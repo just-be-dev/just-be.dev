@@ -2,4 +2,4 @@ packages:
   - 'packages/**/*'
 
 catalog:
-  "@astrojs/markdown-remark": ^5.2.0
+  "@astrojs/markdown-remark": ^6.0.0
