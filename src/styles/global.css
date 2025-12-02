@@ -6,48 +6,48 @@
 
 /* Tailwind v4 Theme Configuration */
 @theme {
-	/* Background colors - map to WebTUI background levels */
-	--color-0: var(--background0);
-	--color-1: var(--background1);
-	--color-2: var(--background2);
-	--color-3: var(--background3);
+  /* Background colors - map to WebTUI background levels */
+  --color-0: var(--background0);
+  --color-1: var(--background1);
+  --color-2: var(--background2);
+  --color-3: var(--background3);
 
-	/* Foreground colors - map to WebTUI foreground levels */
-	--color-fg-0: var(--foreground0);
-	--color-fg-1: var(--foreground1);
-	--color-fg-2: var(--foreground2);
+  /* Foreground colors - map to WebTUI foreground levels */
+  --color-fg-0: var(--foreground0);
+  --color-fg-1: var(--foreground1);
+  --color-fg-2: var(--foreground2);
 
-	/* Border colors - map to WebTUI border tokens */
-	--color-box: var(--box-border-color);
-	--color-table: var(--table-border-color);
-	--color-separator: var(--separator-color);
-	--color-separator-bg: var(--separator-background);
+  /* Border colors - map to WebTUI border tokens */
+  --color-box: var(--box-border-color);
+  --color-table: var(--table-border-color);
+  --color-separator: var(--separator-color);
+  --color-separator-bg: var(--separator-background);
 
-	/* ANSI Terminal Colors - Basic (0) and Bright (1) variants */
-	--color-black-0: #000000;
-	--color-black-1: #555555;
-	--color-red-0: #aa0000;
-	--color-red-1: #ff5555;
-	--color-green-0: #00aa00;
-	--color-green-1: #55ff55;
-	--color-yellow-0: #aa5500;
-	--color-yellow-1: #ffff55;
-	--color-blue-0: #0000aa;
-	--color-blue-1: #5555ff;
-	--color-magenta-0: #aa00aa;
-	--color-magenta-1: #ff55ff;
-	--color-cyan-0: #00aaaa;
-	--color-cyan-1: #55ffff;
-	--color-white-0: #aaaaaa;
-	--color-white-1: #ffffff;
+  /* ANSI Terminal Colors - Basic (0) and Bright (1) variants */
+  --color-black-0: #000000;
+  --color-black-1: #555555;
+  --color-red-0: #aa0000;
+  --color-red-1: #ff5555;
+  --color-green-0: #00aa00;
+  --color-green-1: #55ff55;
+  --color-yellow-0: #aa5500;
+  --color-yellow-1: #ffff55;
+  --color-blue-0: #0000aa;
+  --color-blue-1: #5555ff;
+  --color-magenta-0: #aa00aa;
+  --color-magenta-1: #ff55ff;
+  --color-cyan-0: #00aaaa;
+  --color-cyan-1: #55ffff;
+  --color-white-0: #aaaaaa;
+  --color-white-1: #ffffff;
 
-	/* Accent color */
-	--color-accent: var(--color-blue-0);
+  /* Accent color */
+  --color-accent: var(--color-blue-0);
 
-	/* Custom spacing units based on line-height */
-	--spacing-lh: 1lh;
-	--spacing-2lh: 2lh;
-	--spacing-3lh: 3lh;
+  /* Custom spacing units based on line-height */
+  --spacing-lh: 1lh;
+  --spacing-2lh: 2lh;
+  --spacing-3lh: 3lh;
 }
 
 /* Custom variant: hocus for hover and focus */
@@ -60,27 +60,27 @@
 @import "@webtui/css/components/separator.css";
 @import "@webtui/css/components/badge.css";
 @import "@webtui/css/utils/box.css";
-@import "@webtui/css/components/typography.css";
+/*@import "@webtui/css/components/typography.css";*/
 
 /* Font stack for terminal aesthetic */
 :root {
-	--spacing: 1ch !important;
-	font-family:
-		"IBM Plex Mono", "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas",
-		"Monaco", "Courier New", monospace;
+  --spacing: 1ch !important;
+  font-family:
+    "IBM Plex Mono", "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas",
+    "Monaco", "Courier New", monospace;
 }
 
 * {
-	font-family:
-		"IBM Plex Mono", "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas",
-		"Monaco", "Courier New", monospace;
-	font-size: 1rem;
-	line-height: 1.5;
+  font-family:
+    "IBM Plex Mono", "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas",
+    "Monaco", "Courier New", monospace;
+  font-size: 1rem;
+  line-height: 1.5;
 }
 
 code,
 pre {
-	font-size: 1rem !important;
+  font-size: 1rem !important;
 }
 
 /* Article spacing */
@@ -88,62 +88,62 @@ article h1,
 article h2,
 article .date-component,
 article p {
-	margin-bottom: 1lh;
+  margin-bottom: 1lh;
 }
 
 article h2:has(+ .date-component) {
-	margin-bottom: 0;
+  margin-bottom: 0;
 }
 
 article h2 {
-	font-weight: bold;
+  font-weight: bold;
 }
 
 article dfn {
-	text-decoration: underline dotted;
-	cursor: help;
-	font-style: normal;
+  text-decoration: underline dotted;
+  cursor: help;
+  font-style: normal;
 }
 
 /* Buffer utilities */
 .buffer {
-	margin-left: calc(var(--spacing) * -0.5);
-	margin-right: calc(var(--spacing) * -0.5);
-	padding-left: calc(var(--spacing) * 0.5);
-	padding-right: calc(var(--spacing) * 0.5);
+  margin-left: calc(var(--spacing) * -0.5);
+  margin-right: calc(var(--spacing) * -0.5);
+  padding-left: calc(var(--spacing) * 0.5);
+  padding-right: calc(var(--spacing) * 0.5);
 }
 
 .buffer-2 {
-	margin-left: calc(var(--spacing) * -1);
-	margin-right: calc(var(--spacing) * -1);
-	padding-left: calc(var(--spacing) * 1);
-	padding-right: calc(var(--spacing) * 1);
+  margin-left: calc(var(--spacing) * -1);
+  margin-right: calc(var(--spacing) * -1);
+  padding-left: calc(var(--spacing) * 1);
+  padding-right: calc(var(--spacing) * 1);
 }
 
 /* Nested list indentation */
 article ul {
-	margin-bottom: 1lh;
+  margin-bottom: 1lh;
 }
 
 article ul ul {
-	margin-left: calc(var(--spacing) * 2);
+  margin-left: calc(var(--spacing) * 2);
 }
 
 article ul ul li:last-child {
-	margin-bottom: 0;
+  margin-bottom: 0;
 }
 
 /* Screen reader only utility */
 .sr-only {
-	border: 0;
-	padding: 0;
-	margin: 0;
-	position: absolute !important;
-	height: 1px;
-	width: 1px;
-	overflow: hidden;
-	clip: rect(1px 1px 1px 1px);
-	clip: rect(1px, 1px, 1px, 1px);
-	clip-path: inset(50%);
-	white-space: nowrap;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  position: absolute !important;
+  height: 1px;
+  width: 1px;
+  overflow: hidden;
+  clip: rect(1px 1px 1px 1px);
+  clip: rect(1px, 1px, 1px, 1px);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

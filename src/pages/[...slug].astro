@@ -1,6 +1,8 @@
 ---
 import { getCollection, render } from "astro:content";
 import Layout from "../layouts/Layout.astro";
+import MDContent from "../components/MDContent.astro";
+import Link from "../components/Link.astro";
 
 export async function getStaticPaths() {
   const pages = await getCollection("pages");
@@ -25,6 +27,6 @@ const title =
 
 <Layout title={title}>
   <article class="my-2lh px-4">
-    <Content />
+    <MDContent Content={Content} components={{ a: Link }} />
   </article>
 </Layout>
