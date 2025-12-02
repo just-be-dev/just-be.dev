@@ -1,0 +1,34 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import LinkBox from '../../components/LinkBox.astro';
+
+const research = await getCollection('research');
+const sortedResearch = research.sort((a, b) => a.data.title.localeCompare(b.data.title));
+---
+
+<Layout title="Research - Just Be">
+	<div class="px-4 py-12">
+		<header class="mb-12">
+			<h1 class="font-bold mb-4">~/research</h1>
+		</header>
+
+		{
+			sortedResearch.length > 0 ? (
+				<div class="grid gap-6 md:grid-cols-2">
+					{sortedResearch.map((item) => (
+						<LinkBox
+							href={`/research/${item.id}`}
+							title={item.data.title}
+							description={item.data.description}
+						/>
+					))}
+				</div>
+			) : (
+				<div class="text-center py-12 text-fg-2">
+					<p>No research notes yet. Check back soon!</p>
+				</div>
+			)
+		}
+	</div>
+</Layout>

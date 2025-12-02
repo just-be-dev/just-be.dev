@@ -1,0 +1,69 @@
+---
+interface Props {
+	shortcut?: string;
+	label?: string;
+	class?: string;
+}
+
+const { shortcut, label, class: className } = Astro.props;
+
+function highlightLabel(text: string, key: string) {
+	const index = text.toLowerCase().indexOf(key.toLowerCase());
+	if (index === -1) return null;
+	return {
+		before: text.slice(0, index),
+		key: text.slice(index, index + 1),
+		after: text.slice(index + 1),
+	};
+}
+
+const highlighted = shortcut && label ? highlightLabel(label, shortcut) : null;
+---
+
+<button
+	class:list={[
+		'bg-2 text-accent hocus:bg-0 hocus:invert outline-none flex items-center px-[1ch] cursor-pointer',
+		className,
+	]}
+	data-shortcut={shortcut}
+>
+	{
+		highlighted ? (
+			<>
+				{highlighted.before}
+				<span class="font-bold underline">{highlighted.key}</span>
+				{highlighted.after}
+			</>
+		) : label ? (
+			label
+		) : (
+			<slot />
+		)
+	}
+</button>
+
+<script>
+	document.addEventListener('keydown', (event) => {
+		// Don't trigger if typing
+		if (
+			event.target instanceof HTMLElement &&
+			(event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA')
+		) {
+			return;
+		}
+
+		// Don't trigger with modifiers
+		if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) {
+			return;
+		}
+
+		// Find button with matching shortcut
+		const key = event.key.toLowerCase();
+		const button = document.querySelector(`button[data-shortcut="${key}"]`);
+
+		if (button) {
+			event.preventDefault();
+			(button as HTMLButtonElement).click();
+		}
+	});
+</script>

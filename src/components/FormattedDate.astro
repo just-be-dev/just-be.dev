@@ -1,4 +1,6 @@
 ---
+import { formatDate } from '../utils/date';
+
 interface Props {
 	date: Date;
 }
@@ -6,12 +8,6 @@ interface Props {
 const { date } = Astro.props;
 ---
 
-<time datetime={date.toISOString()}>
-	{
-		date.toLocaleDateString('en-us', {
-			year: 'numeric',
-			month: 'short',
-			day: 'numeric',
-		})
-	}
+<time datetime={date.toISOString()} class="date-component text-fg-2 inline-block">
+	{formatDate(date)}
 </time>

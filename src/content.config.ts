@@ -2,18 +2,48 @@ import { defineCollection, z } from 'astro:content';
 import { glob } from 'astro/loaders';
 
 const blog = defineCollection({
-	// Load Markdown and MDX files in the `src/content/blog/` directory.
-	loader: glob({ base: './src/content/blog', pattern: '**/*.{md,mdx}' }),
-	// Type-check frontmatter using a schema
-	schema: ({ image }) =>
-		z.object({
-			title: z.string(),
-			description: z.string(),
-			// Transform string to Date object
-			pubDate: z.coerce.date(),
-			updatedDate: z.coerce.date().optional(),
-			heroImage: image().optional(),
-		}),
+	loader: glob({ base: './src/content/blog', pattern: '**/*.md' }),
+	schema: z.object({
+		title: z.string(),
+		description: z.string().optional(),
+		date: z.coerce.date(),
+		tags: z.array(z.string()).default([]),
+		draft: z.boolean().default(false),
+	}),
 });
 
-export const collections = { blog };
+const projects = defineCollection({
+	loader: glob({ base: './src/content/projects', pattern: '**/*.md' }),
+	schema: z.object({
+		title: z.string(),
+		description: z.string().optional(),
+		url: z.string().url().optional(),
+		repository: z.string().url().optional(),
+		status: z.enum(['active', 'completed', 'archived', 'maintenance']).default('active'),
+		technologies: z.array(z.string()).default([]),
+		startDate: z.coerce.date().optional(),
+		endDate: z.coerce.date().optional(),
+	}),
+});
+
+const research = defineCollection({
+	loader: glob({ base: './src/content/research', pattern: '**/*.md' }),
+	schema: z.object({
+		title: z.string(),
+		description: z.string().optional(),
+		date: z.coerce.date().optional(),
+		lastUpdated: z.coerce.date().optional(),
+		status: z.enum(['draft', 'published', 'archived']).default('draft'),
+		topics: z.array(z.string()).default([]),
+	}),
+});
+
+const pages = defineCollection({
+	loader: glob({ base: './src/content/pages', pattern: '**/*.md' }),
+	schema: z.object({
+		title: z.string().optional(),
+		description: z.string().optional(),
+	}),
+});
+
+export const collections = { blog, projects, research, pages };

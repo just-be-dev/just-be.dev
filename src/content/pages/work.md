@@ -1,0 +1,68 @@
+---
+defs:
+  legal_engineer: A lawyer who facilitates the automation of regulatory checks by encoding legal knowledge in an AI automation platform
+---
+
+# Work History
+
+## Norm.ai
+
+:date[Aug '25 - Present]
+
+I'm currently a technical director at Norm.ai. I help the team build internal products to empower our :def[legal engineers]{:title="defs.legal_engineer"} while also driving a culture of continuous learning and improvement.
+
+## Val.town
+
+:date[Nov '24 - Feb '25]
+
+I worked briefly with the team at Val.town as a founding engineer helping build out product features as a full-stack engineer.
+
+## Recurse Center
+
+:date[Aug '24 - Nov '24]
+
+I attended the Recurse Center to explore my technical interests and figure out my next career step. During this time, I built a Deno desktop framework in Rust and TypeScript, a language server implementation for a binary DSL protocol called Typical, and paired with another RCer to build a Deno functions-as-a-service platform, among other projects. It was a fun, educational, and productive time.
+
+## Membrane
+
+:date[Feb '24 - Aug '24]
+
+In my brief stint as a co-founder at Membrane, I helped raise a pre-seed, interview potential customers, create the docs, set up product research infrastructure, and build out a CI pipeline for rapid product iteration. I ultimately stepped away on good terms due to a difference of vision.
+
+## Oxide Computer Company
+
+:date[Sep '21 - Feb '24]
+
+As an engineer on the product team, I helped build Oxide's Web Console and contributed to the lower-level Control Plane. I was specifically responsible for rewriting the rack's REST API to support name or unique identifiers (the original version only supported mutable name references). I also helped build Oxide's design system and made significant contributions to the generated TypeScript SDK. You can see my public PRs [here](https://github.com/search?q=org%3Aoxidecomputer+author%3Ajust-be-dev&type=pullrequests).
+
+## Recurse Center
+
+:date[Jun '21 - Aug '21]
+
+This was my first batch at [Recurse](https://www.recurse.com/). I explored learning new programming languages (like Rust) and invested a lot of time in writing and pairing. It was an incredible experience and helped me secure my next role.
+
+## Artsy
+
+:date[Jun '18 - May '21]
+
+I was hired as a senior software engineer at Artsy and worked across the tech stack and on various teams. I helped build the design system, contributed to the UI across the web and mobile app, reduced CI build times significantly, introduced the notion of tech plans, led a major refactor of the GraphQL service, contributed to infrastructure and automation on the platform team, spearheaded performance and SEO improvements, and acted as a tech lead for the purchase team. I was deeply involved with hiring, helping drive culture, and doing everything I could to help those around me be successful in their endeavors.
+
+Artsy is open source by default so _most_ of my work over the three years I was there is available [here](https://github.com/search?q=org:artsy+is:pr+author:zephraph+is:merged+&type=pullrequests).
+
+## Scripps Networks Interactive
+
+:date[Sep '15 - May '18]
+
+At Scripps, I was responsible for improving performance and introducing frontend best practices. I revamped the build system, worked extensively to improve page performance, and co-designed a theming system that enabled HGTV, Travel Channel, and Food Network to effectively use the same markup while retaining their unique brand styling. I helped lead a cross-platform effort to consolidate HGTV, Food Network, and Travel Channel on a single platform.
+
+## Vencore
+
+:date[Aug '14 - Aug '15]
+
+I built features for a rotary aircraft maintenance system using ExtJS and ColdFusion.
+
+## Adtran
+
+:date[Aug '11 - Aug '14]
+
+I worked every other semester as a co-op engineer at Adtran while in college. I rotated from writing embedded C++ on an NetVanta VOIP PBX to designing a voltage anomaly detection system for another networking device, and helping build out an interface to monitor and manage automated tests across a fleet of networked devices. This is also where I got my start in open source, contributing to the [Selenium 2 binding for Robot Framework](https://github.com/robotframework/Selenium2Library).

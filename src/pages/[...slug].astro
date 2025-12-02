@@ -1,0 +1,30 @@
+---
+import { getCollection, render } from "astro:content";
+import Layout from "../layouts/Layout.astro";
+
+export async function getStaticPaths() {
+  const pages = await getCollection("pages");
+  return pages.map((page) => ({
+    params: {
+      slug: page.id === "index" ? undefined : page.id,
+    },
+    props: page,
+  }));
+}
+
+type Props = Awaited<ReturnType<typeof getStaticPaths>>[number]["props"];
+
+const page = Astro.props;
+const { Content } = await render(page);
+
+const title =
+  page.id === "index"
+    ? "Just Be"
+    : `${page.id.charAt(0).toUpperCase() + page.id.slice(1)} - Just Be`;
+---
+
+<Layout title={title}>
+  <article class="my-2lh px-4">
+    <Content />
+  </article>
+</Layout>
