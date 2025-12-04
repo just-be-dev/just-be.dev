@@ -66,14 +66,14 @@
 :root {
   --spacing: 1ch !important;
   font-family:
-    "IBM Plex Mono", "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas",
-    "Monaco", "Courier New", monospace;
+    "IBM Plex Mono", "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas", "Monaco",
+    "Courier New", monospace;
 }
 
 * {
   font-family:
-    "IBM Plex Mono", "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas",
-    "Monaco", "Courier New", monospace;
+    "IBM Plex Mono", "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas", "Monaco",
+    "Courier New", monospace;
   font-size: 1rem;
   line-height: 1.5;
 }

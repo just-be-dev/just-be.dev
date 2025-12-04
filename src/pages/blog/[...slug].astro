@@ -1,60 +1,60 @@
 ---
-import { getCollection, render } from 'astro:content';
-import Layout from '../../layouts/Layout.astro';
-import FormattedDate from '../../components/FormattedDate.astro';
-import Tag from '../../components/Tag.astro';
+import { getCollection, render } from "astro:content";
+import FormattedDate from "../../components/FormattedDate.astro";
+import Tag from "../../components/Tag.astro";
+import Layout from "../../layouts/Layout.astro";
 
 export async function getStaticPaths() {
-	const posts = await getCollection('blog');
-	return posts.map((post) => ({
-		params: { slug: post.id },
-		props: post,
-	}));
+  const posts = await getCollection("blog");
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: post,
+  }));
 }
 
-type Props = Awaited<ReturnType<typeof getStaticPaths>>[number]['props'];
+type Props = Awaited<ReturnType<typeof getStaticPaths>>[number]["props"];
 
 const post = Astro.props;
 const { Content } = await render(post);
 ---
 
 <Layout title={`${post.data.title} - Just Be`} description={post.data.description}>
-	<article class="my-3lh relative px-4">
-		<header class="mb-2lh">
-			<h1 class="font-bold mb-0">{post.data.title}</h1>
-			<FormattedDate date={post.data.date} />
+  <article class="my-3lh relative px-4">
+    <header class="mb-2lh">
+      <h1 class="mb-0 font-bold">{post.data.title}</h1>
+      <FormattedDate date={post.data.date} />
 
-			{
-				post.data.tags.length > 0 && (
-					<div class="flex gap-[1ch] absolute right-4 top-0">
-						{post.data.tags.map((tag) => (
-							<Tag tag={tag} url="/blog" />
-						))}
-					</div>
-				)
-			}
+      {
+        post.data.tags.length > 0 && (
+          <div class="absolute top-0 right-4 flex gap-[1ch]">
+            {post.data.tags.map((tag) => (
+              <Tag tag={tag} url="/blog" />
+            ))}
+          </div>
+        )
+      }
 
-			<div class="text-fg-0 mt-lh">
-				<a href="/blog" class="text-fg-0 font-bold focus-visible:outline-none link">
-					← Back to blog
-				</a>
-			</div>
-		</header>
+      <div class="text-fg-0 mt-lh">
+        <a href="/blog" class="text-fg-0 link font-bold focus-visible:outline-none">
+          ← Back to blog
+        </a>
+      </div>
+    </header>
 
-		<div class="max-w-none">
-			<Content />
-		</div>
-	</article>
+    <div class="max-w-none">
+      <Content />
+    </div>
+  </article>
 </Layout>
 
 <style>
-	.link:hover,
-	.link:focus {
-		padding-left: 0.5rem;
-		padding-right: 0.5rem;
-		margin-left: -0.5rem;
-		margin-right: -0.5rem;
-		background-color: var(--background0);
-		filter: invert(1);
-	}
+  .link:hover,
+  .link:focus {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+    background-color: var(--background0);
+    filter: invert(1);
+  }
 </style>

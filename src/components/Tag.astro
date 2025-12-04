@@ -1,28 +1,28 @@
 ---
 interface Props {
-	tag: string;
-	count?: number;
-	url?: string;
-	class?: string;
+  id?: string;
+  tag: string;
+  count?: number;
+  url?: string;
+  class?: string;
 }
 
-const { tag, count, url = '/blog', class: className } = Astro.props;
+const { id, tag, count, url = "/blog", class: className } = Astro.props;
 const tagUrl = `${url}?tag=${encodeURIComponent(tag)}`;
 ---
 
 <a
-	href={tagUrl}
-	class:list={[
-		'bg-2 text-accent hocus:bg-0 hocus:invert outline-none flex items-center group',
-		className,
-	]}
+  id={id}
+  href={tagUrl}
+  class:list={[
+    "bg-2 text-accent hocus:bg-0 hocus:invert group flex items-center outline-none",
+    className,
+  ]}
 >
-	<span class="px-[1ch]">{tag}</span>
-	{
-		count !== undefined && (
-			<span class="text-fg-2 bg-1 px-[1ch] group-hocus:bg-2 group-hocus:text-accent">
-				{count}
-			</span>
-		)
-	}
+  <span class="px-[1ch]">{tag}</span>
+  {
+    count !== undefined && (
+      <span class="text-fg-2 bg-1 group-hocus:bg-2 group-hocus:text-accent px-[1ch]">{count}</span>
+    )
+  }
 </a>

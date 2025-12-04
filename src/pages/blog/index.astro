@@ -1,148 +1,86 @@
 ---
-import { getCollection } from 'astro:content';
-import Layout from '../../layouts/Layout.astro';
-import Tag from '../../components/Tag.astro';
-import { formatDate } from '../../utils/date';
+import { getCollection } from "astro:content";
+import Button from "../../components/Button.astro";
+import Tag from "../../components/Tag.astro";
+import Layout from "../../layouts/Layout.astro";
+import { formatDate } from "../../utils/date";
+
+export const prerender = false;
+
+// Get selected tag from query params
+const selectedTag = Astro.url.searchParams.get("tag");
 
 // Get all blog posts
-let posts = await getCollection('blog', ({ data }) => !data.draft);
-posts = posts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+let allPosts = await getCollection("blog", ({ data }) => !data.draft);
+allPosts = allPosts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 
-// Calculate tag counts
+// Filter posts if tag is selected
+const posts = selectedTag
+  ? allPosts.filter((post) => post.data.tags.includes(selectedTag))
+  : allPosts;
+
+// Calculate tag counts from all posts
 const tagCounts = new Map<string, number>();
-posts.forEach((post) => {
-	post.data.tags.forEach((tag) => {
-		tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
-	});
+allPosts.forEach((post) => {
+  post.data.tags.forEach((tag) => {
+    tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+  });
 });
 
 const sortedTags = Array.from(tagCounts.entries())
-	.map(([tag, count]) => ({ tag, count }))
-	.sort((a, b) => a.tag.localeCompare(b.tag));
+  .map(([tag, count]) => ({ tag, count }))
+  .sort((a, b) => a.tag.localeCompare(b.tag));
 ---
 
 <Layout title="Blog - Just Be">
-	<div class="px-4 py-12 font-mono">
-		<div class="mb-lh flex justify-between">
-			<h1 class="font-bold">~/blog</h1>
-			<div id="tags-container" class="flex flex-wrap gap-2 items-center">
-				{
-					sortedTags.map(({ tag, count }) => (
-						<Tag tag={tag} count={count} url="/blog" data-tag={tag} />
-					))
-				}
-			</div>
-		</div>
+  <div class="px-4 font-mono">
+    <div class="mb-lh flex justify-between">
+      <h1 class="font-bold">~/blog</h1>
+      <div class="flex flex-wrap items-center gap-2">
+        {
+          selectedTag ? (
+            <>
+              <Tag
+                tag={selectedTag}
+                count={tagCounts.get(selectedTag)}
+                url="/blog"
+                class="invert"
+                id="selected-tag"
+              />
+              <Button shortcut="c" label="clear" href="/blog" />
+            </>
+          ) : (
+            sortedTags.map(({ tag, count }) => <Tag tag={tag} count={count} url="/blog" />)
+          )
+        }
+      </div>
+    </div>
 
-		<ul id="posts-list" class="grid grid-cols-[auto_auto_1fr] gap-x-4">
-			{
-				posts.map((post) => (
-					<li class="contents before:content-none" data-tags={post.data.tags.join(',')}>
-						<a
-							href={`/blog/${post.id}/`}
-							class="col-span-3 grid grid-cols-subgrid bg-0 hocus:invert -mx-[1ch] px-[1ch] outline-none group"
-						>
-							<span class="text-fg-2 group-hocus:text-accent">{formatDate(post.data.date)}</span>
-							<h2 class="whitespace-nowrap font-bold">{post.data.title}</h2>
-							{post.data.description && (
-								<span class="truncate min-w-0">{post.data.description}</span>
-							)}
-						</a>
-					</li>
-				))
-			}
-		</ul>
-	</div>
+    <ul class="grid grid-cols-[auto_auto_1fr] gap-x-4">
+      {
+        posts.map((post) => (
+          <li class="contents before:content-none">
+            <a
+              href={`/blog/${post.id}/`}
+              class="bg-0 hocus:invert group col-span-3 -mx-[1ch] grid grid-cols-subgrid px-[1ch] outline-none"
+            >
+              <span class="text-fg-2 group-hocus:text-accent">{formatDate(post.data.date)}</span>
+              <h2 class="font-bold whitespace-nowrap">{post.data.title}</h2>
+              {post.data.description && (
+                <span class="min-w-0 truncate">{post.data.description}</span>
+              )}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
 </Layout>
 
 <script>
-	// Tag filtering with URL query params
-	const urlParams = new URLSearchParams(window.location.search);
-	const selectedTags = urlParams.getAll('tag');
-
-	const postsList = document.getElementById('posts-list');
-	const tagsContainer = document.getElementById('tags-container');
-
-	function filterPosts(tags: string[]) {
-		const posts = postsList?.querySelectorAll('[data-tags]');
-
-		posts?.forEach((post) => {
-			const postTags = (post as HTMLElement).dataset.tags?.split(',') || [];
-			const matches = tags.length === 0 || tags.some((tag) => postTags.includes(tag));
-
-			if (matches) {
-				(post as HTMLElement).style.display = '';
-			} else {
-				(post as HTMLElement).style.display = 'none';
-			}
-		});
-	}
-
-	function updateTagsDisplay(selectedTags: string[]) {
-		if (!tagsContainer) return;
-
-		const allTags = Array.from(tagsContainer.querySelectorAll('[data-tag]'));
-
-		if (selectedTags.length > 0) {
-			// Show only selected tags and clear button
-			allTags.forEach((tag) => {
-				const tagName = (tag as HTMLElement).dataset.tag;
-				if (selectedTags.includes(tagName!)) {
-					tag.classList.add('invert');
-					(tag as HTMLElement).style.display = '';
-				} else {
-					(tag as HTMLElement).style.display = 'none';
-				}
-			});
-
-			// Add clear button if not exists
-			if (!tagsContainer.querySelector('[data-clear]')) {
-				const clearBtn = document.createElement('button');
-				clearBtn.className =
-					'bg-2 text-accent hocus:bg-0 hocus:invert outline-none flex items-center px-[1ch] cursor-pointer';
-				clearBtn.dataset.clear = 'true';
-				clearBtn.innerHTML = '<span class="font-bold underline">c</span>lear';
-				clearBtn.addEventListener('click', clearTags);
-				tagsContainer.appendChild(clearBtn);
-			}
-		} else {
-			// Show all tags, remove clear button
-			allTags.forEach((tag) => {
-				tag.classList.remove('invert');
-				(tag as HTMLElement).style.display = '';
-			});
-			tagsContainer.querySelector('[data-clear]')?.remove();
-		}
-	}
-
-	function clearTags() {
-		window.location.href = '/blog';
-	}
-
-	// Initialize on page load
-	filterPosts(selectedTags);
-	updateTagsDisplay(selectedTags);
-
-	// Add keyboard shortcut for clear
-	if (selectedTags.length > 0) {
-		document.addEventListener('keydown', (event) => {
-			if (
-				event.target instanceof HTMLElement &&
-				(event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA')
-			) {
-				return;
-			}
-
-			if (
-				!event.metaKey &&
-				!event.ctrlKey &&
-				!event.altKey &&
-				!event.shiftKey &&
-				event.key.toLowerCase() === 'c'
-			) {
-				event.preventDefault();
-				clearTags();
-			}
-		});
-	}
+  // Focus selected tag on page load
+  const selectedTag = document.getElementById("selected-tag");
+  if (selectedTag) {
+    selectedTag.focus();
+  }
 </script>

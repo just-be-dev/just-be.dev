@@ -12,14 +12,10 @@
  */
 
 import { readdirSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { join, dirname } from "node:path";
-import type { Root, Parent, RootContent } from "mdast";
-import type {
-  MdxJsxFlowElement,
-  MdxJsxTextElement,
-  MdxJsxAttribute,
-} from "mdast-util-mdx-jsx";
+import type { Parent, Root, RootContent } from "mdast";
+import type { MdxJsxAttribute, MdxJsxFlowElement, MdxJsxTextElement } from "mdast-util-mdx-jsx";
 import type { MdxjsEsm } from "mdast-util-mdxjs-esm";
 
 // Get the components directory path
@@ -82,7 +78,7 @@ function toPascalCase(str: string): string {
  */
 function convertAttributes(
   attrs: MdcAttributes | undefined,
-  fmAttrs: Record<string, unknown> | undefined,
+  fmAttrs: Record<string, unknown> | undefined
 ): MdxJsxAttribute[] {
   const result: MdxJsxAttribute[] = [];
 
@@ -250,9 +246,7 @@ function isSlotSection(node: any): node is ComponentContainerSection {
 function transformNode(node: any, components: Set<string>): any {
   // First, recursively transform all children
   if (node.children && Array.isArray(node.children)) {
-    node.children = node.children.map((child) =>
-      transformNode(child, components),
-    );
+    node.children = node.children.map((child) => transformNode(child, components));
   }
 
   // Handle slot sections - wrap in a div with slot attribute
@@ -279,9 +273,7 @@ function transformNode(node: any, components: Set<string>): any {
 
     // Check if this component exists in the components directory
     const isCustomComponent = AVAILABLE_COMPONENTS.has(pascalCaseName);
-    const componentName = isCustomComponent
-      ? pascalCaseName
-      : node.name.toLowerCase();
+    const componentName = isCustomComponent ? pascalCaseName : node.name.toLowerCase();
     const attributes = convertAttributes(node.attributes, node.fmAttributes);
 
     // Track component for import generation (only custom components)
@@ -290,8 +282,7 @@ function transformNode(node: any, components: Set<string>): any {
     }
 
     // Determine if block or inline
-    const isBlock =
-      node.type === "containerComponent" || node.type === "leafComponent";
+    const isBlock = node.type === "containerComponent" || node.type === "leafComponent";
 
     if (isBlock) {
       const flowElement: MdxJsxFlowElement = {
@@ -325,9 +316,7 @@ function getExistingImports(tree: Root): Set<string> {
     if (child.type === "mdxjsEsm") {
       const node = child as MdxjsEsm;
       // Match default imports: import ComponentName from '...'
-      const defaultImportMatch = node.value.match(
-        /import\s+(\w+)\s+from\s+['"].*['"]/g,
-      );
+      const defaultImportMatch = node.value.match(/import\s+(\w+)\s+from\s+['"].*['"]/g);
       if (defaultImportMatch) {
         for (const match of defaultImportMatch) {
           const componentName = match.match(/import\s+(\w+)/)?.[1];
@@ -386,9 +375,7 @@ export function remarkMdcToMdx() {
 
     // Use a simpler approach: recursively transform the entire tree
     if (tree.children) {
-      tree.children = tree.children.map((child) =>
-        transformNode(child, components),
-      ) as any;
+      tree.children = tree.children.map((child) => transformNode(child, components)) as any;
     }
 
     // Check for existing imports
@@ -396,7 +383,7 @@ export function remarkMdcToMdx() {
 
     // Filter out components that are already imported
     const componentsToImport = new Set(
-      Array.from(components).filter((comp) => !existingImports.has(comp)),
+      Array.from(components).filter((comp) => !existingImports.has(comp))
     );
 
     // Generate and insert import nodes at the beginning of the tree

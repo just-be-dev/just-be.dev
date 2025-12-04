@@ -19,9 +19,7 @@ const projects = defineCollection({
     description: z.string().optional(),
     url: z.string().url().optional(),
     repository: z.string().url().optional(),
-    status: z
-      .enum(["active", "completed", "archived", "maintenance"])
-      .default("active"),
+    status: z.enum(["active", "completed", "archived", "maintenance"]).default("active"),
     technologies: z.array(z.string()).default([]),
     startDate: z.coerce.date().optional(),
     endDate: z.coerce.date().optional(),

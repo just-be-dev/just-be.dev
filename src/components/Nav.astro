@@ -34,13 +34,13 @@ function highlightLabel(label: string, keyChar: string) {
 
 <a
   href="#main-content"
-  class="skip-link absolute left-[-9999px] focus:left-0 top-lh bg-1 px-1 py-1 z-50 transition-filter"
+  class="skip-link top-lh bg-1 transition-filter absolute left-[-9999px] z-50 px-1 py-1 focus:left-0"
 >
   Skip to main content
 </a>
 
 <nav
-  class="fixed top-0 left-0 right-0 flex items-center bg-1 z-10 h-lh justify-between lg:justify-start"
+  class="bg-1 fixed top-0 right-0 left-0 z-10 flex h-lh items-center justify-between lg:justify-start"
 >
   <div class="flex">
     {
@@ -51,10 +51,7 @@ function highlightLabel(label: string, keyChar: string) {
           <a
             href={tab.href}
             data-key={tab.keyChar}
-            class:list={[
-              "nav-link bg-1 px-1 flex items-center transition-filter",
-              { active },
-            ]}
+            class:list={["nav-link bg-1 transition-filter flex items-center px-1", { active }]}
             tabindex={active ? -1 : undefined}
           >
             {highlighted.before}
@@ -66,30 +63,23 @@ function highlightLabel(label: string, keyChar: string) {
     }
   </div>
 
-  <div
-    class="flex items-center h-lh lg:fixed lg:left-1/2 lg:-translate-x-1/2 lg:z-20"
-  >
-    <span class="text-fg-0 font-normal flex gap-1">
+  <div class="flex h-lh items-center lg:fixed lg:left-1/2 lg:z-20 lg:-translate-x-1/2">
+    <span class="text-fg-0 flex gap-1 font-normal">
       <span>
-        <span class="font-bold">just</span><span
-          class="font-normal text-fg-1 max-md:hidden">in</span
+        <span class="font-bold">just</span><span class="text-fg-1 font-normal max-md:hidden"
+          >in</span
         >
       </span>
       <span>
-        <span class="font-bold">be</span><span
-          class="font-normal text-fg-1 max-md:hidden">nnett</span
+        <span class="font-bold">be</span><span class="text-fg-1 font-normal max-md:hidden"
+          >nnett</span
         >
       </span>
     </span>
   </div>
 
   <div class="flex h-lh pr-1 lg:ml-auto">
-    <a
-      href="mailto:contact@just-be.dev"
-      class="icon-link"
-      title="Email"
-      aria-label="Email"
-    >
+    <a href="mailto:contact@just-be.dev" class="icon-link" title="Email" aria-label="Email">
       <Icon name="pixel:envelope-solid" />
     </a>
     <a
