@@ -22,3 +22,6 @@ run = "astro preview"
 
 [tasks.astro]
 run = "astro"
+
+[tasks.fmt]
+run = "prettier -wl ."
