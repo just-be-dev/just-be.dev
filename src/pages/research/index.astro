@@ -1,7 +1,7 @@
 ---
 import { getCollection } from "astro:content";
-import LinkBox from "../../components/LinkBox.astro";
-import Layout from "../../layouts/Layout.astro";
+import LinkBox from "@/components/LinkBox.astro";
+import Layout from "@/layouts/Layout.astro";
 
 const research = await getCollection("research");
 const sortedResearch = research.sort((a, b) => a.data.title.localeCompare(b.data.title));

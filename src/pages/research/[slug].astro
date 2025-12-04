@@ -1,7 +1,7 @@
 ---
 import { getCollection, render } from "astro:content";
-import FormattedDate from "../../components/FormattedDate.astro";
-import Layout from "../../layouts/Layout.astro";
+import FormattedDate from "@/components/FormattedDate.astro";
+import Layout from "@/layouts/Layout.astro";
 
 export async function getStaticPaths() {
   const research = await getCollection("research");

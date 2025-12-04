@@ -1,7 +1,7 @@
 ---
 import { getCollection } from "astro:content";
-import LinkBox from "../../components/LinkBox.astro";
-import Layout from "../../layouts/Layout.astro";
+import LinkBox from "@/components/LinkBox.astro";
+import Layout from "@/layouts/Layout.astro";
 
 const projects = await getCollection("projects");
 const sortedProjects = projects.sort((a, b) => a.data.title.localeCompare(b.data.title));
