@@ -1,0 +1,7 @@
+pre-commit:
+  parallel: true
+  commands:
+    prettier:
+      glob: "*.{js,ts,jsx,tsx,astro,json,md,mdx,css,html}"
+      run: prettier --write --list-different {staged_files}
+      stage_fixed: true

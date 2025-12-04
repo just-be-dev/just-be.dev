@@ -1,12 +1,13 @@
 [tools]
 bun = "1.3.3"
+lefthook = "2.0.7"
 
 [settings]
 experimental = true
 pin = true
 
 [hooks]
-postinstall = "bun install"
+postinstall = ["bun install", "lefthook install"]
 
 [env]
 _.path = "node_modules/.bin"
