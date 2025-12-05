@@ -3,9 +3,9 @@
 import { fileURLToPath } from "node:url";
 import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
-import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "astro/config";
 import icon from "astro-icon";
+import UnoCSS from "@unocss/astro";
 import remarkMdc from "remark-mdc";
 import { remarkMdcToMdx } from "./src/plugins/remark-mdc-to-mdx.ts";
 
@@ -18,9 +18,9 @@ export default defineConfig({
       remarkPlugins: [remarkMdc, remarkMdcToMdx],
     }),
     sitemap(),
+    UnoCSS({ injectReset: true }),
   ],
   vite: {
-    plugins: [tailwindcss()],
     resolve: {
       alias: {
         "@": fileURLToPath(new URL("./src", import.meta.url)),

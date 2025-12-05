@@ -6,14 +6,12 @@
     "@astrojs/rss": "^4.0.14",
     "@astrojs/sitemap": "^3.6.0",
     "@iconify-json/pixel": "^1.2.1",
-    "@tailwindcss/vite": "^4.1.17",
     "@webtui/css": "^0.1.5",
     "astro": "^5.16.3",
     "astro-icon": "^1.1.1",
     "mdast-util-mdx-jsx": "^3.2.0",
     "remark-mdc": "^3.9.0",
     "sharp": "^0.34.3",
-    "tailwindcss": "^4.1.2",
     "unist-util-visit": "^5.0.0",
     "zod": "^4.1.13"
   },
@@ -25,8 +23,9 @@
   },
   "type": "module",
   "devDependencies": {
+    "@unocss/astro": "^66.5.10",
     "prettier": "^3.7.4",
     "prettier-plugin-astro": "^0.14.1",
-    "prettier-plugin-tailwindcss": "^0.7.2"
+    "unocss": "^66.5.10"
   }
 }

@@ -1,28 +1,20 @@
 /* Import Google Fonts */
 @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,700;1,400&display=swap");
 
-/* Tailwind CSS v4 */
-@import "tailwindcss";
+/* UnoCSS - Auto-imported by Astro integration */
+/* All theme configuration is now in uno.config.ts */
 
-/* Tailwind v4 Theme Configuration */
-@theme {
-  /* Background colors - map to WebTUI background levels */
-  --color-0: var(--background0);
-  --color-1: var(--background1);
-  --color-2: var(--background2);
-  --color-3: var(--background3);
+/* WebTUI CSS Components */
+@import "@webtui/css/base.css";
+@import "@webtui/css/components/pre.css";
+@import "@webtui/css/components/table.css";
+@import "@webtui/css/components/separator.css";
+@import "@webtui/css/components/badge.css";
+@import "@webtui/css/utils/box.css";
+/*@import "@webtui/css/components/typography.css";*/
 
-  /* Foreground colors - map to WebTUI foreground levels */
-  --color-fg-0: var(--foreground0);
-  --color-fg-1: var(--foreground1);
-  --color-fg-2: var(--foreground2);
-
-  /* Border colors - map to WebTUI border tokens */
-  --color-box: var(--box-border-color);
-  --color-table: var(--table-border-color);
-  --color-separator: var(--separator-color);
-  --color-separator-bg: var(--separator-background);
-
+/* Font stack for terminal aesthetic */
+:root {
   /* ANSI Terminal Colors - Basic (0) and Bright (1) variants */
   --color-black-0: #000000;
   --color-black-1: #555555;
@@ -41,30 +33,6 @@
   --color-white-0: #aaaaaa;
   --color-white-1: #ffffff;
 
-  /* Accent color */
-  --color-accent: var(--color-blue-0);
-
-  /* Custom spacing units based on line-height */
-  --spacing-lh: 1lh;
-  --spacing-2lh: 2lh;
-  --spacing-3lh: 3lh;
-}
-
-/* Custom variant: hocus for hover and focus */
-@variant hocus (&:hover, &:focus);
-
-/* WebTUI CSS Components */
-@import "@webtui/css/base.css";
-@import "@webtui/css/components/pre.css";
-@import "@webtui/css/components/table.css";
-@import "@webtui/css/components/separator.css";
-@import "@webtui/css/components/badge.css";
-@import "@webtui/css/utils/box.css";
-/*@import "@webtui/css/components/typography.css";*/
-
-/* Font stack for terminal aesthetic */
-:root {
-  --spacing: 1ch !important;
   font-family:
     "IBM Plex Mono", "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas", "Monaco",
     "Courier New", monospace;
