@@ -33,48 +33,44 @@ const sortedTags = Array.from(tagCounts.entries())
 ---
 
 <Layout title="Blog - Just Be">
-  <div class="px-4 font-mono">
-    <div class="mb-lh flex justify-between">
-      <h1 class="font-bold">~/blog</h1>
-      <div class="flex flex-wrap items-center gap-2">
-        {
-          selectedTag ? (
-            <>
-              <Tag
-                tag={selectedTag}
-                count={tagCounts.get(selectedTag)}
-                url="/blog"
-                class="invert"
-                id="selected-tag"
-              />
-              <Button shortcut="c" label="clear" href="/blog" />
-            </>
-          ) : (
-            sortedTags.map(({ tag, count }) => <Tag tag={tag} count={count} url="/blog" />)
-          )
-        }
-      </div>
-    </div>
-
-    <ul class="grid grid-cols-[auto_auto_1fr] gap-x-4">
+  <header class="mb-2 flex justify-between">
+    <h1 class="font-bold">~/blog</h1>
+    <div class="flex flex-wrap items-center gap-2">
       {
-        posts.map((post) => (
-          <li class="contents before:content-none">
-            <a
-              href={`/blog/${post.id}/`}
-              class="bg-0 hocus:invert group col-span-3 -mx-[1ch] grid grid-cols-subgrid px-[1ch] outline-none"
-            >
-              <span class="text-fg-2 group-hocus:text-accent">{formatDate(post.data.date)}</span>
-              <h2 class="font-bold whitespace-nowrap">{post.data.title}</h2>
-              {post.data.description && (
-                <span class="min-w-0 truncate">{post.data.description}</span>
-              )}
-            </a>
-          </li>
-        ))
+        selectedTag ? (
+          <>
+            <Tag
+              tag={selectedTag}
+              count={tagCounts.get(selectedTag)}
+              url="/blog"
+              class="invert"
+              id="selected-tag"
+            />
+            <Button shortcut="c" label="clear" href="/blog" />
+          </>
+        ) : (
+          sortedTags.map(({ tag, count }) => <Tag tag={tag} count={count} url="/blog" />)
+        )
       }
-    </ul>
-  </div>
+    </div>
+  </header>
+
+  <ul class="grid grid-cols-[auto_auto_1fr] gap-x-4">
+    {
+      posts.map((post) => (
+        <li class="contents before:content-none">
+          <a
+            href={`/blog/${post.id}/`}
+            class="bg-0 hocus:invert group col-span-3 -mx-[1ch] grid grid-cols-subgrid px-[1ch] outline-none"
+          >
+            <span class="text-fg-2 group-hocus:text-accent">{formatDate(post.data.date)}</span>
+            <h2 class="font-bold whitespace-nowrap">{post.data.title}</h2>
+            {post.data.description && <span class="min-w-0 truncate">{post.data.description}</span>}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
 </Layout>
 
 <script>

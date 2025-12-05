@@ -19,14 +19,13 @@ const { Content } = await render(post);
 ---
 
 <Layout title={`${post.data.title} - Just Be`} description={post.data.description}>
-  <article class="my-3lh relative px-4">
-    <header class="mb-2lh">
+  <article class="my-3lh px-4 max-w-article mx-auto">
+    <header class="mb-2lh grid grid-cols-[1fr_auto] gap-x-2">
       <h1 class="mb-0 font-bold">{post.data.title}</h1>
-      <FormattedDate date={post.data.date} />
 
       {
         post.data.tags.length > 0 && (
-          <div class="absolute top-0 right-4 flex gap-[1ch]">
+          <div class="flex gap-[1ch] justify-end">
             {post.data.tags.map((tag) => (
               <Tag tag={tag} url="/blog" />
             ))}
@@ -34,15 +33,17 @@ const { Content } = await render(post);
         )
       }
 
-      <div class="text-fg-0 mt-lh">
-        <a href="/blog" class="text-fg-0 link font-bold focus-visible:outline-none">
-          ← Back to blog
-        </a>
-      </div>
+      <FormattedDate date={post.data.date} />
     </header>
 
     <div class="max-w-none">
       <Content />
+    </div>
+
+    <div class="text-fg-0 mt-2lh">
+      <a href="/blog" class="text-fg-0 link font-bold focus-visible:outline-none h-1lh">
+        ← Back to blog
+      </a>
     </div>
   </article>
 </Layout>
