@@ -13,6 +13,19 @@
 @import "@webtui/css/utils/box.css";
 /*@import "@webtui/css/components/typography.css";*/
 
+/* Override UnoCSS reset for WebTUI boxes */
+[box-]::before,
+[box-]::after {
+  border-width: var(--box-border-width, 1px) !important;
+  border-color: var(--box-border-color, currentColor) !important;
+}
+
+[box-~="double"]::before,
+[box-~="double"]::after {
+  border-width: var(--box-double-border-width, 3px) !important;
+  border-color: var(--box-border-color, currentColor) !important;
+}
+
 /* Font stack for terminal aesthetic */
 :root {
   /* ANSI Terminal Colors - Basic (0) and Bright (1) variants */
