@@ -15,14 +15,14 @@ const tagUrl = `${url}?tag=${encodeURIComponent(tag)}`;
   id={id}
   href={tagUrl}
   class:list={[
-    "bg-2 text-accent hocus:bg-0 hocus:invert group flex items-center outline-none",
+    "bg-2 text-accent hocus:bg-0 hocus:invert group flex items-center outline-none font-medium border-2 border-fg-0",
     className,
   ]}
 >
   <span class="px-[1ch]">{tag}</span>
   {
     count !== undefined && (
-      <span class="text-fg-2 bg-1 group-hocus:bg-2 group-hocus:text-accent px-[1ch]">{count}</span>
+      <span class="text-fg-2 bg-1 border-l-2 border-fg-0 group-hocus:bg-2 group-hocus:text-accent px-[1ch]">{count}</span>
     )
   }
 </a>
