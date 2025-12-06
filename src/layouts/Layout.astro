@@ -8,7 +8,7 @@ interface Props {
   description?: string;
 }
 
-const { title = "Just Be", description } = Astro.props;
+const { title = "Just Be", description = "The personal site of Justin Bennett" } = Astro.props;
 ---
 
 <!doctype html>
