@@ -1,6 +1,4 @@
 ---
-import { Icon } from "astro-icon/components";
-
 const currentPath = Astro.url.pathname;
 
 interface Tab {
@@ -80,7 +78,7 @@ function highlightLabel(label: string, keyChar: string) {
 
   <div class="flex h-lh pr-1 lg:ml-auto">
     <a href="mailto:contact@just-be.dev" class="icon-link" title="Email" aria-label="Email">
-      <Icon name="pixel:envelope-solid" />
+      <div class="i-pixel-envelope-solid"></div>
     </a>
     <a
       href="https://github.com/just-be-dev"
@@ -90,7 +88,7 @@ function highlightLabel(label: string, keyChar: string) {
       title="GitHub"
       aria-label="GitHub"
     >
-      <Icon name="pixel:github" />
+      <div class="i-pixel-github"></div>
     </a>
     <a
       href="https://bsky.app/profile/just-be.dev"
@@ -100,7 +98,7 @@ function highlightLabel(label: string, keyChar: string) {
       title="Bluesky"
       aria-label="Bluesky"
     >
-      <Icon name="pixel:bluesky" />
+      <div class="i-pixel-bluesky"></div>
     </a>
     <a
       href="https://twitter.com/just_be_dev"
@@ -110,7 +108,7 @@ function highlightLabel(label: string, keyChar: string) {
       title="Twitter"
       aria-label="Twitter"
     >
-      <Icon name="pixel:twitter" />
+      <div class="i-pixel-twitter"></div>
     </a>
     <a
       href="https://linkedin.com/in/jtbnnt"
@@ -120,7 +118,7 @@ function highlightLabel(label: string, keyChar: string) {
       title="LinkedIn"
       aria-label="LinkedIn"
     >
-      <Icon name="pixel:linkedin" />
+      <div class="i-pixel-linkedin"></div>
     </a>
   </div>
 </nav>

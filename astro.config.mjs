@@ -4,7 +4,6 @@ import { fileURLToPath } from "node:url";
 import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
 import { defineConfig } from "astro/config";
-import icon from "astro-icon";
 import UnoCSS from "@unocss/astro";
 import remarkMdc from "remark-mdc";
 import { remarkMdcToMdx } from "./src/plugins/remark-mdc-to-mdx.ts";
@@ -13,7 +12,6 @@ import { remarkMdcToMdx } from "./src/plugins/remark-mdc-to-mdx.ts";
 export default defineConfig({
   site: "https://just-be.dev",
   integrations: [
-    icon(),
     mdx({
       remarkPlugins: [remarkMdc, remarkMdcToMdx],
     }),

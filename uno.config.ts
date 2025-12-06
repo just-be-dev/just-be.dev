@@ -1,4 +1,5 @@
 import { defineConfig, presetWind, transformerDirectives, transformerVariantGroup } from "unocss";
+import presetIcons from "@unocss/preset-icons";
 import type { Theme } from "@unocss/preset-wind";
 
 export default defineConfig<Theme>({
@@ -6,6 +7,12 @@ export default defineConfig<Theme>({
   presets: [
     presetWind({
       dark: "class",
+    }),
+    presetIcons({
+      extraProperties: {
+        display: "inline-block",
+        "vertical-align": "middle",
+      },
     }),
   ],
 
