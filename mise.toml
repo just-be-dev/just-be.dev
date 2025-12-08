@@ -26,3 +26,12 @@ run = "astro"
 
 [tasks.fmt]
 run = "prettier -wl ."
+
+[tasks.test]
+run = "vitest"
+
+[tasks."test:ui"]
+run = "vitest --ui"
+
+[tasks.prefix-codes]
+run = "bun scripts/prefix-codes.ts"
