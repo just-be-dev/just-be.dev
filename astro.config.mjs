@@ -13,6 +13,11 @@ export default defineConfig({
   site: "https://just-be.dev",
   integrations: [
     mdx({
+      syntaxHighlight: "shiki",
+      shikiConfig: {
+        theme: "github-light",
+      },
+      gfm: true,
       remarkPlugins: [remarkMdc, remarkMdcToMdx],
     }),
     sitemap(),
