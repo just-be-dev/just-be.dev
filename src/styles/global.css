@@ -67,6 +67,8 @@ pre {
 /* Content styles  */
 article h1,
 article h2,
+article h3,
+article h4,
 article .date-component,
 article p {
   margin-bottom: 1lh;
@@ -76,8 +78,25 @@ article h2:has(+ .date-component) {
   margin-bottom: 0;
 }
 
-article h2 {
+article h2,
+article h3,
+article h4 {
   font-weight: bold;
+}
+
+article h2::before {
+  color: var(--foreground2);
+  content: "## ";
+}
+
+article h3::before {
+  color: var(--foreground2);
+  content: "### ";
+}
+
+article h4::before {
+  color: var(--foreground2);
+  content: "#### ";
 }
 
 article dfn {
@@ -97,6 +116,12 @@ article ul {
   padding-left: 2ch;
 }
 
+article ol {
+  list-style-type: decimal;
+  margin-bottom: 1lh;
+  padding-left: 3ch;
+}
+
 article li {
   list-style-type: inherit;
 }
@@ -111,7 +136,18 @@ article ul ul ul {
   list-style-type: square;
 }
 
-article ul ul li:last-child {
+article ol ol {
+  list-style-type: lower-alpha;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+article ol ol ol {
+  list-style-type: lower-roman;
+}
+
+article ul ul li:last-child,
+article ol ol li:last-child {
   margin-bottom: 0;
 }
 
