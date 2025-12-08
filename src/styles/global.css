@@ -86,6 +86,10 @@ article dfn {
   font-style: normal;
 }
 
+article code {
+  background-color: var(--background1);
+}
+
 /* The unocss reset disabled list styling so I'm overriding that */
 article ul {
   list-style-type: disc;
