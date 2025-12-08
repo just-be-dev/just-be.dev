@@ -1,5 +1,6 @@
 import { defineCollection, z } from "astro:content";
 import { glob } from "astro/loaders";
+import { feedLoader } from "@ascorbic/feed-loader";
 
 const blog = defineCollection({
   loader: glob({ base: "./src/content/blog", pattern: "**/*.{md,mdx}" }),
@@ -20,9 +21,7 @@ const projects = defineCollection({
     url: z.string().url().optional(),
     repository: z.string().url().optional(),
     status: z.enum(["active", "completed", "archived", "maintenance"]).default("active"),
-    technologies: z.array(z.string()).default([]),
-    startDate: z.coerce.date().optional(),
-    endDate: z.coerce.date().optional(),
+    date: z.coerce.date(),
   }),
 });
 
@@ -46,4 +45,10 @@ const pages = defineCollection({
   }),
 });
 
-export const collections = { blog, projects, research, pages };
+const devtools = defineCollection({
+  loader: feedLoader({
+    url: "https://www.devtools.fm/rss.xml",
+  }),
+});
+
+export const collections = { blog, projects, research, pages, devtools };
