@@ -24,7 +24,7 @@ const projects = (await getCollection("projects"))
           >
             <code class="text-fg-2 group-hocus:text-accent">{project.code.toString()}</code>
             <ProjectStatus status={project.data.status} />
-            <h2 class="font-bold">
+            <h2 class="truncate font-bold">
               {project.data.title}
               {project.data.description && (
                 <span class="text-fg-2 font-normal"> — {project.data.description}</span>

@@ -3,6 +3,7 @@ import { getCollection, render } from "astro:content";
 import FormattedDate from "@/components/FormattedDate.astro";
 import ProjectStatus from "@/components/ProjectStatus.astro";
 import Link from "@/components/Link.astro";
+import MDContent from "@/components/MDContent.astro";
 import Layout from "@/layouts/Layout.astro";
 import { Code } from "@/utils/code";
 
@@ -52,7 +53,7 @@ const code = Code.fromId(project.id);
     </header>
 
     <div class="max-w-none">
-      <Content />
+      <MDContent Content={Content} components={{ a: Link }} />
     </div>
 
     <div class="text-fg-0 mt-2lh">
