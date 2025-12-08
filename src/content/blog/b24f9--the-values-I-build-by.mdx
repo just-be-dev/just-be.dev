@@ -1,0 +1,26 @@
+---
+title: The Values I Build By
+date: 2025-11-30
+description: Reflecting on the values that guide my design and development process.
+tags: [meta, web]
+---
+
+If a thing is worth doing, it's worth doing well. When it's something personal though, what does _well_ mean? I believe that having strong values that guide your decisions and building according to those values is all the measure that's needed. Here are the values I've developed over my career that have guided the design of this site.
+
+## 1. Constraints Breed Creativity
+
+The surest way to get nothing done is to get stuck weighing all your options. In past iterations of my site I've spent inordinate amounts of time trying to decide between different fonts, colors, and layouts. In this iteration, I've styled it after a TUI app to intentionally constrain the design surface area. Effectively it limits me to one font, one size, a limited color palette, and overall simpler aesthetic. The spacing between text is limited to character widths and line heights. Instead of trying to figure out how much space there should be between paragraphs, I just add a newline and move on with my life.
+
+## 2. Innovate Sparingly
+
+There's a common temptation when building something for oneself where you choose to also learn a new technology in the process. It can be a valuable exercise, but there's an unstated risk that if the technology choice doesn't play out then the underlying project doesn't get finished. 
+
+There's also the risk of using all the time you have available to work on the project in building out the perfect publishing pipeline (which may or may not be what happened on my last iteration). 
+
+If you have to innovate, ensure you're doing so for a good reason. On this iteration of my site I added support for [MDC](https://content.nuxt.com/docs/files/markdown#mdc-syntax), a minimal extension of markdown that allows rendering components with `:component` instead of `<component>`. It's a small change with wider implications (I'll write more about that later), but it's in service of what I actually want to be doing: writing more. 
+
+## 3. Principle of Least Surprise
+
+I believe strongly that we should build software in the way that is least surprising to the user. It should be clear if a link navigates to a different site. It should be known _why_ a button is disabled, if it is. If there are shortcuts they should be obvious and consistent. The engineer should understand and empathize with the context the user may be operating under and avoid introducing features that break the user's expectations.
+
+That doesn't mean we can't add delight or whimsy, but we can't break the core contract of a user's expectations. We should also endeavor to proactively disclose when the state of the software isn't obvious.
