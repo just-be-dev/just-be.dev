@@ -1,71 +1,94 @@
 const EPOCH = Date.UTC(2000, 0, 1); // January 1, 2000 UTC
-const BASE36_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" as const;
+const BASE16_CHARS = "0123456789ABCDEF" as const;
+
+export const VALID_KINDS = ["B", "R", "P"] as const;
+export type Kind = typeof VALID_KINDS[number];
+
+function isValidKind(char: string): char is Kind {
+  return VALID_KINDS.includes(char as Kind);
+}
 
 export class Code {
-  private readonly value: string;
+  private readonly kind: Kind;
+  private readonly dateCode: string;
 
-  private constructor(value: string) {
-    this.value = value.toUpperCase();
+  private constructor(kind: Kind, dateCode: string) {
+    this.kind = kind;
+    this.dateCode = dateCode.toUpperCase();
   }
 
   /**
    * Create a Code from a Date object
    * @param date - Date object to encode
+   * @param kind - Kind identifier (B=blog, R=research, P=projects)
    */
-  static fromDate(date: Date): Code {
+  static fromDate(date: Date, kind: Kind): Code {
     const days = Math.floor((date.getTime() - EPOCH) / (1000 * 60 * 60 * 24));
     let code = "";
     let remaining = days;
 
     for (let i = 0; i < 4; i++) {
-      code = BASE36_CHARS[remaining % 36] + code;
-      remaining = Math.floor(remaining / 36);
+      code = BASE16_CHARS[remaining % 16] + code;
+      remaining = Math.floor(remaining / 16);
     }
 
-    return new Code(code);
+    return new Code(kind, code);
   }
 
   /**
    * Create a Code from a UTC milliseconds timestamp
    * @param milliseconds - Milliseconds from epoch (e.g., result of Date.UTC())
+   * @param kind - Kind identifier (B=blog, R=research, P=projects)
    */
-  static fromUTC(milliseconds: number): Code {
-    return Code.fromDate(new Date(milliseconds));
+  static fromUTC(milliseconds: number, kind: Kind): Code {
+    return Code.fromDate(new Date(milliseconds), kind);
   }
 
   /**
    * Create a Code from a date string
    * @param dateString - ISO date string (e.g., "2024-12-06", "2024-12-06T00:00:00Z")
+   * @param kind - Kind identifier (B=blog, R=research, P=projects)
    */
-  static fromDateString(dateString: string): Code {
+  static fromDateString(dateString: string, kind: Kind): Code {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) {
       throw new Error("Invalid date string");
     }
-    return Code.fromDate(date);
+    return Code.fromDate(date, kind);
   }
 
   /**
    * Create a Code from a code string
-   * @param code - 4-character code string (e.g., "070Y")
+   * @param code - 5-character code string (e.g., "B2391")
    */
   static fromCode(code: string): Code {
     // Validate string format
-    if (code.length !== 4) {
-      throw new Error("Code must be exactly 4 characters");
+    if (code.length !== 5) {
+      throw new Error("Code must be exactly 5 characters (1 kind + 4 date)");
     }
-    if (!/^[0-9A-Za-z]{4}$/.test(code)) {
-      throw new Error("Code must contain only letters and numbers");
+
+    const kindChar = code[0].toUpperCase();
+    if (!isValidKind(kindChar)) {
+      throw new Error(`Invalid kind '${kindChar}'. Must be one of: ${VALID_KINDS.join(", ")}`);
     }
-    return new Code(code);
+
+    const dateCode = code.slice(1);
+    if (!/^[0-9A-Fa-f]{4}$/.test(dateCode)) {
+      throw new Error("Date code must contain only hex characters (0-9, A-F)");
+    }
+
+    return new Code(kindChar, dateCode);
   }
 
   /**
    * Create a Code from an astro page ID string
-   * @param id - ID string (e.g., "070Y--this-is-a-page")
+   * @param id - ID string (e.g., "B2391--this-is-a-page")
    */
   static fromId(id: string): Code {
-    const code = id.slice(0, 4);
+    if (id.length < 5) {
+      throw new Error(`ID too short to contain a code: ${id}`);
+    }
+    const code = id.slice(0, 5);
     return Code.fromCode(code);
   }
 
@@ -73,15 +96,29 @@ export class Code {
    * Convert the code to a Date object
    */
   toDate(): Date {
-    const days = parseInt(this.value, 36);
+    const days = parseInt(this.dateCode, 16);
     return new Date(EPOCH + days * 24 * 60 * 60 * 1000);
   }
 
   /**
-   * Get the string representation of the code
+   * Get the string representation of the code (includes kind prefix)
    */
   toString(): string {
-    return this.value;
+    return this.kind + this.dateCode;
+  }
+
+  /**
+   * Get the kind identifier
+   */
+  getKind(): Kind {
+    return this.kind;
+  }
+
+  /**
+   * Get the date code portion (without kind prefix)
+   */
+  getDateCode(): string {
+    return this.dateCode;
   }
 
   /**
@@ -94,121 +131,140 @@ export class Code {
 
 // Usage examples:
 // Create from a Date:
-// const code = Code.fromDate(new Date(Date.UTC(2024, 11, 6)));
-// code.toString() // "070Y"
+// const code = Code.fromDate(new Date(Date.UTC(2024, 11, 6)), "B");
+// code.toString() // "B2392"
 
 // Create from UTC milliseconds:
-// const code = Code.fromUTC(Date.UTC(2024, 11, 6));
-// code.toString() // "070Y"
+// const code = Code.fromUTC(Date.UTC(2024, 11, 6), "B");
+// code.toString() // "B2392"
 
 // Create from a date string:
-// const code = Code.fromDateString("2024-12-06");
-// code.toString() // "070Y"
+// const code = Code.fromDateString("2024-12-06", "B");
+// code.toString() // "B2392"
 
 // Create from a code string:
-// const code = Code.fromCode("070Y");
+// const code = Code.fromCode("B2392");
 // code.toDate() // Date object for 2024-12-06
+// code.getKind() // "B"
 
 // Inline tests
 if (import.meta.vitest) {
   const { it, expect, describe } = import.meta.vitest;
 
   describe("Code.fromDate()", () => {
-    it("should encode epoch date as 0000", () => {
+    it("should encode epoch date as B0000", () => {
       const epochDate = new Date(EPOCH);
-      const code = Code.fromDate(epochDate);
-      expect(code.toString()).toBe("0000");
+      const code = Code.fromDate(epochDate, "B");
+      expect(code.toString()).toBe("B0000");
     });
 
-    it("should encode dates consistently", () => {
+    it("should encode dates consistently with hex", () => {
       const date = new Date(Date.UTC(2024, 11, 6)); // December 6, 2024 UTC
-      const code = Code.fromDate(date);
-      expect(code.toString()).toBe("070Y");
+      const code = Code.fromDate(date, "B");
+      expect(code.toString()).toBe("B2392"); // 9106 days = 0x2392
     });
 
     it("should handle dates one day after epoch", () => {
       const date = new Date(EPOCH + 24 * 60 * 60 * 1000);
-      const code = Code.fromDate(date);
-      expect(code.toString()).toBe("0001");
+      const code = Code.fromDate(date, "B");
+      expect(code.toString()).toBe("B0001");
     });
 
     it("should handle larger dates", () => {
       const date = new Date(Date.UTC(2025, 0, 1)); // January 1, 2025 UTC
-      const code = Code.fromDate(date);
-      expect(code.toString()).toMatch(/^[0-9A-Z]{4}$/);
+      const code = Code.fromDate(date, "B");
+      expect(code.toString()).toMatch(/^B[0-9A-F]{4}$/);
+    });
+
+    it("should support different kinds", () => {
+      const date = new Date(Date.UTC(2024, 11, 6));
+      expect(Code.fromDate(date, "B").toString()).toBe("B2392");
+      expect(Code.fromDate(date, "R").toString()).toBe("R2392");
+      expect(Code.fromDate(date, "P").toString()).toBe("P2392");
     });
   });
 
   describe("Code.fromUTC()", () => {
     it("should create from milliseconds timestamp", () => {
-      const code = Code.fromUTC(Date.UTC(2024, 11, 6));
-      expect(code.toString()).toBe("070Y");
+      const code = Code.fromUTC(Date.UTC(2024, 11, 6), "B");
+      expect(code.toString()).toBe("B2392");
     });
 
     it("should create from epoch timestamp", () => {
-      const code = Code.fromUTC(EPOCH);
-      expect(code.toString()).toBe("0000");
+      const code = Code.fromUTC(EPOCH, "B");
+      expect(code.toString()).toBe("B0000");
     });
   });
 
   describe("Code.fromDateString()", () => {
     it("should create from ISO date string", () => {
-      const code = Code.fromDateString("2024-12-06");
-      expect(code.toString()).toBe("070Y");
+      const code = Code.fromDateString("2024-12-06", "B");
+      expect(code.toString()).toBe("B2392");
     });
 
     it("should create from ISO datetime string", () => {
-      const code = Code.fromDateString("2024-12-06T00:00:00Z");
-      expect(code.toString()).toBe("070Y");
+      const code = Code.fromDateString("2024-12-06T00:00:00Z", "B");
+      expect(code.toString()).toBe("B2392");
     });
 
     it("should reject invalid date strings", () => {
-      expect(() => Code.fromDateString("invalid-date")).toThrow("Invalid date string");
+      expect(() => Code.fromDateString("invalid-date", "B")).toThrow("Invalid date string");
     });
   });
 
   describe("Code.fromCode()", () => {
     it("should parse valid code strings", () => {
-      const code = Code.fromCode("070Y");
-      expect(code.toString()).toBe("070Y");
+      const code = Code.fromCode("B2391");
+      expect(code.toString()).toBe("B2391");
+    });
+
+    it("should accept lowercase kind and normalize to uppercase", () => {
+      const code = Code.fromCode("b2391");
+      expect(code.toString()).toBe("B2391");
     });
 
     it("should reject codes that are too short", () => {
-      expect(() => Code.fromCode("07B")).toThrow("Code must be exactly 4 characters");
+      expect(() => Code.fromCode("B23")).toThrow("Code must be exactly 5 characters (1 kind + 4 date)");
     });
 
     it("should reject codes that are too long", () => {
-      expect(() => Code.fromCode("07B45")).toThrow("Code must be exactly 4 characters");
+      expect(() => Code.fromCode("B23456")).toThrow("Code must be exactly 5 characters (1 kind + 4 date)");
     });
 
-    it("should reject codes with lowercase letters", () => {
-      expect(() => Code.fromCode("070y")).toThrow(
-        "Code must contain only uppercase letters and numbers"
-      );
+    it("should reject codes with invalid kind", () => {
+      expect(() => Code.fromCode("X2391")).toThrow("Invalid kind 'X'. Must be one of: B, R, P");
+    });
+
+    it("should reject codes with non-hex characters in date portion", () => {
+      expect(() => Code.fromCode("B239G")).toThrow("Date code must contain only hex characters (0-9, A-F)");
     });
 
     it("should reject codes with invalid characters", () => {
-      expect(() => Code.fromCode("07B!")).toThrow(
-        "Code must contain only uppercase letters and numbers"
-      );
+      expect(() => Code.fromCode("B239!")).toThrow("Date code must contain only hex characters (0-9, A-F)");
+    });
+
+    it("should accept all valid kinds", () => {
+      expect(Code.fromCode("B2391").getKind()).toBe("B");
+      expect(Code.fromCode("R2391").getKind()).toBe("R");
+      expect(Code.fromCode("P2391").getKind()).toBe("P");
     });
   });
 
   describe("Code.toDate()", () => {
-    it("should decode 0000 as epoch date", () => {
-      const code = Code.fromCode("0000");
+    it("should decode B0000 as epoch date", () => {
+      const code = Code.fromCode("B0000");
       const date = code.toDate();
       expect(date.getTime()).toBe(EPOCH);
     });
 
     it("should decode dates consistently", () => {
-      const code = Code.fromCode("070Y");
+      const code = Code.fromCode("B2392");
       const date = code.toDate();
       expect(date.getTime()).toBe(Date.UTC(2024, 11, 6));
     });
 
-    it("should decode 0001 as one day after epoch", () => {
-      const code = Code.fromCode("0001");
+    it("should decode B0001 as one day after epoch", () => {
+      const code = Code.fromCode("B0001");
       const date = code.toDate();
       expect(date.getTime()).toBe(EPOCH + 24 * 60 * 60 * 1000);
     });
@@ -224,13 +280,42 @@ if (import.meta.vitest) {
       ];
 
       for (const originalDate of testDates) {
-        const code = Code.fromDate(originalDate);
+        const code = Code.fromDate(originalDate, "B");
         const decodedDate = code.toDate();
         // Compare by day (ignoring time components)
         expect(decodedDate.toISOString().split("T")[0]).toBe(
           originalDate.toISOString().split("T")[0]
         );
       }
+    });
+  });
+
+  describe("Code.fromId()", () => {
+    it("should extract code from ID string", () => {
+      const code = Code.fromId("B2392--my-blog-post");
+      expect(code.toString()).toBe("B2392");
+      expect(code.getKind()).toBe("B");
+    });
+
+    it("should handle lowercase codes in IDs", () => {
+      const code = Code.fromId("b2392--my-blog-post");
+      expect(code.toString()).toBe("B2392");
+    });
+
+    it("should reject IDs that are too short", () => {
+      expect(() => Code.fromId("B23")).toThrow("ID too short to contain a code");
+    });
+  });
+
+  describe("getters", () => {
+    it("should return kind via getKind()", () => {
+      expect(Code.fromCode("B2392").getKind()).toBe("B");
+      expect(Code.fromCode("R2392").getKind()).toBe("R");
+      expect(Code.fromCode("P2392").getKind()).toBe("P");
+    });
+
+    it("should return date code via getDateCode()", () => {
+      expect(Code.fromCode("B2392").getDateCode()).toBe("2392");
     });
   });
 }

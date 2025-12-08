@@ -1,10 +1,26 @@
 #!/usr/bin/env bun
 
 import { $ } from "bun";
-import { Code } from "../src/utils/code";
+import { Code, type Kind } from "../src/utils/code";
 
 const CONTENT_DIR = `${import.meta.dir}/../src/content`;
-const DEFAULT_DIRS = ["blog", "research"];
+const DEFAULT_DIRS = ["blog", "research", "projects"];
+
+/**
+ * Infer kind prefix from directory name
+ */
+function inferKind(dir: string): Kind {
+  switch (dir) {
+    case "blog":
+      return "B";
+    case "research":
+      return "R";
+    case "projects":
+      return "P";
+    default:
+      throw new Error(`Unknown content directory: ${dir}`);
+  }
+}
 
 /**
  * Extract the date from MDX frontmatter
@@ -22,17 +38,24 @@ function extractDate(content: string): string | null {
 }
 
 /**
- * Check if filename already has a code prefix (4 chars followed by --)
+ * Check if filename already has a code prefix (5 chars: kind + hex date followed by --)
  */
 function hasCodePrefix(filename: string): boolean {
-  return /^[0-9A-Za-z]{4}--/.test(filename);
+  return /^[BRP][0-9A-Fa-f]{4}--/.test(filename);
 }
 
 /**
  * Check if filename has an uppercase code prefix
  */
 function hasUppercasePrefix(filename: string): boolean {
-  return /^[0-9A-Z]{4}--/.test(filename) && /[A-Z]/.test(filename.substring(0, 4));
+  return /^[BRP][0-9A-F]{4}--/.test(filename) && /[A-F]/.test(filename.substring(1, 5));
+}
+
+/**
+ * Check if filename has old 4-char base-36 code prefix (needs migration)
+ */
+function hasOldCodePrefix(filename: string): boolean {
+  return /^[0-9A-Za-z]{4}--/.test(filename) && !/^[BRP][0-9A-Fa-f]{4}--/.test(filename);
 }
 
 /**
@@ -40,6 +63,7 @@ function hasUppercasePrefix(filename: string): boolean {
  */
 async function processDirectory(dir: string) {
   const dirPath = `${CONTENT_DIR}/${dir}`;
+  const kind = inferKind(dir);
 
   // Check if directory exists
   const exists = await $`test -d ${dirPath}`.nothrow().quiet();
@@ -48,7 +72,7 @@ async function processDirectory(dir: string) {
     return { processed: 0, skipped: 0, errors: 0, total: 0 };
   }
 
-  console.log(`Processing files in: ${dir}\n`);
+  console.log(`Processing files in: ${dir} (kind: ${kind})\n`);
 
   // Get all .mdx files
   const files = await $`ls ${dirPath}/*.mdx 2>/dev/null`.nothrow().quiet();
@@ -69,7 +93,7 @@ async function processDirectory(dir: string) {
     try {
       // Check if file has uppercase prefix that needs to be converted
       if (hasUppercasePrefix(filename)) {
-        const lowercaseFilename = filename.substring(0, 4).toLowerCase() + filename.substring(4);
+        const lowercaseFilename = filename.substring(0, 5).toLowerCase() + filename.substring(5);
         const newFilePath = filePath.replace(filename, lowercaseFilename);
         await $`mv ${filePath} ${newFilePath}`;
         console.log(`🔄 ${filename} → ${lowercaseFilename} (converted to lowercase)`);
@@ -77,7 +101,7 @@ async function processDirectory(dir: string) {
         continue;
       }
 
-      // Skip if already has lowercase code prefix
+      // Skip if already has new 5-char code prefix
       if (hasCodePrefix(filename)) {
         console.log(`⏭  Skipping ${filename} (already has code prefix)`);
         skippedCount++;
@@ -95,12 +119,20 @@ async function processDirectory(dir: string) {
         continue;
       }
 
-      // Generate code from date (lowercase)
-      const code = Code.fromDateString(dateString);
+      // Generate code from date with kind prefix (lowercase)
+      const code = Code.fromDateString(dateString, kind);
       const codeStr = code.toString().toLowerCase();
 
+      // Determine base filename (strip old code if present)
+      let baseFilename = filename;
+      if (hasOldCodePrefix(filename)) {
+        // Remove old 4-char base-36 code prefix
+        baseFilename = filename.substring(6); // Skip "XXXX--"
+        console.log(`🔄 Migrating from old base-36 code: ${filename.substring(0, 4)}`);
+      }
+
       // Create new filename
-      const newFilename = `${codeStr}--${filename}`;
+      const newFilename = `${codeStr}--${baseFilename}`;
       const newFilePath = filePath.replace(filename, newFilename);
 
       // Rename file
@@ -108,7 +140,10 @@ async function processDirectory(dir: string) {
       console.log(`✅ ${filename} → ${newFilename} (${dateString})`);
       processedCount++;
     } catch (error) {
-      console.error(`❌ Error processing ${filename}:`, error instanceof Error ? error.message : error);
+      console.error(
+        `❌ Error processing ${filename}:`,
+        error instanceof Error ? error.message : error
+      );
       errorCount++;
     }
   }
@@ -118,7 +153,7 @@ async function processDirectory(dir: string) {
     processed: processedCount,
     skipped: skippedCount,
     errors: errorCount,
-    total: mdxFiles.length
+    total: mdxFiles.length,
   };
 }
 
@@ -153,9 +188,7 @@ async function prefixCodes(dirs: string[]) {
 }
 
 // Parse command line arguments or use defaults
-const dirs = process.argv.slice(2).length > 0
-  ? process.argv.slice(2)
-  : DEFAULT_DIRS;
+const dirs = process.argv.slice(2).length > 0 ? process.argv.slice(2) : DEFAULT_DIRS;
 
 // Run the script
 prefixCodes(dirs).catch((error) => {
