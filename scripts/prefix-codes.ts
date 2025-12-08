@@ -41,7 +41,7 @@ function extractDate(content: string): string | null {
  * Check if filename already has a code prefix (5 chars: kind + hex date followed by --)
  */
 function hasCodePrefix(filename: string): boolean {
-  return /^[BRP][0-9A-Fa-f]{4}--/.test(filename);
+  return /^[BRPbrp][0-9A-Fa-f]{4}--/.test(filename);
 }
 
 /**
