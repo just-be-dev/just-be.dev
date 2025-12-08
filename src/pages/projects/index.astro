@@ -1,32 +1,38 @@
 ---
 import { getCollection } from "astro:content";
-import LinkBox from "@/components/LinkBox.astro";
 import Layout from "@/layouts/Layout.astro";
+import ProjectStatus from "@/components/ProjectStatus.astro";
+import { Code } from "@/utils/code";
 
-const projects = await getCollection("projects");
-const sortedProjects = projects.sort((a, b) => a.data.title.localeCompare(b.data.title));
+const projects = (await getCollection("projects"))
+  .map((post) => ({ ...post, code: Code.fromId(post.id) }))
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 ---
 
 <Layout title="Projects - Just Be">
-  <header>
-    <h1 class="mb-4 font-bold">~/projects</h1>
+  <header class="mb-2">
+    <h1 class="font-bold">~/projects</h1>
   </header>
 
-  {
-    sortedProjects.length > 0 ? (
-      <div class="grid gap-6 md:grid-cols-2">
-        {sortedProjects.map((project) => (
-          <LinkBox
-            href={`/projects/${project.id}`}
-            title={project.data.title}
-            description={project.data.description}
-          />
-        ))}
-      </div>
-    ) : (
-      <div class="text-fg-2 py-12 text-center">
-        <p>No projects yet. Check back soon!</p>
-      </div>
-    )
-  }
+  <ul class="grid grid-cols-[auto_auto_1fr] gap-x-1">
+    {
+      projects.map((project) => (
+        <li class="contents before:content-none">
+          <a
+            href={`/projects/${project.id}/`}
+            class="bg-0 hocus:invert group col-span-3 -mx-[1ch] grid grid-cols-subgrid px-[1ch] outline-none"
+          >
+            <code class="text-fg-2 group-hocus:text-accent">{project.code.toString()}</code>
+            <ProjectStatus status={project.data.status} />
+            <h2 class="font-bold">
+              {project.data.title}
+              {project.data.description && (
+                <span class="text-fg-2 font-normal"> — {project.data.description}</span>
+              )}
+            </h2>
+          </a>
+        </li>
+      ))
+    }
+  </ul>
 </Layout>

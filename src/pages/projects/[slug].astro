@@ -1,6 +1,10 @@
 ---
 import { getCollection, render } from "astro:content";
+import FormattedDate from "@/components/FormattedDate.astro";
+import ProjectStatus from "@/components/ProjectStatus.astro";
+import Link from "@/components/Link.astro";
 import Layout from "@/layouts/Layout.astro";
+import { Code } from "@/utils/code";
 
 export async function getStaticPaths() {
   const projects = await getCollection("projects");
@@ -14,71 +18,48 @@ type Props = Awaited<ReturnType<typeof getStaticPaths>>[number]["props"];
 
 const project = Astro.props;
 const { Content } = await render(project);
+
+// Extract code from filename
+const code = Code.fromId(project.id);
 ---
 
 <Layout title={`${project.data.title} - Just Be`} description={project.data.description}>
-  <article class="px-4 py-8">
-    <header class="border-fg-2 mb-8 border-b pb-4">
-      <h1 class="mb-2 font-bold">{project.data.title}</h1>
-      {project.data.description && <p class="text-fg-2 mb-4">{project.data.description}</p>}
-
-      <div class="flex flex-wrap items-center gap-4">
+  <article class="px-4 max-w-article mx-auto">
+    <header class="mb-2lh grid grid-cols-[1fr_auto] gap-x-2">
+      <h1 class="mb-0 font-bold">
         {
-          project.data.status && (
-            <span class="badge" variant-={project.data.status === "active" ? "success" : "default"}>
-              {project.data.status}
-            </span>
+          project.data.url ? (
+            <Link href={project.data.url}>{project.data.title}</Link>
+          ) : (
+            project.data.title
           )
         }
-
-        {
-          project.data.technologies && project.data.technologies.length > 0 && (
-            <div class="flex gap-2">
-              {project.data.technologies.map((tech) => (
-                <span class="badge text-accent bg-2 px-[1ch]">{tech}</span>
-              ))}
-            </div>
-          )
-        }
-      </div>
+      </h1>
 
       {
-        (project.data.url || project.data.repository) && (
-          <div class="mt-4 flex gap-4">
-            {project.data.url && (
-              <a
-                href={project.data.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="bg-2 text-accent hocus:bg-0 hocus:invert px-[1ch] py-1"
-              >
-                Visit Project →
-              </a>
-            )}
-            {project.data.repository && (
-              <a
-                href={project.data.repository}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="bg-2 text-fg-0 hocus:bg-0 hocus:invert px-[1ch] py-1"
-              >
-                View Source
-              </a>
-            )}
+        project.data.status && (
+          <div class="flex gap-[1ch] justify-end">
+            <ProjectStatus status={project.data.status} variant="badge" />
           </div>
         )
       }
+
+      <div class="flex gap-[1ch]">
+        <span class="text-fg-2">{code}</span>
+        <span class="opacity-25">|</span>
+        <FormattedDate date={project.data.date} />
+      </div>
     </header>
 
-    <div class="prose prose-invert max-w-none">
+    <div class="max-w-none">
       <Content />
     </div>
 
-    <footer class="border-fg-2 mt-12 border-t pt-8">
-      <a href="/projects" class="text-fg-0 link font-bold focus-visible:outline-none">
+    <div class="text-fg-0 mt-2lh">
+      <a href="/projects" class="text-fg-0 link font-bold focus-visible:outline-none h-1lh">
         ← Back to projects
       </a>
-    </footer>
+    </div>
   </article>
 </Layout>
 

@@ -11,17 +11,18 @@ export const prerender = false;
 const selectedTag = Astro.url.searchParams.get("tag");
 
 // Get all blog posts
-let allPosts = await getCollection("blog", ({ data }) => !data.draft);
-allPosts = allPosts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+const publishedPosts = (await getCollection("blog", ({ data }) => !data.draft))
+  .map((post) => ({ ...post, code: Code.fromId(post.id) }))
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 
 // Filter posts if tag is selected
 const posts = selectedTag
-  ? allPosts.filter((post) => post.data.tags.includes(selectedTag))
-  : allPosts;
+  ? publishedPosts.filter((post) => post.data.tags.includes(selectedTag))
+  : publishedPosts;
 
 // Calculate tag counts from all posts
 const tagCounts = new Map<string, number>();
-allPosts.forEach((post) => {
+publishedPosts.forEach((post) => {
   post.data.tags.forEach((tag) => {
     tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
   });
@@ -58,7 +59,6 @@ const sortedTags = Array.from(tagCounts.entries())
   <ul class="grid grid-cols-[auto_auto_1fr] gap-x-2">
     {
       posts.map((post) => {
-        const code = Code.fromDate(post.data.date);
         const date = `${post.data.date.getFullYear()}-${String(post.data.date.getMonth() + 1).padStart(2, "0")}-${String(post.data.date.getDate()).padStart(2, "0")}`;
         return (
           <li class="contents before:content-none">
@@ -66,7 +66,7 @@ const sortedTags = Array.from(tagCounts.entries())
               href={`/blog/${post.id}/`}
               class="bg-0 hocus:invert group col-span-3 -mx-[1ch] grid grid-cols-subgrid px-[1ch] outline-none"
             >
-              <code class="text-fg-2 group-hocus:text-accent">{code.toString()}</code>
+              <code class="text-fg-2 group-hocus:text-accent">{post.code.toString()}</code>
               <span class="text-fg-2 group-hocus:text-accent whitespace-nowrap">{date}</span>
               <h2 class="font-bold whitespace-nowrap">{post.data.title}</h2>
             </a>
