@@ -8,6 +8,7 @@ import UnoCSS from "@unocss/astro";
 import remarkMdc from "remark-mdc";
 import { remarkMdcToMdx } from "./src/plugins/remark-mdc-to-mdx.ts";
 import cloudflare from "@astrojs/cloudflare";
+import sentry from "@sentry/astro";
 
 // https://astro.build/config
 export default defineConfig({
@@ -15,6 +16,13 @@ export default defineConfig({
   output: "static",
   adapter: cloudflare(),
   integrations: [
+    sentry({
+      dsn: process.env.PUBLIC_SENTRY_DSN,
+      sourceMapsUploadOptions: {
+        project: process.env.SENTRY_PROJECT,
+        authToken: process.env.SENTRY_AUTH_TOKEN,
+      },
+    }),
     mdx({
       syntaxHighlight: "shiki",
       shikiConfig: {
