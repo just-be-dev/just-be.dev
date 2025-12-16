@@ -68,89 +68,89 @@ pre {
 }
 
 /* Content styles  */
-article h1,
-article h2,
-article h3,
-article h4,
-article .date-component,
-article p {
+article h1:not(:is(.not-prose *)),
+article h2:not(:is(.not-prose *)),
+article h3:not(:is(.not-prose *)),
+article h4:not(:is(.not-prose *)),
+article .date-component:not(:is(.not-prose *)),
+article p:not(:is(.not-prose *)) {
   margin-bottom: 1lh;
 }
 
-article h2:has(+ .date-component) {
+article h2:not(:is(.not-prose *)):has(+ .date-component) {
   margin-bottom: 0;
 }
 
-article h2,
-article h3,
-article h4 {
+article h2:not(:is(.not-prose *)),
+article h3:not(:is(.not-prose *)),
+article h4:not(:is(.not-prose *)) {
   font-weight: bold;
 }
 
-article h2::before {
+article h2:not(:is(.not-prose *))::before {
   color: var(--foreground2);
   content: "## ";
 }
 
-article h3::before {
+article h3:not(:is(.not-prose *))::before {
   color: var(--foreground2);
   content: "### ";
 }
 
-article h4::before {
+article h4:not(:is(.not-prose *))::before {
   color: var(--foreground2);
   content: "#### ";
 }
 
-article dfn {
+article dfn:not(:is(.not-prose *)) {
   text-decoration: underline dotted;
   cursor: help;
   font-style: normal;
 }
 
-article code {
+article code:not(:is(.not-prose *)) {
   background-color: var(--background1);
 }
 
 /* The unocss reset disabled list styling so I'm overriding that */
-article ul {
+article ul:not(:is(.not-prose *)) {
   list-style-type: disc;
   margin-bottom: 1lh;
   padding-left: 2ch;
 }
 
-article ol {
+article ol:not(:is(.not-prose *)) {
   list-style-type: decimal;
   margin-bottom: 1lh;
   padding-left: 3ch;
 }
 
-article li {
+article li:not(:is(.not-prose *)) {
   list-style-type: inherit;
 }
 
-article ul ul {
+article ul:not(:is(.not-prose *)) ul {
   list-style-type: circle;
   margin-top: 0;
   margin-bottom: 0;
 }
 
-article ul ul ul {
+article ul:not(:is(.not-prose *)) ul ul {
   list-style-type: square;
 }
 
-article ol ol {
+article ol:not(:is(.not-prose *)) ol {
   list-style-type: lower-alpha;
   margin-top: 0;
   margin-bottom: 0;
 }
 
-article ol ol ol {
+article ol:not(:is(.not-prose *)) ol ol {
   list-style-type: lower-roman;
 }
 
-article ul ul li:last-child,
-article ol ol li:last-child {
+article ul:not(:is(.not-prose *)) ul li:last-child,
+article ol:not(:is(.not-prose *)) ol li:last-child {
   margin-bottom: 0;
 }
 
