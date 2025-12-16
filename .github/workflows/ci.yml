@@ -14,6 +14,10 @@ jobs:
         with:
           experimental: true
 
+      - name: Export mise environment
+        run: |
+          mise env --json | jq -r 'to_entries | .[] | "\(.key)=\(.value)"' >> $GITHUB_ENV
+
       - name: Build
         run: mise run build
 
