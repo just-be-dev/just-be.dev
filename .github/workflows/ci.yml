@@ -1,0 +1,21 @@
+name: CI
+
+on:
+  push:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup mise
+        uses: jdx/mise-action@v2
+        with:
+          experimental: true
+
+      - name: Build
+        run: mise run build
+
+      - name: Test
+        run: mise run test
