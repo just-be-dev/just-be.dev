@@ -24,7 +24,7 @@ export default defineConfig({
       remarkPlugins: [remarkMdc, remarkMdcToMdx],
     }),
     sitemap(),
-    UnoCSS({ injectReset: true }),
+    UnoCSS(),
   ],
   vite: {
     resolve: {

@@ -1,6 +1,9 @@
 /* Import Google Fonts */
 @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,700;1,400&display=swap");
 
+/* UnoCSS Reset */
+@import "@unocss/reset/tailwind.css";
+
 /* UnoCSS - Auto-imported by Astro integration */
 /* All theme configuration is now in uno.config.ts */
 
