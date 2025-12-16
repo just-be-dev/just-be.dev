@@ -16,7 +16,7 @@ _.path = "node_modules/.bin"
 run = "astro dev"
 
 [tasks.build]
-run = "astro build"
+run = "bun astro build"
 
 [tasks.preview]
 run = "astro preview"
@@ -35,3 +35,7 @@ run = "vitest --ui"
 
 [tasks.prefix-codes]
 run = "bun scripts/prefix-codes.ts"
+
+[tasks.deploy]
+run = "wrangler deploy"
+depends = ["build"]
