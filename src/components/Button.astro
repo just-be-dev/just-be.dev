@@ -1,0 +1,48 @@
+---
+interface Props {
+  shortcut?: string;
+  label?: string;
+  class?: string;
+  href?: string;
+}
+
+const { shortcut, label, class: className, href } = Astro.props;
+
+function highlightLabel(text: string, key: string) {
+  const index = text.toLowerCase().indexOf(key.toLowerCase());
+  if (index === -1) return null;
+  return {
+    before: text.slice(0, index),
+    key: text.slice(index, index + 1),
+    after: text.slice(index + 1),
+  };
+}
+
+const highlighted = shortcut && label ? highlightLabel(label, shortcut) : null;
+
+// Dynamic tag based on href prop
+const Element = href ? "a" : "button";
+---
+
+<Element
+  class:list={[
+    "bg-2 text-accent hocus:bg-0 hocus:invert flex cursor-pointer items-center px-1 outline-none font-medium border-2 border-fg-0 focus-visible:border-3",
+    className,
+  ]}
+  data-key={shortcut}
+  href={href}
+>
+  {
+    highlighted ? (
+      <>
+        {highlighted.before}
+        <span class="font-bold underline">{highlighted.key}</span>
+        {highlighted.after}
+      </>
+    ) : label ? (
+      label
+    ) : (
+      <slot />
+    )
+  }
+</Element>

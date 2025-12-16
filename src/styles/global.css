@@ -1,0 +1,185 @@
+/* Import Google Fonts */
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,700;1,400&display=swap");
+
+/* UnoCSS Reset */
+@import "@unocss/reset/tailwind.css";
+
+/* UnoCSS - Auto-imported by Astro integration */
+/* All theme configuration is now in uno.config.ts */
+
+/* WebTUI CSS Components */
+@import "@webtui/css/base.css";
+@import "@webtui/css/components/pre.css";
+@import "@webtui/css/components/table.css";
+@import "@webtui/css/components/separator.css";
+@import "@webtui/css/components/badge.css";
+@import "@webtui/css/utils/box.css";
+/*@import "@webtui/css/components/typography.css";*/
+
+/* Override UnoCSS reset for WebTUI boxes */
+[box-]::before,
+[box-]::after {
+  border-width: var(--box-border-width, 1px) !important;
+  border-color: var(--box-border-color, currentColor) !important;
+}
+
+[box-~="double"]::before,
+[box-~="double"]::after {
+  border-width: var(--box-double-border-width, 3px) !important;
+  border-color: var(--box-border-color, currentColor) !important;
+}
+
+/* Font stack for terminal aesthetic */
+:root {
+  /* ANSI Terminal Colors - Basic (0) and Bright (1) variants */
+  --color-black-0: #000000;
+  --color-black-1: #555555;
+  --color-red-0: #aa0000;
+  --color-red-1: #ff5555;
+  --color-green-0: #00aa00;
+  --color-green-1: #55ff55;
+  --color-yellow-0: #aa5500;
+  --color-yellow-1: #ffff55;
+  --color-blue-0: #0000aa;
+  --color-blue-1: #5555ff;
+  --color-magenta-0: #aa00aa;
+  --color-magenta-1: #ff55ff;
+  --color-cyan-0: #00aaaa;
+  --color-cyan-1: #55ffff;
+  --color-white-0: #aaaaaa;
+  --color-white-1: #ffffff;
+
+  font-family:
+    "IBM Plex Mono", "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas", "Monaco",
+    "Courier New", monospace;
+}
+
+* {
+  font-family:
+    "IBM Plex Mono", "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas", "Monaco",
+    "Courier New", monospace;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+code,
+pre {
+  font-size: 1rem !important;
+}
+
+/* Content styles  */
+article h1,
+article h2,
+article h3,
+article h4,
+article .date-component,
+article p {
+  margin-bottom: 1lh;
+}
+
+article h2:has(+ .date-component) {
+  margin-bottom: 0;
+}
+
+article h2,
+article h3,
+article h4 {
+  font-weight: bold;
+}
+
+article h2::before {
+  color: var(--foreground2);
+  content: "## ";
+}
+
+article h3::before {
+  color: var(--foreground2);
+  content: "### ";
+}
+
+article h4::before {
+  color: var(--foreground2);
+  content: "#### ";
+}
+
+article dfn {
+  text-decoration: underline dotted;
+  cursor: help;
+  font-style: normal;
+}
+
+article code {
+  background-color: var(--background1);
+}
+
+/* The unocss reset disabled list styling so I'm overriding that */
+article ul {
+  list-style-type: disc;
+  margin-bottom: 1lh;
+  padding-left: 2ch;
+}
+
+article ol {
+  list-style-type: decimal;
+  margin-bottom: 1lh;
+  padding-left: 3ch;
+}
+
+article li {
+  list-style-type: inherit;
+}
+
+article ul ul {
+  list-style-type: circle;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+article ul ul ul {
+  list-style-type: square;
+}
+
+article ol ol {
+  list-style-type: lower-alpha;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+article ol ol ol {
+  list-style-type: lower-roman;
+}
+
+article ul ul li:last-child,
+article ol ol li:last-child {
+  margin-bottom: 0;
+}
+
+/* Buffer utilities */
+.buffer {
+  margin-left: calc(var(--spacing) * -0.5);
+  margin-right: calc(var(--spacing) * -0.5);
+  padding-left: calc(var(--spacing) * 0.5);
+  padding-right: calc(var(--spacing) * 0.5);
+}
+
+.buffer-2 {
+  margin-left: calc(var(--spacing) * -1);
+  margin-right: calc(var(--spacing) * -1);
+  padding-left: calc(var(--spacing) * 1);
+  padding-right: calc(var(--spacing) * 1);
+}
+
+/* Screen reader only utility */
+.sr-only {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  position: absolute !important;
+  height: 1px;
+  width: 1px;
+  overflow: hidden;
+  clip: rect(1px 1px 1px 1px);
+  clip: rect(1px, 1px, 1px, 1px);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

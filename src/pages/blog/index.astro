@@ -1,0 +1,86 @@
+---
+import { getCollection } from "astro:content";
+import Button from "@/components/Button.astro";
+import Tag from "@/components/Tag.astro";
+import Layout from "@/layouts/Layout.astro";
+import { Code } from "@/utils/code";
+
+export const prerender = false;
+
+// Get selected tag from query params
+const selectedTag = Astro.url.searchParams.get("tag");
+
+// Get all blog posts
+const publishedPosts = (await getCollection("blog", ({ data }) => !data.draft))
+  .map((post) => ({ ...post, code: Code.fromId(post.id) }))
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+// Filter posts if tag is selected
+const posts = selectedTag
+  ? publishedPosts.filter((post) => post.data.tags.includes(selectedTag))
+  : publishedPosts;
+
+// Calculate tag counts from all posts
+const tagCounts = new Map<string, number>();
+publishedPosts.forEach((post) => {
+  post.data.tags.forEach((tag) => {
+    tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+  });
+});
+
+const sortedTags = Array.from(tagCounts.entries())
+  .map(([tag, count]) => ({ tag, count }))
+  .sort((a, b) => a.tag.localeCompare(b.tag));
+---
+
+<Layout title="Blog - Just Be">
+  <header class="mb-2 flex justify-between">
+    <h1 class="font-bold">~/blog</h1>
+    <div class="flex flex-wrap items-center gap-2">
+      {
+        selectedTag ? (
+          <>
+            <Tag
+              tag={selectedTag}
+              count={tagCounts.get(selectedTag)}
+              url="/blog"
+              class="invert"
+              id="selected-tag"
+            />
+            <Button shortcut="c" label="clear" href="/blog" />
+          </>
+        ) : (
+          sortedTags.map(({ tag, count }) => <Tag tag={tag} count={count} url="/blog" />)
+        )
+      }
+    </div>
+  </header>
+
+  <ul class="grid grid-cols-[auto_auto_1fr] gap-x-2">
+    {
+      posts.map((post) => {
+        const date = `${post.data.date.getFullYear()}-${String(post.data.date.getMonth() + 1).padStart(2, "0")}-${String(post.data.date.getDate()).padStart(2, "0")}`;
+        return (
+          <li class="contents before:content-none">
+            <a
+              href={`/blog/${post.id}/`}
+              class="bg-0 hocus:invert group col-span-3 -mx-[1ch] grid grid-cols-subgrid px-[1ch] outline-none"
+            >
+              <code class="text-fg-2 group-hocus:text-accent">{post.code.toString()}</code>
+              <span class="text-fg-2 group-hocus:text-accent whitespace-nowrap">{date}</span>
+              <h2 class="font-bold whitespace-nowrap">{post.data.title}</h2>
+            </a>
+          </li>
+        );
+      })
+    }
+  </ul>
+</Layout>
+
+<script>
+  // Focus selected tag on page load
+  const selectedTag = document.getElementById("selected-tag");
+  if (selectedTag) {
+    selectedTag.focus();
+  }
+</script>

@@ -1,41 +1,22 @@
 [tools]
-node = "22.17.0"
-pnpm = "10.12.4"
-
-[env]
-_.path = "node_modules/.bin"
-_.file = ".env"
+bun = "1.3.3"
+lefthook = "2.0.7"
 
 [settings]
 experimental = true
+pin = true
 
 [hooks]
-postinstall = [
-    "pnpm install ${CI:+--frozen-lockfile}",
-    "mise run sync-versions",
-]
+postinstall = ["bun install", "lefthook install"]
 
-[tasks.sync-versions]
-run = """
-NODE_VERSION="v$(grep '^node = ' mise.toml | cut -d'"' -f2)"
-PNPM_VERSION="v$(grep '^pnpm = ' mise.toml | cut -d'"' -f2)"
-sed -i.bak -e "s/^NODE_VERSION = .*/NODE_VERSION = \\"$NODE_VERSION\\"/" \
-           -e "s/^PNPM_VERSION = .*/PNPM_VERSION = \\"$PNPM_VERSION\\"/" wrangler.toml
-rm -f wrangler.toml.bak
-echo "Updated wrangler.toml: NODE_VERSION=$NODE_VERSION, PNPM_VERSION=$PNPM_VERSION"
-"""
+[env]
+_.path = "node_modules/.bin"
 
 [tasks.dev]
 run = "astro dev"
 
-[tasks.start]
-run = "astro dev"
-
-[tasks.test]
-run = "vitest"
-
 [tasks.build]
-run = "astro check && astro build"
+run = "bun astro build"
 
 [tasks.preview]
 run = "astro preview"
@@ -43,8 +24,18 @@ run = "astro preview"
 [tasks.astro]
 run = "astro"
 
-[tasks.logs]
-run = "wrangler pages deployment tail --project-name just-be-dev"
+[tasks.fmt]
+run = "prettier -wl ."
 
-[tasks."logs:preview"]
-run = "wrangler pages deployment tail --project-name just-be-dev --environment preview"
+[tasks.test]
+run = "vitest"
+
+[tasks."test:ui"]
+run = "vitest --ui"
+
+[tasks.prefix-codes]
+run = "bun scripts/prefix-codes.ts"
+
+[tasks.deploy]
+run = "wrangler deploy"
+depends = ["build"]

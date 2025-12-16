@@ -1,14 +1,13 @@
 {
   "extends": "astro/tsconfigs/strict",
+  "include": [".astro/types.d.ts", "**/*"],
+  "exclude": ["dist"],
   "compilerOptions": {
-      "baseUrl": ".",
-      "types": [".astro/types.d.ts", "src/types.d.ts"],
-      "paths": {
-        "~/*": ["./src/*"],
-        "@components/*": ["src/components/*"],
-        "@layouts/*": ["src/layouts/*"],
-        "@just-be/*": ["packages/*"],
-      }
+    "strictNullChecks": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
     },
-    "exclude": ["node_modules", "dist", "scripts"]
+    "types": ["vitest/importMeta"]
+  }
 }

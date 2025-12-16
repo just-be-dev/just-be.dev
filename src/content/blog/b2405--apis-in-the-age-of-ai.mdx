@@ -1,0 +1,21 @@
+---
+title: APIs in the Age of AI
+date: 2025-03-31
+tags: [ai, mcp, api]
+---
+
+I think we're on the cusp of a shift in how people interact with software services. Steve Manuel, CEO of Dylibso, wrote a post called [MCP: The Differential for Modern APIs and Systems](https://docs.mcp.run/blog/2025/03/27/mcp-differential-for-modern-apis/) where he describes Anthropic's Model Context Protocol (MCP) as a kind of fuzzy interface between users and the systems they want to interact with. MCP is essentially a protocol that describes how LLMs can interact with APIs and services. It's worth reading more about.
+
+The core idea is simple: you have an MCP server (either local or hosted) that wraps an API. You plug the MCP server's URL into your LLM-enabled tool (like Claude Desktop, Cursor, Zed, etc.) and then you can just ask it to do something. The tool interprets your intent and executes it via the MCP endpoint.
+
+As an example, imagine you're working on a big file full of TODOs and you want to track them in GitHub. You plug in mcp.github.com to your editor's MCP config and prompt it:
+
+> Turn all the TODOs in this file into GitHub issues.
+
+Your editor + LLM combo uses GitHub's MCP interface to handle the rest. No need to read API docs, understand request schemas, or install an SDK. In 30 seconds, your intent becomes reality.
+
+This is possible today. Go to mcp.run, install the GitHub servlet, copy the MCP server URL, plug it into your editor, and you're off. But here's the catch: that servlet is just a third-party wrapper around GitHub's API. If GitHub ships a breaking change, the servlet breaks. (_GitHub has since shipped a hosted MCP client_)
+
+I believe that companies will begin shipping first-party MCP support directly into their products. The GitHub team (and others) could make MCP a core part of their interface strategy: a semantic wrapper around their internal APIs, updated and maintained by the same people who build the underlying functionality. Forget the old tension between internal vs. external APIs. This is a new category: semantic interfaces designed for LLM-first consumption.
+
+I'm not saying APIs are going away (nor should they). But I do think, for better or worse, integrated MCPs will become a key part of how we interact with software going forward.

@@ -1,6 +1,0 @@
-#!/bin/sh
-CWD="$(cd "$(dirname "$0")" && pwd)"
-if [[ "$CWD" == *".deno/bin" ]]; then
-  CWD="${CWD%.deno/bin}"
-fi
-exec deno run --allow-read --allow-write --allow-net --allow-env --env="$CWD/.dev.vars" --no-config "file://$CWD/scripts/ob.ts" "$@"

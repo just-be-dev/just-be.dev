@@ -1,0 +1,174 @@
+---
+const currentPath = Astro.url.pathname;
+
+interface Tab {
+  href: string;
+  keyChar: string;
+  label: string;
+}
+
+const tabs: Tab[] = [
+  { href: "/", keyChar: "h", label: "home" },
+  { href: "/blog", keyChar: "b", label: "blog" },
+  { href: "/projects", keyChar: "p", label: "projects" },
+  { href: "/research", keyChar: "r", label: "research" },
+  { href: "/work", keyChar: "w", label: "work" },
+];
+
+function isActive(href: string, path: string) {
+  return href === "/" ? path === "/" : path.startsWith(href);
+}
+
+function highlightLabel(label: string, keyChar: string) {
+  const index = label.toLowerCase().indexOf(keyChar.toLowerCase());
+  if (index === -1) return { before: label, key: "", after: "" };
+  return {
+    before: label.slice(0, index),
+    key: label.slice(index, index + 1),
+    after: label.slice(index + 1),
+  };
+}
+---
+
+<a
+  href="#main-content"
+  class="skip-link top-lh bg-1 transition-filter absolute left-[-9999px] z-50 px-2 focus:left-0"
+>
+  Skip to main content
+</a>
+
+<nav
+  class="bg-1 fixed top-0 right-0 left-0 z-10 flex h-lh items-center justify-between lg:justify-start"
+>
+  <div class="flex">
+    {
+      tabs.map((tab) => {
+        const active = isActive(tab.href, currentPath);
+        const highlighted = highlightLabel(tab.label, tab.keyChar);
+        return (
+          <a
+            href={tab.href}
+            data-key={tab.keyChar}
+            class:list={["nav-link bg-1 transition-filter flex items-center px-1", { active }]}
+            tabindex={active ? -1 : undefined}
+          >
+            {highlighted.before}
+            <span class="font-bold underline">{highlighted.key}</span>
+            {highlighted.after}
+          </a>
+        );
+      })
+    }
+  </div>
+
+  <div class="flex h-lh items-center lg:fixed lg:left-1/2 lg:z-20 lg:-translate-x-1/2">
+    <span class="text-fg-0 flex gap-1 font-normal">
+      <span>
+        <span class="font-bold">just</span><span class="text-fg-1 font-normal max-md:hidden"
+          >in</span
+        >
+      </span>
+      <span>
+        <span class="font-bold">be</span><span class="text-fg-1 font-normal max-md:hidden"
+          >nnett</span
+        >
+      </span>
+    </span>
+  </div>
+
+  <div class="flex h-lh pr-1 lg:ml-auto">
+    <a href="mailto:contact@just-be.dev" class="icon-link" title="Email" aria-label="Email">
+      <div class="i-pixel-envelope-solid"></div>
+    </a>
+    <a
+      href="https://github.com/just-be-dev"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="icon-link"
+      title="GitHub"
+      aria-label="GitHub"
+    >
+      <div class="i-pixel-github"></div>
+    </a>
+    <a
+      href="https://bsky.app/profile/just-be.dev"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="icon-link"
+      title="Bluesky"
+      aria-label="Bluesky"
+    >
+      <div class="i-pixel-bluesky"></div>
+    </a>
+    <a
+      href="https://twitter.com/just_be_dev"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="icon-link"
+      title="Twitter"
+      aria-label="Twitter"
+    >
+      <div class="i-pixel-twitter"></div>
+    </a>
+    <a
+      href="https://linkedin.com/in/jtbnnt"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="icon-link"
+      title="LinkedIn"
+      aria-label="LinkedIn"
+    >
+      <div class="i-pixel-linkedin"></div>
+    </a>
+  </div>
+</nav>
+
+<style>
+  .nav-link {
+    display: flex;
+    align-items: center;
+    transition: filter 0.2s;
+  }
+
+  .nav-link:hover,
+  .nav-link:focus-visible {
+    filter: invert(1);
+    outline: none;
+  }
+
+  .nav-link.active,
+  .nav-link.active:hover,
+  .nav-link.active:focus-visible {
+    background-color: var(--background0);
+    color: var(--foreground0);
+    filter: invert(0);
+    outline: none;
+    pointer-events: none;
+    cursor: default;
+  }
+
+  .icon-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--background1);
+    height: 100%;
+    padding: 0.5rem;
+    transition: filter 0.2s;
+  }
+
+  .icon-link:hover,
+  .icon-link:focus-visible {
+    filter: invert(1);
+    outline: none;
+  }
+
+  .skip-link {
+    transition: filter 0.2s;
+  }
+
+  .skip-link:focus {
+    filter: invert(1);
+    outline: none;
+  }
+</style>

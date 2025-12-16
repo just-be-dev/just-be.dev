@@ -1,0 +1,21 @@
+---
+interface Props {
+  href?: string;
+  class?: string;
+  [key: string]: any;
+}
+
+const { href, class: className, ...rest } = Astro.props;
+const isExternal = href?.startsWith("http");
+---
+
+<a
+  href={href}
+  class:list={[
+    "text-fg-0 link hocus:px-0.5 hocus:-mx-0.5 hocus:bg-0 hocus:invert decoration-current font-bold focus-visible:outline-none underline decoration-2",
+    className,
+  ]}
+  target={isExternal ? "_blank" : undefined}
+  rel={isExternal ? "noopener noreferrer" : undefined}
+  {...rest}><slot />{isExternal && "↗"}</a
+>

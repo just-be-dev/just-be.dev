@@ -1,0 +1,29 @@
+---
+interface Props {
+  href: string;
+  title: string;
+  description?: string;
+}
+
+const { href, title, description } = Astro.props;
+---
+
+<a
+  href={href}
+  class="group bg-0 block transition-colors focus:invert focus-visible:outline-none"
+  box-="square"
+  shear-="top"
+>
+  <div class="header flex">
+    <span variant-="background0 flex align-center">
+      <span class="bg-0 group-hover:text-accent ml-[1ch] px-[1ch] invert group-hover:font-bold">
+        {title}
+        <span class="inline-block transition-all group-hover:-mr-1 group-hover:pl-1">-></span>
+      </span>
+    </span>
+  </div>
+  <div class="p-[1ch]">
+    {description && <p>{description}</p>}
+    <slot />
+  </div>
+</a>

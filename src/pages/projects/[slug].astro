@@ -1,0 +1,77 @@
+---
+import { getCollection, render } from "astro:content";
+import FormattedDate from "@/components/FormattedDate.astro";
+import ProjectStatus from "@/components/ProjectStatus.astro";
+import Link from "@/components/Link.astro";
+import MDContent from "@/components/MDContent.astro";
+import Layout from "@/layouts/Layout.astro";
+import { Code } from "@/utils/code";
+
+export async function getStaticPaths() {
+  const projects = await getCollection("projects");
+  return projects.map((project) => ({
+    params: { slug: project.id },
+    props: project,
+  }));
+}
+
+type Props = Awaited<ReturnType<typeof getStaticPaths>>[number]["props"];
+
+const project = Astro.props;
+const { Content } = await render(project);
+
+// Extract code from filename
+const code = Code.fromId(project.id);
+---
+
+<Layout title={`${project.data.title} - Just Be`} description={project.data.description}>
+  <article class="px-4 max-w-article mx-auto">
+    <header class="mb-2lh grid grid-cols-[1fr_auto] gap-x-2">
+      <h1 class="mb-0 font-bold">
+        {
+          project.data.url ? (
+            <Link href={project.data.url}>{project.data.title}</Link>
+          ) : (
+            project.data.title
+          )
+        }
+      </h1>
+
+      {
+        project.data.status && (
+          <div class="flex gap-[1ch] justify-end">
+            <ProjectStatus status={project.data.status} variant="badge" />
+          </div>
+        )
+      }
+
+      <div class="flex gap-[1ch]">
+        <span class="text-fg-2">{code}</span>
+        <span class="opacity-25">|</span>
+        <FormattedDate date={project.data.date} />
+      </div>
+    </header>
+
+    <div class="max-w-none">
+      <MDContent Content={Content} components={{ a: Link }} />
+    </div>
+
+    <div class="text-fg-0 mt-2lh">
+      <a href="/projects" class="text-fg-0 link font-bold focus-visible:outline-none h-1lh">
+        ← Back to projects
+      </a>
+    </div>
+  </article>
+</Layout>
+
+<style>
+  .link:hover,
+  .link:focus {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+    background-color: var(--background0);
+    filter: invert(1);
+  }
+</style>

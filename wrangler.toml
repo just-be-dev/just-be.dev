@@ -1,25 +1,15 @@
 name = "just-be-dev"
-pages_build_output_dir = "./dist"
-compatibility_date = "2024-08-06"
-compatibility_flags = ["nodejs_als"]
+main = "dist/_worker.js/index.js"
+compatibility_date = "2025-12-15"
+compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
 
-[vars]
-NODE_VERSION = "v22.17.0"
-PNPM_VERSION = "v10.12.4"
-SYNTAX_VERSION = "0"
+[observability]
+enabled = true
 
-[[kv_namespaces]]
-binding = "KV_MAPPINGS"
-id = "36e4319084c4498fa08e5bf00f36331a"
+[assets]
+directory = "./dist"
+binding = "ASSETS"
 
-[[kv_namespaces]]
-binding = "KV_HIGHLIGHT"
-id = "9503a7c1e6f948cb8f1754c08e046179"
-
-[[r2_buckets]]
-binding = "R2_BUCKET"
-bucket_name = "just-be-dev"
-
-[[r2_buckets]]
-binding = "R2_ASSETS"
-bucket_name = "just-be-dev-assets"
+[[routes]]
+pattern = "just-be.dev"
+custom_domain = true

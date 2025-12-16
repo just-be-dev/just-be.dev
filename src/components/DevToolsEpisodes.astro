@@ -1,0 +1,58 @@
+---
+import { getCollection } from "astro:content";
+import FormattedDate from "@/components/FormattedDate.astro";
+
+// Get episodes from the content collection
+const allEpisodes = await getCollection("devtools");
+
+// Transform and prepare episodes for display
+const episodes = allEpisodes
+  .map((episode) => {
+    const title = episode.data.title ?? "";
+    const link = episode.data.url ?? "";
+    const pubDate = episode.data.published ?? new Date();
+
+    // Extract episode number from title (e.g., "Episode 123: Title" or "#123 Title")
+    const episodeNumber = episode.id.split("/").pop()!;
+
+    return { title, link, pubDate, episodeNumber };
+  })
+  .sort((a, b) => b.pubDate.getTime() - a.pubDate.getTime());
+---
+
+<div class="my-2lh">
+  <h2 class="font-bold mb-2">Recent Episodes</h2>
+
+  {
+    episodes.length === 0 ? (
+      <p class="text-fg-2">
+        Unable to load episodes. Visit{" "}
+        <a href="https://devtools.fm" class="underline">
+          devtools.fm
+        </a>{" "}
+        to listen.
+      </p>
+    ) : (
+      <ul class="m-0 p-0 list-none">
+        {episodes.slice(0, 10).map((episode) => (
+          <li>
+            <a
+              href={episode.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="bg-0 h-1lh hocus:invert group flex gap-x-1 -mx-[1ch] px-[1ch] outline-none"
+            >
+              <code class="text-fg-2 group-hocus:text-accent">
+                {episode.episodeNumber ? `#${episode.episodeNumber}` : "—"}
+              </code>
+              <span class="text-fg-2 group-hocus:text-fg-0 whitespace-nowrap">
+                <FormattedDate date={episode.pubDate} />
+              </span>
+              <h3 class="font-bold">{episode.title}</h3>
+            </a>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</div>

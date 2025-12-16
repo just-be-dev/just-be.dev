@@ -1,0 +1,1 @@
+I'm a Brooklyn based [software engineer](/work), [independent researcher](/research), and [podcaster](https://devtools.fm) considering ways in which technology can bring us together and improve our lives. I host a small meetup called [Side Project Saturday](https://sideprojectsaturday.com) and I'm a [Recurse](https://recurse.com) alum.

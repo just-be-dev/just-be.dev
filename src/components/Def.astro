@@ -1,0 +1,9 @@
+---
+interface Props {
+  title?: string;
+}
+
+const { title } = Astro.props;
+---
+
+<abbr class="def-component cursor-help" title={title}><slot /></abbr>

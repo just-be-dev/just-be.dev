@@ -1,0 +1,38 @@
+---
+import { getCollection } from "astro:content";
+import Layout from "@/layouts/Layout.astro";
+import ProjectStatus from "@/components/ProjectStatus.astro";
+import { Code } from "@/utils/code";
+
+const projects = (await getCollection("projects"))
+  .map((post) => ({ ...post, code: Code.fromId(post.id) }))
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+---
+
+<Layout title="Projects - Just Be">
+  <header class="mb-2">
+    <h1 class="font-bold">~/projects</h1>
+  </header>
+
+  <ul class="grid grid-cols-[auto_auto_1fr] gap-x-1">
+    {
+      projects.map((project) => (
+        <li class="contents before:content-none">
+          <a
+            href={`/projects/${project.id}/`}
+            class="bg-0 hocus:invert group col-span-3 -mx-[1ch] grid grid-cols-subgrid px-[1ch] outline-none"
+          >
+            <code class="text-fg-2 group-hocus:text-accent">{project.code.toString()}</code>
+            <ProjectStatus status={project.data.status} />
+            <h2 class="truncate font-bold">
+              {project.data.title}
+              {project.data.description && (
+                <span class="text-fg-2 font-normal"> — {project.data.description}</span>
+              )}
+            </h2>
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</Layout>

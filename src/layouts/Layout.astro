@@ -1,0 +1,27 @@
+---
+import BaseHead from "@/components/BaseHead.astro";
+import Nav from "@/components/Nav.astro";
+import "@/styles/global.css";
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title = "Just Be", description = "The personal site of Justin Bennett" } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <BaseHead {title} {description} />
+  </head>
+  <body class="pt-lh flex min-h-screen flex-col">
+    <Nav />
+    <div class="mx-auto flex w-full max-w-4xl flex-1 flex-col">
+      <main id="main-content" class="my-2lh flex-1 focus:outline-none" tabindex="-1">
+        <slot />
+      </main>
+    </div>
+  </body>
+</html>

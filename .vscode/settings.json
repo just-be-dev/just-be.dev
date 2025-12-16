@@ -1,9 +1,0 @@
-{
-  "deno.enable": true,
-  "deno.enablePaths": [
-    "./scripts"
-  ],
-  "files.exclude": {
-    "deno.lock": true
-  },
-}
