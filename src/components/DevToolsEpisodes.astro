@@ -20,8 +20,8 @@ const episodes = allEpisodes
   .sort((a, b) => b.pubDate.getTime() - a.pubDate.getTime());
 ---
 
-<div class="my-2lh">
-  <h2 class="font-bold mb-2">Recent Episodes</h2>
+<div class="my-2lh not-prose">
+  <h2 class="font-bold mb-1">Recent Episodes</h2>
 
   {
     episodes.length === 0 ? (
