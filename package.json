@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "dependencies": {
     "@ascorbic/feed-loader": "^2.0.1",
+    "@astrojs/cloudflare": "^12.6.12",
     "@astrojs/mdx": "^4.3.12",
     "@astrojs/rss": "^4.0.14",
     "@astrojs/sitemap": "^3.6.0",

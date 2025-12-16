@@ -7,10 +7,13 @@ import { defineConfig } from "astro/config";
 import UnoCSS from "@unocss/astro";
 import remarkMdc from "remark-mdc";
 import { remarkMdcToMdx } from "./src/plugins/remark-mdc-to-mdx.ts";
+import cloudflare from "@astrojs/cloudflare";
 
 // https://astro.build/config
 export default defineConfig({
   site: "https://just-be.dev",
+  output: "static",
+  adapter: cloudflare(),
   integrations: [
     mdx({
       syntaxHighlight: "shiki",
