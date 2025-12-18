@@ -113,7 +113,7 @@
           .post-description {
             grid-column: 2 / -1;
             color: var(--foreground1);
-            margin-bottom: 0;
+            margin: 0;
           }
 
           .posts a:hover + .post-description,
