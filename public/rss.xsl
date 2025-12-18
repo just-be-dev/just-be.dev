@@ -37,24 +37,19 @@
           }
 
           .feed-info {
-            margin-bottom: 3lh;
-            padding: 1lh 1ch;
+            margin-bottom: 2lh;
             background-color: var(--background1);
             border: 1px solid var(--foreground2);
           }
 
           .feed-info h2 {
             font-weight: bold;
-            margin: 0 0 0.5lh 0;
+            margin: 0;
           }
 
           .feed-info p {
             margin: 0;
             color: var(--foreground1);
-          }
-
-          .feed-info p:not(:last-child) {
-            margin-bottom: 0.5lh;
           }
 
           .feed-info a {
