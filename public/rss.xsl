@@ -92,6 +92,7 @@
           .posts a:focus {
             background-color: var(--accent);
             color: var(--background0);
+            filter: invert(1);
           }
 
           .post-date {
