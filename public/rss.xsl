@@ -106,6 +106,7 @@
 
           .post-title {
             font-weight: bold;
+            margin: 0;
           }
 
           .post-description {
