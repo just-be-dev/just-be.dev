@@ -84,7 +84,8 @@
             padding: 0 1ch;
             margin: 0 -1ch;
             text-decoration: none;
-            color: inherit;
+            color: black;
+            background-color: white;
             outline: none;
           }
 
