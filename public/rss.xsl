@@ -9,7 +9,7 @@
         <meta charset="UTF-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,700;1,400&amp;display=swap"/>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@webtui/css@latest/base.css"/>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@webtui/css@0.1.5/base.css"/>
         <style>
           * {
             font-family: "IBM Plex Mono", "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas", "Monaco", "Courier New", monospace;
