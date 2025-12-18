@@ -85,6 +85,7 @@
             display: grid;
             grid-template-columns: subgrid;
             align-items: baseline;
+            height: 1lh;
             padding: 0 1ch;
             margin: 0 -1ch;
             text-decoration: none;
@@ -115,7 +116,7 @@
           .post-description {
             grid-column: 2 / -1;
             color: var(--foreground1);
-            margin-bottom: 1lh;
+            margin-bottom: 0;
           }
 
           .posts a:hover + .post-description,
