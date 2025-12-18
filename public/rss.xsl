@@ -31,36 +31,30 @@
           .container {
             max-width: 768px;
             margin: 0 auto;
-            padding: 0 2ch;
+            padding: 1.5lh 2ch 0;
             flex: 1;
             width: 100%;
           }
 
-          header {
-            padding-top: 1.5lh;
-            margin-bottom: 2lh;
-          }
-
-          h1 {
-            font-weight: bold;
-            margin: 0 0 1.5lh 0;
-          }
-
           .feed-info {
             margin-bottom: 3lh;
-            padding: 1lh 2ch;
+            padding: 1lh 1ch;
             background-color: var(--background1);
             border: 1px solid var(--foreground2);
           }
 
           .feed-info h2 {
             font-weight: bold;
-            margin: 0 0 1lh 0;
+            margin: 0 0 0.5lh 0;
           }
 
           .feed-info p {
-            margin: 0 0 0.5lh 0;
+            margin: 0;
             color: var(--foreground1);
+          }
+
+          .feed-info p:not(:last-child) {
+            margin-bottom: 0.5lh;
           }
 
           .feed-info a {
@@ -128,39 +122,12 @@
           .posts a:focus + .post-description {
             color: var(--foreground0);
           }
-
-          nav {
-            margin-bottom: 1.5lh;
-            display: flex;
-            gap: 2ch;
-          }
-
-          nav a {
-            color: var(--foreground1);
-            text-decoration: none;
-          }
-
-          nav a:hover,
-          nav a:focus {
-            color: var(--accent);
-            text-decoration: underline;
-          }
         </style>
       </head>
       <body>
         <div class="container">
-          <header>
-            <nav>
-              <a href="/">~/</a>
-              <a href="/blog">blog</a>
-              <a href="/projects">projects</a>
-              <a href="/research">research</a>
-            </nav>
-            <h1>~/blog/rss.xml</h1>
-          </header>
-
           <div class="feed-info">
-            <h2>📡 RSS Feed</h2>
+            <h2>RSS Feed</h2>
             <p><xsl:value-of select="/rss/channel/description"/></p>
             <p>Subscribe to this feed in your RSS reader: <a href="/rss.xml">https://just-be.dev/rss.xml</a></p>
           </div>
