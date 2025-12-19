@@ -19,6 +19,13 @@ function isActive(href: string, path: string) {
   return href === "/" ? path === "/" : path.startsWith(href);
 }
 
+function isCurrent(href: string, path: string) {
+  // Normalize paths by removing trailing slashes for comparison
+  const normalizedHref = href.replace(/\/$/, "") || "/";
+  const normalizedPath = path.replace(/\/$/, "") || "/";
+  return normalizedHref === normalizedPath;
+}
+
 function highlightLabel(label: string, keyChar: string) {
   const index = label.toLowerCase().indexOf(keyChar.toLowerCase());
   if (index === -1) return { before: label, key: "", after: "" };
@@ -44,13 +51,14 @@ function highlightLabel(label: string, keyChar: string) {
     {
       tabs.map((tab) => {
         const active = isActive(tab.href, currentPath);
+        const current = isCurrent(tab.href, currentPath);
         const highlighted = highlightLabel(tab.label, tab.keyChar);
         return (
           <a
             href={tab.href}
             data-key={tab.keyChar}
-            class:list={["nav-link bg-1 transition-filter flex items-center px-1", { active }]}
-            tabindex={active ? -1 : undefined}
+            class:list={["nav-link bg-1 transition-filter flex items-center px-1", { active, current }]}
+            tabindex={current ? -1 : undefined}
           >
             {highlighted.before}
             <span class="font-bold underline">{highlighted.key}</span>
@@ -136,11 +144,14 @@ function highlightLabel(label: string, keyChar: string) {
     outline: none;
   }
 
-  .nav-link.active,
-  .nav-link.active:hover,
-  .nav-link.active:focus-visible {
+  .nav-link.active {
     background-color: var(--background0);
     color: var(--foreground0);
+  }
+
+  .nav-link.current,
+  .nav-link.current:hover,
+  .nav-link.current:focus-visible {
     filter: invert(0);
     outline: none;
     pointer-events: none;
