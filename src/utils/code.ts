@@ -1,7 +1,7 @@
 const EPOCH = Date.UTC(2000, 0, 1); // January 1, 2000 UTC
 const BASE16_CHARS = "0123456789ABCDEF" as const;
 
-export const VALID_KINDS = ["B", "R", "P"] as const;
+export const VALID_KINDS = ["B", "R", "P", "T"] as const;
 export type Kind = typeof VALID_KINDS[number];
 
 function isValidKind(char: string): char is Kind {
@@ -20,7 +20,7 @@ export class Code {
   /**
    * Create a Code from a Date object
    * @param date - Date object to encode
-   * @param kind - Kind identifier (B=blog, R=research, P=projects)
+   * @param kind - Kind identifier (B=blog, R=research, P=projects, T=talks)
    */
   static fromDate(date: Date, kind: Kind): Code {
     const days = Math.floor((date.getTime() - EPOCH) / (1000 * 60 * 60 * 24));
@@ -38,7 +38,7 @@ export class Code {
   /**
    * Create a Code from a UTC milliseconds timestamp
    * @param milliseconds - Milliseconds from epoch (e.g., result of Date.UTC())
-   * @param kind - Kind identifier (B=blog, R=research, P=projects)
+   * @param kind - Kind identifier (B=blog, R=research, P=projects, T=talks)
    */
   static fromUTC(milliseconds: number, kind: Kind): Code {
     return Code.fromDate(new Date(milliseconds), kind);
@@ -47,7 +47,7 @@ export class Code {
   /**
    * Create a Code from a date string
    * @param dateString - ISO date string (e.g., "2024-12-06", "2024-12-06T00:00:00Z")
-   * @param kind - Kind identifier (B=blog, R=research, P=projects)
+   * @param kind - Kind identifier (B=blog, R=research, P=projects, T=talks)
    */
   static fromDateString(dateString: string, kind: Kind): Code {
     const date = new Date(dateString);
@@ -181,6 +181,7 @@ if (import.meta.vitest) {
       expect(Code.fromDate(date, "B").toString()).toBe("B2392");
       expect(Code.fromDate(date, "R").toString()).toBe("R2392");
       expect(Code.fromDate(date, "P").toString()).toBe("P2392");
+      expect(Code.fromDate(date, "T").toString()).toBe("T2392");
     });
   });
 
@@ -247,6 +248,7 @@ if (import.meta.vitest) {
       expect(Code.fromCode("B2391").getKind()).toBe("B");
       expect(Code.fromCode("R2391").getKind()).toBe("R");
       expect(Code.fromCode("P2391").getKind()).toBe("P");
+      expect(Code.fromCode("T2391").getKind()).toBe("T");
     });
   });
 
@@ -312,6 +314,7 @@ if (import.meta.vitest) {
       expect(Code.fromCode("B2392").getKind()).toBe("B");
       expect(Code.fromCode("R2392").getKind()).toBe("R");
       expect(Code.fromCode("P2392").getKind()).toBe("P");
+      expect(Code.fromCode("T2392").getKind()).toBe("T");
     });
 
     it("should return date code via getDateCode()", () => {

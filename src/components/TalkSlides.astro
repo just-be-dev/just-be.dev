@@ -1,0 +1,165 @@
+---
+import { resolveSlideImageUrl } from "@/utils/images";
+
+interface Slide {
+  image: string;
+  timestamp?: number;
+}
+
+interface Props {
+  /**
+   * Either a number of slides (will look for images 1.png through n.png)
+   * or an array of slide objects with image paths and optional timestamps
+   */
+  slides: number | Slide[];
+  /**
+   * Base path for slide images (e.g., "/talks/codegen-in-rust")
+   */
+  basePath: string;
+  /**
+   * ID for the talk (used for namespacing)
+   */
+  talkId: string;
+}
+
+const { slides, basePath, talkId } = Astro.props;
+
+// Normalize slides to array format
+const slideList: Slide[] = typeof slides === "number"
+  ? Array.from({ length: slides }, (_, i) => ({
+      image: `codegen-${i + 1}.png`,
+    }))
+  : slides;
+
+// Resolve image URLs with local-first fallback
+// Priority: 1) Local file in /assets/, 2) R2 URL from manifest, 3) Fallback path
+const resolvedSlides = await Promise.all(
+  slideList.map(async (slide) => {
+    const resolvedUrl = await resolveSlideImageUrl(basePath, slide.image);
+    // Fallback: if not resolved, try /assets/{basePath} (should rarely happen)
+    const normalizedBase = basePath.startsWith("/") ? basePath.slice(1) : basePath;
+    return {
+      ...slide,
+      url: resolvedUrl ?? `/assets/${normalizedBase}/${slide.image}`,
+    };
+  })
+);
+
+const totalSlides = resolvedSlides.length;
+const containerId = `talk-slides-${talkId}`;
+---
+
+<div id={containerId} class="talk-slides not-prose" tabindex="0">
+  <div class="slide-container bg-1 border-2 border-fg-2 relative" style="cursor: pointer;">
+    <img
+      src={resolvedSlides[0].url}
+      alt="Slide 1"
+      class="slide-image w-full h-auto"
+    />
+  </div>
+
+  <div class="controls mt-2 flex items-center justify-between gap-2">
+    <button
+      class="btn-prev bg-2 text-accent hocus:bg-0 hocus:invert px-1 py-0.5 border-2 border-fg-0 outline-none font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+      disabled
+    >
+      ← Prev
+    </button>
+
+    <div class="slide-counter text-fg-1 font-mono">
+      1 / {totalSlides}
+    </div>
+
+    <button
+      class="btn-next bg-2 text-accent hocus:bg-0 hocus:invert px-1 py-0.5 border-2 border-fg-0 outline-none font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      Next →
+    </button>
+  </div>
+
+  <div class="keyboard-hints mt-1 text-fg-2 text-sm text-center">
+    <kbd class="px-1 bg-1 border border-fg-2">←</kbd>
+    <kbd class="px-1 bg-1 border border-fg-2">→</kbd>
+    <kbd class="px-1 bg-1 border border-fg-2">Space</kbd>
+    to navigate •
+    <kbd class="px-1 bg-1 border border-fg-2">Home</kbd>
+    <kbd class="px-1 bg-1 border border-fg-2">End</kbd>
+    to jump
+  </div>
+</div>
+
+<script define:vars={{ containerId, resolvedSlides, totalSlides }}>
+  const container = document.getElementById(containerId);
+  if (!container) throw new Error(`Container ${containerId} not found`);
+
+  const img = container.querySelector(".slide-image");
+  const counter = container.querySelector(".slide-counter");
+  const btnPrev = container.querySelector(".btn-prev");
+  const btnNext = container.querySelector(".btn-next");
+  const slideContainer = container.querySelector(".slide-container");
+
+  let currentSlide = 0;
+
+  function updateSlide() {
+    const slide = resolvedSlides[currentSlide];
+    img.src = slide.url;
+    img.alt = `Slide ${currentSlide + 1}`;
+    counter.textContent = `${currentSlide + 1} / ${totalSlides}`;
+    btnPrev.disabled = currentSlide === 0;
+    btnNext.disabled = currentSlide === totalSlides - 1;
+  }
+
+  function goToSlide(index) {
+    currentSlide = Math.max(0, Math.min(index, totalSlides - 1));
+    updateSlide();
+  }
+
+  // Button clicks
+  btnPrev.addEventListener("click", () => goToSlide(currentSlide - 1));
+  btnNext.addEventListener("click", () => goToSlide(currentSlide + 1));
+  slideContainer.addEventListener("click", () => goToSlide(currentSlide + 1));
+
+  // Keyboard events
+  container.addEventListener("keydown", (evt) => {
+    if (evt.key === "ArrowRight" || evt.key === " ") {
+      evt.preventDefault();
+      goToSlide(currentSlide + 1);
+    } else if (evt.key === "ArrowLeft") {
+      evt.preventDefault();
+      goToSlide(currentSlide - 1);
+    } else if (evt.key === "Home") {
+      evt.preventDefault();
+      goToSlide(0);
+    } else if (evt.key === "End") {
+      evt.preventDefault();
+      goToSlide(totalSlides - 1);
+    }
+  });
+</script>
+
+<style>
+  .talk-slides {
+    max-width: 100%;
+    margin: 2lh auto;
+  }
+
+  .slide-container {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+  }
+
+  .slide-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  kbd {
+    font-family: monospace;
+    font-size: 0.875em;
+  }
+</style>

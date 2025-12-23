@@ -37,6 +37,16 @@ const research = defineCollection({
   }),
 });
 
+const talks = defineCollection({
+  loader: glob({ base: "./src/content/talks", pattern: "**/*.{md,mdx}" }),
+  schema: z.object({
+    title: z.string(),
+    description: z.string().optional(),
+    date: z.coerce.date(),
+    event: z.string(),
+  }),
+});
+
 const pages = defineCollection({
   loader: glob({ base: "./src/content/pages", pattern: "**/*.{md,mdx}" }),
   schema: z.object({
@@ -51,4 +61,4 @@ const devtools = defineCollection({
   }),
 });
 
-export const collections = { blog, projects, research, pages, devtools };
+export const collections = { blog, projects, research, pages, devtools, talks };
