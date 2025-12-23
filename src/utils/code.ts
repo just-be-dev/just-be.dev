@@ -93,6 +93,33 @@ export class Code {
   }
 
   /**
+   * Parse an ID string into its code and slug components
+   * @param id - ID string (e.g., "b24f9--the-values-i-build-by")
+   * @returns Object with code (e.g., "b24f9") and slug (e.g., "the-values-i-build-by")
+   */
+  static parseId(id: string): { code: string; slug: string } {
+    const separatorIndex = id.indexOf("--");
+    if (separatorIndex === -1) {
+      throw new Error(`ID does not contain '--' separator: ${id}`);
+    }
+    return {
+      code: id.slice(0, separatorIndex),
+      slug: id.slice(separatorIndex + 2),
+    };
+  }
+
+  /**
+   * Build a URL path for a content entry
+   * @param collection - The collection name (e.g., "blog", "projects")
+   * @param id - The entry ID (e.g., "b24f9--the-values-i-build-by")
+   * @returns URL path (e.g., "/blog/b24f9/the-values-i-build-by/")
+   */
+  static buildUrl(collection: string, id: string): string {
+    const { code, slug } = Code.parseId(id);
+    return `/${collection}/${code}/${slug}/`;
+  }
+
+  /**
    * Convert the code to a Date object
    */
   toDate(): Date {
@@ -319,6 +346,43 @@ if (import.meta.vitest) {
 
     it("should return date code via getDateCode()", () => {
       expect(Code.fromCode("B2392").getDateCode()).toBe("2392");
+    });
+  });
+
+  describe("Code.parseId()", () => {
+    it("should parse ID into code and slug", () => {
+      const result = Code.parseId("b24f9--the-values-i-build-by");
+      expect(result.code).toBe("b24f9");
+      expect(result.slug).toBe("the-values-i-build-by");
+    });
+
+    it("should handle IDs with multiple dashes in slug", () => {
+      const result = Code.parseId("b2392--my-really-long-blog-post-title");
+      expect(result.code).toBe("b2392");
+      expect(result.slug).toBe("my-really-long-blog-post-title");
+    });
+
+    it("should reject IDs without separator", () => {
+      expect(() => Code.parseId("b2392noseparator")).toThrow(
+        "ID does not contain '--' separator"
+      );
+    });
+  });
+
+  describe("Code.buildUrl()", () => {
+    it("should build URL path for blog", () => {
+      const url = Code.buildUrl("blog", "b24f9--the-values-i-build-by");
+      expect(url).toBe("/blog/b24f9/the-values-i-build-by/");
+    });
+
+    it("should build URL path for projects", () => {
+      const url = Code.buildUrl("projects", "p1e73--devtools-fm");
+      expect(url).toBe("/projects/p1e73/devtools-fm/");
+    });
+
+    it("should build URL path for research", () => {
+      const url = Code.buildUrl("research", "r24e5--parsing-techniques");
+      expect(url).toBe("/research/r24e5/parsing-techniques/");
     });
   });
 }
