@@ -6,13 +6,7 @@ import { Code } from "@/utils/code";
 
 export async function getStaticPaths() {
   const research = await getCollection("research");
-  return research.map((item) => {
-    const { code, slug } = Code.parseId(item.id);
-    return {
-      params: { code, slug },
-      props: item,
-    };
-  });
+  return Code.getStaticPaths(research);
 }
 
 type Props = Awaited<ReturnType<typeof getStaticPaths>>[number]["props"];

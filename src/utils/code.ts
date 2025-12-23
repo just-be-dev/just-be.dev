@@ -154,6 +154,21 @@ export class Code {
   valueOf(): string {
     return this.toString();
   }
+
+  /**
+   * Helper to generate getStaticPaths for Astro routes
+   * @param collection - The collection to get entries from
+   * @returns Array of path objects with code/slug params and entry props
+   */
+  static async getStaticPaths<T>(collection: Awaited<ReturnType<typeof import("astro:content").getCollection<any>>>) {
+    return collection.map((entry) => {
+      const { code, slug } = Code.parseId(entry.id);
+      return {
+        params: { code, slug },
+        props: entry,
+      };
+    });
+  }
 }
 
 // Usage examples:

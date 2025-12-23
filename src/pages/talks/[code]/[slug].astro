@@ -8,13 +8,7 @@ import { Code } from "@/utils/code";
 
 export async function getStaticPaths() {
   const talks = await getCollection("talks");
-  return talks.map((talk) => {
-    const { code, slug } = Code.parseId(talk.id);
-    return {
-      params: { code, slug },
-      props: talk,
-    };
-  });
+  return Code.getStaticPaths(talks);
 }
 
 type Props = Awaited<ReturnType<typeof getStaticPaths>>[number]["props"];
