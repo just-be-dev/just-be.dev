@@ -4,7 +4,7 @@ import { $ } from "bun";
 import { Code, type Kind } from "../src/utils/code";
 
 const CONTENT_DIR = `${import.meta.dir}/../src/content`;
-const DEFAULT_DIRS = ["blog", "research", "projects"];
+const DEFAULT_DIRS = ["blog", "research", "projects", "talks"];
 
 /**
  * Infer kind prefix from directory name
@@ -17,6 +17,8 @@ function inferKind(dir: string): Kind {
       return "R";
     case "projects":
       return "P";
+    case "talks":
+      return "T";
     default:
       throw new Error(`Unknown content directory: ${dir}`);
   }
@@ -41,21 +43,21 @@ function extractDate(content: string): string | null {
  * Check if filename already has a code prefix (5 chars: kind + hex date followed by --)
  */
 function hasCodePrefix(filename: string): boolean {
-  return /^[BRPbrp][0-9A-Fa-f]{4}--/.test(filename);
+  return /^[BRPTbrpt][0-9A-Fa-f]{4}--/.test(filename);
 }
 
 /**
  * Check if filename has an uppercase code prefix
  */
 function hasUppercasePrefix(filename: string): boolean {
-  return /^[BRP][0-9A-F]{4}--/.test(filename) && /[A-F]/.test(filename.substring(1, 5));
+  return /^[BRPT][0-9A-F]{4}--/.test(filename) && /[A-F]/.test(filename.substring(1, 5));
 }
 
 /**
  * Check if filename has old 4-char base-36 code prefix (needs migration)
  */
 function hasOldCodePrefix(filename: string): boolean {
-  return /^[0-9A-Za-z]{4}--/.test(filename) && !/^[BRP][0-9A-Fa-f]{4}--/.test(filename);
+  return /^[0-9A-Za-z]{4}--/.test(filename) && !/^[BRPT][0-9A-Fa-f]{4}--/.test(filename);
 }
 
 /**
