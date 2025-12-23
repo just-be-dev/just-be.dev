@@ -34,7 +34,7 @@
     "prettier": "3.7.4",
     "prettier-plugin-astro": "0.14.1",
     "unocss": "66.5.10",
-    "vitest": "4.0.15",
+    "vitest": "4.0.16",
     "wrangler": "4.48.0"
   }
 }
