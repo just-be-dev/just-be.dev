@@ -1,6 +1,8 @@
 import { defineCollection, z } from "astro:content";
-import { glob } from "astro/loaders";
+import { glob, file } from "astro/loaders";
 import { feedLoader } from "@ascorbic/feed-loader";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 const blog = defineCollection({
   loader: glob({ base: "./src/content/blog", pattern: "**/*.{md,mdx}" }),
@@ -61,4 +63,32 @@ const devtools = defineCollection({
   }),
 });
 
-export const collections = { blog, projects, research, pages, devtools, talks };
+const images = defineCollection({
+  loader: {
+    name: "image-manifest-loader",
+    load: ({ store, logger }) => {
+      logger.info("Loading image manifest");
+
+      const manifestPath = join(process.cwd(), "src/content/image-manifest.json");
+      const manifestContent = readFileSync(manifestPath, "utf-8");
+      const manifest = JSON.parse(manifestContent);
+
+      // Transform {images: {path: {metadata}}} to array of {id, ...metadata}
+      for (const [path, metadata] of Object.entries(manifest.images)) {
+        store.set({
+          id: path,
+          data: metadata,
+        });
+      }
+
+      logger.info(`Loaded ${Object.keys(manifest.images).length} images`);
+    },
+  },
+  schema: z.object({
+    hash: z.string(),
+    size: z.number(),
+    ext: z.string(),
+  }),
+});
+
+export const collections = { blog, projects, research, pages, devtools, talks, images };
