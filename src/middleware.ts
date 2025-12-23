@@ -1,12 +1,13 @@
 import { defineMiddleware } from "astro:middleware";
 import { getCollection } from "astro:content";
+import { Code } from "@/utils/code";
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const url = new URL(context.request.url);
 
-  // Handle /blog/*, /projects/*, and /research/* paths
-  const match = url.pathname.match(/^\/(blog|projects|research)\//);
-  const matchedType = match?.[1] as "blog" | "projects" | "research" | undefined;
+  // Handle /blog/*, /projects/*, /research/*, and /talks/* paths
+  const match = url.pathname.match(/^\/(blog|projects|research|talks)\//);
+  const matchedType = match?.[1] as "blog" | "projects" | "research" | "talks" | undefined;
 
   if (!matchedType) {
     return next();
@@ -17,19 +18,28 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return next();
   }
 
-  const slug = parts[1];
+  // Extract the code from the URL (first segment after collection name)
+  const urlCode = parts[1];
+
+  // Find the entry by matching the code (first 5 characters of the ID)
   const entry = (
     await getCollection(matchedType, ({ id }) => {
-      return slug.slice(0, 5).toLowerCase() === id.slice(0, 5).toLowerCase();
+      return urlCode.slice(0, 5).toLowerCase() === id.slice(0, 5).toLowerCase();
     })
   ).at(0);
 
   if (entry) {
-    // We're going to the right page, continue
-    if (context.props.id === entry.id) return next();
-    // Redirect to the full ID
+    const { code, slug } = Code.parseId(entry.id);
+    const correctPath = `/${matchedType}/${code}/${slug}/`;
+
+    // Check if we're already on the correct path
+    if (url.pathname === correctPath) {
+      return next();
+    }
+
+    // Redirect to the correct URL format
     const newUrl = new URL(url);
-    newUrl.pathname = `/${matchedType}/${entry.id}/`;
+    newUrl.pathname = correctPath;
     return context.redirect(newUrl.toString());
   }
 

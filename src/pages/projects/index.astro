@@ -19,7 +19,7 @@ const projects = (await getCollection("projects"))
       projects.map((project) => (
         <li class="contents before:content-none">
           <a
-            href={`/projects/${project.id}/`}
+            href={Code.buildUrl("projects", project.id)}
             class="bg-0 hocus:invert group col-span-3 -mx-[1ch] grid grid-cols-subgrid px-[1ch] outline-none"
           >
             <code class="text-fg-2 group-hocus:text-accent">{project.code.toString()}</code>

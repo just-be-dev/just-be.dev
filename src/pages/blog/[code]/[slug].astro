@@ -1,43 +1,45 @@
 ---
 import { getCollection, render } from "astro:content";
 import FormattedDate from "@/components/FormattedDate.astro";
+import Tag from "@/components/Tag.astro";
 import Link from "@/components/Link.astro";
 import MDContent from "@/components/MDContent.astro";
 import Layout from "@/layouts/Layout.astro";
 import { Code } from "@/utils/code";
 
 export async function getStaticPaths() {
-  const talks = await getCollection("talks");
-  return talks.map((talk) => ({
-    params: { slug: talk.id },
-    props: talk,
-  }));
+  const posts = await getCollection("blog");
+  return Code.getStaticPaths(posts);
 }
 
 type Props = Awaited<ReturnType<typeof getStaticPaths>>[number]["props"];
 
-const talk = Astro.props;
-const { Content } = await render(talk);
+const post = Astro.props;
+const { Content } = await render(post);
 
-// Extract code from filename
-const code = Code.fromId(talk.id);
+// Extract code from filename (e.g., "0745--apis-in-the-age-of-ai" -> "0745")
+const code = Code.fromId(post.id);
 ---
 
-<Layout title={`${talk.data.title} - Just Be`} description={talk.data.description}>
+<Layout title={`${post.data.title} - Just Be`} description={post.data.description}>
   <article class="px-4 max-w-article mx-auto">
     <header class="mb-2lh grid grid-cols-[1fr_auto] gap-x-2 not-prose">
-      <h1 class="mb-0 font-bold">{talk.data.title}</h1>
+      <h1 class="mb-0 font-bold">{post.data.title}</h1>
 
-      <div class="flex gap-[1ch] justify-end">
-        <span class="text-fg-2">{talk.data.event}</span>
-      </div>
+      {
+        post.data.tags.length > 0 && (
+          <div class="flex gap-[1ch] justify-end">
+            {post.data.tags.map((tag) => (
+              <Tag tag={tag} url="/blog" />
+            ))}
+          </div>
+        )
+      }
 
       <div class="flex gap-[1ch]">
         <span class="text-fg-2">{code}</span>
         <span class="opacity-25">|</span>
-        <FormattedDate date={talk.data.date} />
-        <span class="opacity-25">|</span>
-        <span class="text-fg-2">{talk.data.location}</span>
+        <FormattedDate date={post.data.date} />
       </div>
     </header>
 
@@ -46,8 +48,8 @@ const code = Code.fromId(talk.id);
     </div>
 
     <div class="text-fg-0 mt-2lh">
-      <a href="/talks" class="text-fg-0 link font-bold focus-visible:outline-none h-1lh">
-        ← Back to talks
+      <a href="/blog" class="text-fg-0 link font-bold focus-visible:outline-none h-1lh">
+        ← Back to blog
       </a>
     </div>
   </article>
