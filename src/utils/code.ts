@@ -2,7 +2,15 @@ const EPOCH = Date.UTC(2000, 0, 1); // January 1, 2000 UTC
 const BASE16_CHARS = "0123456789ABCDEF" as const;
 
 export const VALID_KINDS = ["B", "R", "P", "T"] as const;
-export type Kind = typeof VALID_KINDS[number];
+export type Kind = (typeof VALID_KINDS)[number];
+
+export const KIND_TO_COLLECTION = {
+  B: "blog",
+  R: "research",
+  P: "projects",
+  T: "talks",
+} as const;
+export type Collection = (typeof KIND_TO_COLLECTION)[Kind];
 
 function isValidKind(char: string): char is Kind {
   return VALID_KINDS.includes(char as Kind);
@@ -156,6 +164,13 @@ export class Code {
   }
 
   /**
+   * Get the collection name for this code's kind
+   */
+  getCollection(): Collection {
+    return KIND_TO_COLLECTION[this.kind];
+  }
+
+  /**
    * Helper to generate getStaticPaths for Astro routes
    * @param collection - The collection to get entries from
    * @returns Array of path objects with code/slug params and entry props
@@ -275,7 +290,7 @@ if (import.meta.vitest) {
     });
 
     it("should reject codes with invalid kind", () => {
-      expect(() => Code.fromCode("X2391")).toThrow("Invalid kind 'X'. Must be one of: B, R, P");
+      expect(() => Code.fromCode("X2391")).toThrow(`Invalid kind 'X'. Must be one of: ${VALID_KINDS.join(", ")}`);
     });
 
     it("should reject codes with non-hex characters in date portion", () => {
@@ -398,6 +413,24 @@ if (import.meta.vitest) {
     it("should build URL path for research", () => {
       const url = Code.buildUrl("research", "r24e5--parsing-techniques");
       expect(url).toBe("/research/r24e5/parsing-techniques/");
+    });
+  });
+
+  describe("Code.getCollection()", () => {
+    it("should return 'blog' for kind B", () => {
+      expect(Code.fromCode("B2392").getCollection()).toBe("blog");
+    });
+
+    it("should return 'research' for kind R", () => {
+      expect(Code.fromCode("R2392").getCollection()).toBe("research");
+    });
+
+    it("should return 'projects' for kind P", () => {
+      expect(Code.fromCode("P2392").getCollection()).toBe("projects");
+    });
+
+    it("should return 'talks' for kind T", () => {
+      expect(Code.fromCode("T2392").getCollection()).toBe("talks");
     });
   });
 }

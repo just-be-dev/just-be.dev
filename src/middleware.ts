@@ -1,13 +1,41 @@
 import { defineMiddleware } from "astro:middleware";
 import { getCollection } from "astro:content";
-import { Code } from "@/utils/code";
+import { Code, KIND_TO_COLLECTION, type Kind, type Collection } from "@/utils/code";
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const url = new URL(context.request.url);
 
+  // Handle short code URLs like /b232e -> /blog/b232e/slug/
+  const kindChars = Object.keys(KIND_TO_COLLECTION).join("").toLowerCase();
+  const shortCodePattern = new RegExp(`^\\/([${kindChars}][0-9a-f]{4})\\/?$`, "i");
+  const shortCodeMatch = url.pathname.match(shortCodePattern);
+  if (shortCodeMatch) {
+    const shortCode = shortCodeMatch[1].toLowerCase();
+    const kindChar = shortCode[0].toUpperCase() as Kind;
+    const collection = KIND_TO_COLLECTION[kindChar];
+
+    const entry = (
+      await getCollection(collection, ({ id }) => {
+        return shortCode === id.slice(0, 5).toLowerCase();
+      })
+    ).at(0);
+
+    if (entry) {
+      const { code, slug } = Code.parseId(entry.id);
+      const newUrl = new URL(url);
+      newUrl.pathname = `/${collection}/${code}/${slug}/`;
+      return context.redirect(newUrl.toString(), 301);
+    }
+
+    // No match, continue to 404
+    return next();
+  }
+
   // Handle /blog/*, /projects/*, /research/*, and /talks/* paths
-  const match = url.pathname.match(/^\/(blog|projects|research|talks)\//);
-  const matchedType = match?.[1] as "blog" | "projects" | "research" | "talks" | undefined;
+  const collections = Object.values(KIND_TO_COLLECTION).join("|");
+  const collectionPattern = new RegExp(`^\\/(${collections})\\/`);
+  const match = url.pathname.match(collectionPattern);
+  const matchedType = match?.[1] as Collection | undefined;
 
   if (!matchedType) {
     return next();
