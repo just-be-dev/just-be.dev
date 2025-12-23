@@ -1,6 +1,6 @@
 import { defineMiddleware } from "astro:middleware";
 import { getCollection } from "astro:content";
-import { Code, KIND_TO_COLLECTION, type Kind } from "@/utils/code";
+import { Code, KIND_TO_COLLECTION, type Kind, type Collection } from "@/utils/code";
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const url = new URL(context.request.url);
@@ -31,7 +31,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   // Handle /blog/*, /projects/*, /research/*, and /talks/* paths
   const match = url.pathname.match(/^\/(blog|projects|research|talks)\//);
-  const matchedType = match?.[1] as "blog" | "projects" | "research" | "talks" | undefined;
+  const matchedType = match?.[1] as Collection | undefined;
 
   if (!matchedType) {
     return next();
