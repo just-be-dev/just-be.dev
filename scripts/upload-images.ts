@@ -34,7 +34,6 @@ const MANIFEST_PATH = join(import.meta.dir, "../src/content/image-manifest.json"
 
 interface ImageManifest {
   version: string;
-  generatedAt: string;
   images: Record<string, {
     hash: string;
     size: number;
@@ -92,7 +91,6 @@ async function uploadImages() {
 
   const manifest: ImageManifest = {
     version: "1.0",
-    generatedAt: new Date().toISOString(),
     images: {},
   };
 

@@ -4,10 +4,7 @@ import { join, dirname } from "node:path";
 
 const ASSETS_CDN = "https://assets.just-be.dev";
 
-export async function getImageManifest() {
-  const manifest = await getEntry("images", "image-manifest");
-  return manifest?.data;
-}
+// Note: No longer need getImageManifest since we use getEntry directly
 
 /**
  * Construct R2 URL from hash and extension
@@ -62,9 +59,9 @@ export async function resolveImageUrl(path: string): Promise<string | null> {
     return `/assets/${path}`;
   }
 
-  // Get metadata from manifest and construct R2 URL
-  const manifest = await getImageManifest();
-  const metadata = manifest?.images[path];
+  // Get metadata from manifest (using path as entry ID) and construct R2 URL
+  const entry = await getEntry("images", path);
+  const metadata = entry?.data;
 
   if (!metadata) {
     return null;
@@ -84,8 +81,8 @@ export async function resolveImageUrl(path: string): Promise<string | null> {
 }
 
 export async function getImageMetadata(path: string) {
-  const manifest = await getImageManifest();
-  return manifest?.images[path] ?? null;
+  const entry = await getEntry("images", path);
+  return entry?.data ?? null;
 }
 
 /**
