@@ -1,5 +1,5 @@
 import { defineCollection, z } from "astro:content";
-import { glob } from "astro/loaders";
+import { glob, file } from "astro/loaders";
 import { feedLoader } from "@ascorbic/feed-loader";
 
 const blog = defineCollection({
@@ -61,4 +61,19 @@ const devtools = defineCollection({
   }),
 });
 
-export const collections = { blog, projects, research, pages, devtools, talks };
+const images = defineCollection({
+  loader: file("src/content/image-manifest.json"),
+  schema: z.object({
+    version: z.string(),
+    generatedAt: z.string(),
+    images: z.record(
+      z.object({
+        hash: z.string(),
+        size: z.number(),
+        ext: z.string(),
+      })
+    ),
+  }),
+});
+
+export const collections = { blog, projects, research, pages, devtools, talks, images };

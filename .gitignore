@@ -22,3 +22,11 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# local asset files (uploaded to R2, referenced via manifest)
+public/assets/*
+!public/assets/index.html
+
+# wrangler temporary files
+.wrangler/
+*.png
