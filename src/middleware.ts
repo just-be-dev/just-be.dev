@@ -30,7 +30,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
 
   // Handle /blog/*, /projects/*, /research/*, and /talks/* paths
-  const match = url.pathname.match(/^\/(blog|projects|research|talks)\//);
+  const collections = Object.values(KIND_TO_COLLECTION).join("|");
+  const collectionPattern = new RegExp(`^\\/(${collections})\\/`);
+  const match = url.pathname.match(collectionPattern);
   const matchedType = match?.[1] as Collection | undefined;
 
   if (!matchedType) {
