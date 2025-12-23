@@ -6,7 +6,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const url = new URL(context.request.url);
 
   // Handle short code URLs like /b232e -> /blog/b232e/slug/
-  const shortCodeMatch = url.pathname.match(/^\/([brpt][0-9a-f]{4})\/?$/i);
+  const kindChars = Object.keys(KIND_TO_COLLECTION).join("").toLowerCase();
+  const shortCodePattern = new RegExp(`^\\/([${kindChars}][0-9a-f]{4})\\/?$`, "i");
+  const shortCodeMatch = url.pathname.match(shortCodePattern);
   if (shortCodeMatch) {
     const shortCode = shortCodeMatch[1].toLowerCase();
     const kindChar = shortCode[0].toUpperCase() as Kind;
