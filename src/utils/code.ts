@@ -290,7 +290,7 @@ if (import.meta.vitest) {
     });
 
     it("should reject codes with invalid kind", () => {
-      expect(() => Code.fromCode("X2391")).toThrow("Invalid kind 'X'. Must be one of: B, R, P, T");
+      expect(() => Code.fromCode("X2391")).toThrow(`Invalid kind 'X'. Must be one of: ${VALID_KINDS.join(", ")}`);
     });
 
     it("should reject codes with non-hex characters in date portion", () => {
