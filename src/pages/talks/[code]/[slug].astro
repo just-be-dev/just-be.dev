@@ -3,6 +3,8 @@ import { getCollection, render } from "astro:content";
 import FormattedDate from "@/components/FormattedDate.astro";
 import Link from "@/components/Link.astro";
 import MDContent from "@/components/MDContent.astro";
+import TalkSlides from "@/components/TalkSlides.astro";
+import AudioTranscript from "@/components/AudioTranscript.astro";
 import Layout from "@/layouts/Layout.astro";
 import { Code } from "@/utils/code";
 
@@ -16,13 +18,20 @@ type Props = Awaited<ReturnType<typeof getStaticPaths>>[number]["props"];
 const talk = Astro.props;
 const { Content } = await render(talk);
 
-// Extract code from filename
+// Extract code and slug from filename
 const code = Code.fromId(talk.id);
+const { slug } = Code.parseId(talk.id);
+
+// Check if this talk has slides/audio/transcript
+const hasSlides = talk.data.slides !== undefined;
+const hasAudio = talk.data.audioPath !== undefined;
+const hasTranscript = talk.data.transcriptPath !== undefined;
+const hasInteractiveLayout = hasSlides && hasAudio && hasTranscript;
 ---
 
 <Layout title={`${talk.data.title} - Just Be`} description={talk.data.description}>
-  <article class="px-4 max-w-article mx-auto">
-    <header class="mb-2lh grid grid-cols-[1fr_auto] gap-x-2 not-prose">
+  <article>
+    <header class="px-4 max-w-article mx-auto mb-2lh grid grid-cols-[1fr_auto] gap-x-2 not-prose">
       <h1 class="mb-0 font-bold">{talk.data.title}</h1>
 
       <div class="flex gap-[1ch] justify-end">
@@ -38,26 +47,41 @@ const code = Code.fromId(talk.id);
       </div>
     </header>
 
-    <div class="max-w-none">
-      <MDContent Content={Content} components={{ a: Link }} />
-    </div>
+    {hasInteractiveLayout ? (
+      <div class="talk-layout grid grid-cols-1 lg:grid-cols-2 gap-4 not-prose" style="margin-left: calc(-50vw + 50%); margin-right: calc(-50vw + 50%); padding-left: 1rem; padding-right: 1rem;">
+        <div class="slides-column flex flex-col min-h-0" style="height: 60vh; lg:height: calc(100vh - 8rem);">
+          <TalkSlides
+            slides={talk.data.slides}
+            basePath={`/talks/${slug}`}
+            talkId={slug}
+            syncWithAudio={true}
+            audioPlayerId={`audio-player-${slug}`}
+          />
+        </div>
 
-    <div class="text-fg-0 mt-2lh">
-      <a href="/talks" class="text-fg-0 link font-bold focus-visible:outline-none h-1lh">
-        ← Back to talks
-      </a>
-    </div>
+        <div class="transcript-column flex flex-col min-h-0" style="height: 60vh; lg:height: calc(100vh - 8rem);">
+          <AudioTranscript
+            audioPath={talk.data.audioPath}
+            transcriptPath={talk.data.transcriptPath}
+            talkId={slug}
+          />
+        </div>
+      </div>
+    ) : (
+      <MDContent Content={Content} components={{ a: Link }} />
+    )}
   </article>
 </Layout>
 
-<style>
-  .link:hover,
-  .link:focus {
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
-    margin-left: -0.5rem;
-    margin-right: -0.5rem;
-    background-color: var(--background0);
-    filter: invert(1);
+<style>{`
+  @media (min-width: 1024px) {
+    .talk-layout {
+      height: calc(100vh - 8rem);
+      grid-auto-rows: 1fr;
+    }
+    .talk-layout .slides-column,
+    .talk-layout .transcript-column {
+      height: auto;
+    }
   }
-</style>
+`}</style>

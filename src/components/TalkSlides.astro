@@ -20,9 +20,17 @@ interface Props {
    * ID for the talk (used for namespacing)
    */
   talkId: string;
+  /**
+   * Whether to sync slides with audio playback (requires audioPlayerId)
+   */
+  syncWithAudio?: boolean;
+  /**
+   * ID of the audio player to sync with (e.g., "audio-player-codegen-rust")
+   */
+  audioPlayerId?: string;
 }
 
-const { slides, basePath, talkId } = Astro.props;
+const { slides, basePath, talkId, syncWithAudio = false, audioPlayerId } = Astro.props;
 
 // Normalize slides to array format
 const slideList: Slide[] = typeof slides === "number"
@@ -49,75 +57,96 @@ const totalSlides = resolvedSlides.length;
 const containerId = `talk-slides-${talkId}`;
 ---
 
-<div id={containerId} class="talk-slides not-prose" tabindex="0">
-  <div class="slide-container bg-1 border-2 border-fg-2 relative" style="cursor: pointer;">
+<div id={containerId} class="talk-slides not-prose h-full flex flex-col" tabindex="0">
+  <div class="slide-container border-2 border-fg-2 relative flex-1 group" style="cursor: pointer; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;">
     <img
       src={resolvedSlides[0].url}
       alt="Slide 1"
       class="slide-image w-full h-auto"
+      style="max-width: 100%; max-height: 100%; object-fit: contain;"
     />
-  </div>
-
-  <div class="controls mt-2 flex items-center justify-between gap-2">
-    <button
-      class="btn-prev bg-2 text-accent hocus:bg-0 hocus:invert px-1 py-0.5 border-2 border-fg-0 outline-none font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-      disabled
-    >
-      ← Prev
-    </button>
-
-    <div class="slide-counter text-fg-1 font-mono">
-      1 / {totalSlides}
+    <div class="slide-nav-left" style="position: absolute; top: 0; bottom: 0; left: 0; right: 50%; display: flex; align-items: center; justify-content: flex-start; padding-left: 1ch; opacity: 0; transition: opacity 0.2s ease; pointer-events: auto; z-index: 100;">
+      <div class="i-pixel-arrow-alt-circle-left-solid" style="width: 3rem; height: 3rem; filter: drop-shadow(0 0 10px var(--background0)); pointer-events: none;"></div>
     </div>
-
-    <button
-      class="btn-next bg-2 text-accent hocus:bg-0 hocus:invert px-1 py-0.5 border-2 border-fg-0 outline-none font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-    >
-      Next →
-    </button>
-  </div>
-
-  <div class="keyboard-hints mt-1 text-fg-2 text-sm text-center">
-    <kbd class="px-1 bg-1 border border-fg-2">←</kbd>
-    <kbd class="px-1 bg-1 border border-fg-2">→</kbd>
-    <kbd class="px-1 bg-1 border border-fg-2">Space</kbd>
-    to navigate •
-    <kbd class="px-1 bg-1 border border-fg-2">Home</kbd>
-    <kbd class="px-1 bg-1 border border-fg-2">End</kbd>
-    to jump
+    <div class="slide-nav-right" style="position: absolute; top: 0; bottom: 0; left: 50%; right: 0; display: flex; align-items: center; justify-content: flex-end; padding-right: 1ch; opacity: 0; transition: opacity 0.2s ease; pointer-events: auto; z-index: 100;">
+      <div class="i-pixel-arrow-alt-circle-right-solid" style="width: 3rem; height: 3rem; filter: drop-shadow(0 0 10px var(--background0)); pointer-events: none;"></div>
+    </div>
   </div>
 </div>
 
-<script define:vars={{ containerId, resolvedSlides, totalSlides }}>
+<script define:vars={{ containerId, resolvedSlides, totalSlides, syncWithAudio, audioPlayerId }}>
   const container = document.getElementById(containerId);
   if (!container) throw new Error(`Container ${containerId} not found`);
 
   const img = container.querySelector(".slide-image");
-  const counter = container.querySelector(".slide-counter");
-  const btnPrev = container.querySelector(".btn-prev");
-  const btnNext = container.querySelector(".btn-next");
   const slideContainer = container.querySelector(".slide-container");
+  const navLeft = container.querySelector(".slide-nav-left");
+  const navRight = container.querySelector(".slide-nav-right");
 
   let currentSlide = 0;
+  let autoSyncEnabled = syncWithAudio;
 
   function updateSlide() {
     const slide = resolvedSlides[currentSlide];
     img.src = slide.url;
     img.alt = `Slide ${currentSlide + 1}`;
-    counter.textContent = `${currentSlide + 1} / ${totalSlides}`;
-    btnPrev.disabled = currentSlide === 0;
-    btnNext.disabled = currentSlide === totalSlides - 1;
+
+    // Don't set opacity here - let hover handlers manage it
+    // Just ensure the arrows can be shown/hidden based on position
+    if (currentSlide === 0) {
+      navLeft.setAttribute('data-disabled', 'true');
+    } else {
+      navLeft.removeAttribute('data-disabled');
+    }
+
+    if (currentSlide === totalSlides - 1) {
+      navRight.setAttribute('data-disabled', 'true');
+    } else {
+      navRight.removeAttribute('data-disabled');
+    }
   }
 
-  function goToSlide(index) {
+  function goToSlide(index, fromAudioSync = false) {
     currentSlide = Math.max(0, Math.min(index, totalSlides - 1));
     updateSlide();
+
+    // If user manually navigates, disable auto-sync temporarily
+    if (!fromAudioSync && autoSyncEnabled) {
+      autoSyncEnabled = false;
+      // Re-enable after a delay
+      setTimeout(() => {
+        autoSyncEnabled = syncWithAudio;
+      }, 3000);
+    }
   }
 
-  // Button clicks
-  btnPrev.addEventListener("click", () => goToSlide(currentSlide - 1));
-  btnNext.addEventListener("click", () => goToSlide(currentSlide + 1));
-  slideContainer.addEventListener("click", () => goToSlide(currentSlide + 1));
+  // Binary search to find the slide index for a given time
+  function findSlideIndexAtTime(time) {
+    // Find the last slide whose timestamp is <= current time
+    let result = 0;
+    for (let i = 0; i < resolvedSlides.length; i++) {
+      if (resolvedSlides[i].timestamp !== undefined && resolvedSlides[i].timestamp <= time) {
+        result = i;
+      } else {
+        break;
+      }
+    }
+    return result;
+  }
+
+  // Click handling with zones
+  slideContainer.addEventListener("click", (evt) => {
+    const rect = slideContainer.getBoundingClientRect();
+    const clickX = evt.clientX - rect.left;
+    const width = rect.width;
+
+    // Left third goes back, right two-thirds advances
+    if (clickX < width / 3) {
+      goToSlide(currentSlide - 1);
+    } else {
+      goToSlide(currentSlide + 1);
+    }
+  });
 
   // Keyboard events
   container.addEventListener("keydown", (evt) => {
@@ -135,31 +164,64 @@ const containerId = `talk-slides-${talkId}`;
       goToSlide(totalSlides - 1);
     }
   });
+
+  // Initialize arrow visibility
+  updateSlide();
+
+  // Handle hover to show/hide arrows based on zone
+  navLeft.addEventListener('mouseenter', () => {
+    if (!navLeft.hasAttribute('data-disabled')) {
+      navLeft.style.opacity = '0.7';
+    }
+  });
+
+  navLeft.addEventListener('mouseleave', () => {
+    navLeft.style.opacity = '0';
+  });
+
+  navRight.addEventListener('mouseenter', () => {
+    if (!navRight.hasAttribute('data-disabled')) {
+      navRight.style.opacity = '0.7';
+    }
+  });
+
+  navRight.addEventListener('mouseleave', () => {
+    navRight.style.opacity = '0';
+  });
+
+  // Audio sync setup
+  if (syncWithAudio && audioPlayerId) {
+    const audioPlayerContainer = document.getElementById(audioPlayerId);
+    if (audioPlayerContainer) {
+      const audio = audioPlayerContainer.querySelector('audio');
+      if (audio) {
+        // Sync slides with audio playback
+        audio.addEventListener('timeupdate', () => {
+          if (!autoSyncEnabled) return;
+
+          const time = audio.currentTime;
+          const targetSlide = findSlideIndexAtTime(time);
+
+          if (targetSlide !== currentSlide) {
+            goToSlide(targetSlide, true);
+          }
+        });
+
+        // Also sync on seeking
+        audio.addEventListener('seeked', () => {
+          if (!autoSyncEnabled) return;
+
+          const time = audio.currentTime;
+          const targetSlide = findSlideIndexAtTime(time);
+          goToSlide(targetSlide, true);
+        });
+      }
+    }
+  }
 </script>
 
 <style>
   .talk-slides {
     max-width: 100%;
-    margin: 2lh auto;
-  }
-
-  .slide-container {
-    position: relative;
-    aspect-ratio: 16 / 9;
-    overflow: hidden;
-  }
-
-  .slide-image {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-
-  kbd {
-    font-family: monospace;
-    font-size: 0.875em;
   }
 </style>

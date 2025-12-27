@@ -46,6 +46,16 @@ const talks = defineCollection({
     description: z.string().optional(),
     date: z.coerce.date(),
     event: z.string(),
+    location: z.string().optional(),
+    slides: z.union([
+      z.number(),
+      z.array(z.object({
+        image: z.string(),
+        timestamp: z.number().optional(),
+      }))
+    ]).optional(),
+    audioPath: z.string().optional(),
+    transcriptPath: z.string().optional(),
   }),
 });
 
