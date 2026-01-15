@@ -36,9 +36,9 @@ run = "vitest --ui"
 [tasks.prefix-codes]
 run = "bun scripts/prefix-codes.ts"
 
-[tasks.upload-images]
-run = "bun scripts/upload-images.ts"
-description = "Upload images to R2 and update manifest"
+[tasks.upload-assets]
+run = "bun scripts/upload-assets.ts"
+description = "Upload assets (images, audio) to R2 and update manifest"
 
 [tasks.deploy]
 run = "wrangler deploy"
