@@ -1,14 +1,14 @@
 #!/usr/bin/env bun
 
 /**
- * Upload images from public/assets to Cloudflare R2
+ * Upload assets (images, audio) from public/assets to Cloudflare R2
  *
  * This script:
- * - Scans public/assets for images (png, jpg, jpeg, webp, gif, svg)
- * - Generates SHA-256 hash for each image
+ * - Scans public/assets for media files (images: png, jpg, jpeg, webp, gif, svg; audio: m4a, mp3, wav, ogg)
+ * - Generates SHA-256 hash for each file
  * - Uploads to R2 with content-addressable key (hash.ext)
  * - Creates manifest mapping original paths to R2 URLs
- * - Skips uploads for images already in R2 (idempotent)
+ * - Skips uploads for files already in R2 (idempotent)
  *
  * Path structure:
  * - Local: public/assets/talks/codegen-in-rust/slide-1.png
@@ -29,10 +29,10 @@ import { join, relative } from "path";
 
 const BUCKET_NAME = "just-be-dev-assets";
 const CUSTOM_DOMAIN = "https://assets.just-be.dev";
-const IMAGE_DIR = join(import.meta.dir, "../public/assets");
+const ASSETS_DIR = join(import.meta.dir, "../public/assets");
 const MANIFEST_PATH = join(import.meta.dir, "../src/content/image-manifest.json");
 
-interface ImageManifest {
+interface AssetManifest {
   version: string;
   images: Record<string, {
     hash: string;
@@ -46,8 +46,13 @@ async function hashFile(filePath: string): Promise<string> {
   return createHash("sha256").update(content).digest("hex");
 }
 
-async function findImages(dir: string): Promise<string[]> {
-  const imageExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg'];
+async function findAssets(dir: string): Promise<string[]> {
+  const assetExtensions = [
+    // Images
+    '.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg',
+    // Audio
+    '.m4a', '.mp3', '.wav', '.ogg', '.aac', '.flac'
+  ];
   const results: string[] = [];
 
   async function walk(currentDir: string): Promise<void> {
@@ -58,7 +63,7 @@ async function findImages(dir: string): Promise<string[]> {
         await walk(fullPath);
       } else if (entry.isFile()) {
         const ext = entry.name.toLowerCase().slice(entry.name.lastIndexOf('.'));
-        if (imageExtensions.includes(ext)) {
+        if (assetExtensions.includes(ext)) {
           results.push(fullPath);
         }
       }
@@ -83,13 +88,13 @@ async function uploadToR2(localPath: string, key: string): Promise<void> {
   await $`wrangler r2 object put ${BUCKET_NAME}/${key} --file ${localPath} --remote`;
 }
 
-async function uploadImages() {
-  console.log(`Scanning images in: ${IMAGE_DIR}\n`);
+async function uploadAssets() {
+  console.log(`Scanning assets in: ${ASSETS_DIR}\n`);
 
-  const imagePaths = await findImages(IMAGE_DIR);
-  console.log(`Found ${imagePaths.length} images\n`);
+  const assetPaths = await findAssets(ASSETS_DIR);
+  console.log(`Found ${assetPaths.length} assets\n`);
 
-  const manifest: ImageManifest = {
+  const manifest: AssetManifest = {
     version: "1.0",
     images: {},
   };
@@ -97,13 +102,13 @@ async function uploadImages() {
   let uploadCount = 0;
   let skipCount = 0;
 
-  for (const imagePath of imagePaths) {
-    const hash = await hashFile(imagePath);
-    const ext = imagePath.split(".").pop()!;
+  for (const assetPath of assetPaths) {
+    const hash = await hashFile(assetPath);
+    const ext = assetPath.split(".").pop()!;
     const key = `${hash}.${ext}`;
 
     // Store path relative to public/assets (e.g., "talks/codegen-in-rust/slide-1.png")
-    const originalPath = relative(join(import.meta.dir, "../public/assets"), imagePath);
+    const originalPath = relative(join(import.meta.dir, "../public/assets"), assetPath);
 
     const exists = await checkR2Exists(key);
 
@@ -112,11 +117,11 @@ async function uploadImages() {
       skipCount++;
     } else {
       console.log(`⬆  ${originalPath} → ${key}`);
-      await uploadToR2(imagePath, key);
+      await uploadToR2(assetPath, key);
       uploadCount++;
     }
 
-    const stats = await Bun.file(imagePath).stat();
+    const stats = await Bun.file(assetPath).stat();
     manifest.images[originalPath] = {
       hash,
       size: stats.size,
@@ -126,10 +131,10 @@ async function uploadImages() {
 
   await writeFile(MANIFEST_PATH, JSON.stringify(manifest, null, 2) + "\n");
   console.log(`\n✅ Manifest written to ${MANIFEST_PATH}`);
-  console.log(`\nUploaded: ${uploadCount}, Skipped: ${skipCount}, Total: ${imagePaths.length}`);
+  console.log(`\nUploaded: ${uploadCount}, Skipped: ${skipCount}, Total: ${assetPaths.length}`);
 }
 
-uploadImages().catch((error) => {
+uploadAssets().catch((error) => {
   console.error("Fatal error:", error);
   process.exit(1);
 });
