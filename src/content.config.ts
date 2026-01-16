@@ -51,7 +51,7 @@ const talks = defineCollection({
       z.number(),
       z.array(z.object({
         image: z.string(),
-        timestamp: z.number().optional(),
+        timestamp: z.union([z.number(), z.string()]).optional(),
       }))
     ]).optional(),
     audioPath: z.string().optional(),
