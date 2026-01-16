@@ -90,11 +90,18 @@ const { audioPath, playerId } = Astro.props;
   playPauseBtn.addEventListener('click', () => {
     if (audio.paused) {
       audio.play();
-      playPauseBtn.textContent = '■';
     } else {
       audio.pause();
-      playPauseBtn.textContent = '►';
     }
+  });
+
+  // Update button state based on audio play/pause events
+  audio.addEventListener('play', () => {
+    playPauseBtn.textContent = '■';
+  });
+
+  audio.addEventListener('pause', () => {
+    playPauseBtn.textContent = '►';
   });
 
   // Update time display
