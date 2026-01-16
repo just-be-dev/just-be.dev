@@ -1,10 +1,10 @@
 #!/usr/bin/env bun
 
 /**
- * Upload assets (images, audio) from public/assets to Cloudflare R2
+ * Upload assets (images, audio, transcripts) from public/assets to Cloudflare R2
  *
  * This script:
- * - Scans public/assets for media files (images: png, jpg, jpeg, webp, gif, svg; audio: m4a, mp3, wav, ogg)
+ * - Scans public/assets for media files (images: png, jpg, jpeg, webp, gif, svg; audio: m4a, mp3, wav, ogg; transcripts: json)
  * - Generates SHA-256 hash for each file
  * - Uploads to R2 with content-addressable key (hash.ext)
  * - Creates manifest mapping original paths to R2 URLs
@@ -51,7 +51,9 @@ async function findAssets(dir: string): Promise<string[]> {
     // Images
     '.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg',
     // Audio
-    '.m4a', '.mp3', '.wav', '.ogg', '.aac', '.flac'
+    '.m4a', '.mp3', '.wav', '.ogg', '.aac', '.flac',
+    // Transcripts
+    '.json'
   ];
   const results: string[] = [];
 

@@ -151,6 +151,11 @@
       "size": 211241,
       "ext": "png"
     },
+    "talks/codegen-in-rust/transcript.json": {
+      "hash": "15dceaa191253ea1b4ff7ee0874ce4b70607239a27569dfd0181848a785af6b7",
+      "size": 794028,
+      "ext": "json"
+    },
     "talks/codegen-in-rust/codegen-42.png": {
       "hash": "7d6b797c361d7f79a931b0121f1f5f0dc063b560f5c6df31635a1c056b2fb7f3",
       "size": 171497,
