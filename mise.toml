@@ -48,5 +48,5 @@ run = "wrangler deploy"
 depends = ["build"]
 
 [tasks.transcribe]
-run = "python scripts/transcribe.py"
+run = "uv run --with openai-whisper python scripts/transcribe.py"
 description = "Generate word-level transcript from audio/video"
