@@ -9,7 +9,3 @@ enabled = true
 [assets]
 directory = "./dist"
 binding = "ASSETS"
-
-[[routes]]
-pattern = "just-be.dev"
-custom_domain = true
