@@ -1,5 +1,6 @@
 ---
 import TUIAudioPlayer from "./TUIAudioPlayer.astro";
+import { resolveAssetUrl } from "@/utils/assets";
 
 interface Word {
   word: string;
@@ -30,12 +31,19 @@ interface Props {
 const { audioPath, transcriptPath, talkId, class: className } = Astro.props;
 const containerId = `audio-transcript-${talkId}`;
 const playerId = `audio-player-${talkId}`;
+
+// Resolve asset URLs with local-first fallback
+// Remove leading /assets/ if present to get the path relative to public/assets
+const normalizedAudioPath = audioPath.replace(/^\/assets\//, '');
+const normalizedTranscriptPath = transcriptPath.replace(/^\/assets\//, '');
+const resolvedAudioUrl = await resolveAssetUrl(normalizedAudioPath) ?? audioPath;
+const resolvedTranscriptUrl = await resolveAssetUrl(normalizedTranscriptPath) ?? transcriptPath;
 ---
 
 <div id={containerId} class:list={["audio-transcript not-prose h-full flex flex-col", className]}>
   <!-- TUI Audio Player -->
   <div class="mb-1">
-    <TUIAudioPlayer audioPath={audioPath} playerId={playerId} />
+    <TUIAudioPlayer audioPath={resolvedAudioUrl} playerId={playerId} />
   </div>
 
   <!-- Transcript with WebTUI View -->
@@ -60,7 +68,7 @@ const playerId = `audio-player-${talkId}`;
   }
 `}></style>
 
-<script define:vars={{ containerId, playerId, transcriptPath }}>
+<script define:vars={{ containerId, playerId, resolvedTranscriptUrl }}>
   const container = document.getElementById(containerId);
   if (!container) throw new Error(`Container ${containerId} not found`);
 
@@ -146,7 +154,7 @@ const playerId = `audio-player-${talkId}`;
   });
 
   // Load transcript
-  fetch(transcriptPath)
+  fetch(resolvedTranscriptUrl)
     .then(res => {
       if (!res.ok) {
         throw new Error(`Failed to load transcript: ${res.status} ${res.statusText}`);

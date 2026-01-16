@@ -30,11 +30,11 @@ import { join, relative } from "path";
 const BUCKET_NAME = "just-be-dev-assets";
 const CUSTOM_DOMAIN = "https://assets.just-be.dev";
 const ASSETS_DIR = join(import.meta.dir, "../public/assets");
-const MANIFEST_PATH = join(import.meta.dir, "../src/content/image-manifest.json");
+const MANIFEST_PATH = join(import.meta.dir, "../src/content/manifest.json");
 
 interface AssetManifest {
   version: string;
-  images: Record<string, {
+  assets: Record<string, {
     hash: string;
     size: number;
     ext: string;
@@ -98,7 +98,7 @@ async function uploadAssets() {
 
   const manifest: AssetManifest = {
     version: "1.0",
-    images: {},
+    assets: {},
   };
 
   let uploadCount = 0;
@@ -124,7 +124,7 @@ async function uploadAssets() {
     }
 
     const stats = await Bun.file(assetPath).stat();
-    manifest.images[originalPath] = {
+    manifest.assets[originalPath] = {
       hash,
       size: stats.size,
       ext,

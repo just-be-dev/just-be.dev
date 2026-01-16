@@ -73,25 +73,25 @@ const devtools = defineCollection({
   }),
 });
 
-const images = defineCollection({
+const assets = defineCollection({
   loader: {
-    name: "image-manifest-loader",
+    name: "asset-manifest-loader",
     load: ({ store, logger }) => {
-      logger.info("Loading image manifest");
+      logger.info("Loading asset manifest");
 
-      const manifestPath = join(process.cwd(), "src/content/image-manifest.json");
+      const manifestPath = join(process.cwd(), "src/content/manifest.json");
       const manifestContent = readFileSync(manifestPath, "utf-8");
       const manifest = JSON.parse(manifestContent);
 
-      // Transform {images: {path: {metadata}}} to array of {id, ...metadata}
-      for (const [path, metadata] of Object.entries(manifest.images)) {
+      // Transform {assets: {path: {metadata}}} to array of {id, ...metadata}
+      for (const [path, metadata] of Object.entries(manifest.assets)) {
         store.set({
           id: path,
           data: metadata,
         });
       }
 
-      logger.info(`Loaded ${Object.keys(manifest.images).length} images`);
+      logger.info(`Loaded ${Object.keys(manifest.assets).length} assets`);
     },
   },
   schema: z.object({
@@ -101,4 +101,4 @@ const images = defineCollection({
   }),
 });
 
-export const collections = { blog, projects, research, pages, devtools, talks, images };
+export const collections = { blog, projects, research, pages, devtools, talks, assets };

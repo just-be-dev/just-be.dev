@@ -40,7 +40,7 @@ function downloadAssetInBackground(url: string, localPath: string): void {
 }
 
 /**
- * Resolve an image URL with local-first fallback and auto-download
+ * Resolve an asset URL with local-first fallback and auto-download
  *
  * Priority:
  * 1. If file exists locally in public/assets/, use /assets/{path}
@@ -48,10 +48,10 @@ function downloadAssetInBackground(url: string, localPath: string): void {
  *    - If in dev mode, kick off background download to public/assets/
  * 3. If not in manifest, return null
  *
- * @param path - Path relative to public/assets (e.g., "talks/codegen-in-rust/slide-1.png")
- * @returns URL to use for the image
+ * @param path - Path relative to public/assets (e.g., "talks/codegen-in-rust/slide-1.png", "talks/codegen-in-rust/audio.m4a")
+ * @returns URL to use for the asset
  */
-export async function resolveImageUrl(path: string): Promise<string | null> {
+export async function resolveAssetUrl(path: string): Promise<string | null> {
   const localPath = join(process.cwd(), "public/assets", path);
 
   // Check if file exists locally (for development)
@@ -60,7 +60,7 @@ export async function resolveImageUrl(path: string): Promise<string | null> {
   }
 
   // Get metadata from manifest (using path as entry ID) and construct R2 URL
-  const entry = await getEntry("images", path);
+  const entry = await getEntry("assets", path);
   const metadata = entry?.data;
 
   if (!metadata) {
@@ -80,8 +80,8 @@ export async function resolveImageUrl(path: string): Promise<string | null> {
   return r2Url;
 }
 
-export async function getImageMetadata(path: string) {
-  const entry = await getEntry("images", path);
+export async function getAssetMetadata(path: string) {
+  const entry = await getEntry("assets", path);
   return entry?.data ?? null;
 }
 
@@ -98,5 +98,5 @@ export async function resolveSlideImageUrl(
 ): Promise<string | null> {
   const normalizedBase = basePath.startsWith("/") ? basePath.slice(1) : basePath;
   const fullPath = `${normalizedBase}/${filename}`;
-  return resolveImageUrl(fullPath);
+  return resolveAssetUrl(fullPath);
 }

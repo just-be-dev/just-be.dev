@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "images": {
+  "assets": {
     "talks/codegen-in-rust/codegen-12.png": {
       "hash": "24fb1576348cd7ef61c14a9f0b1e36f7e041402016044170d75b06002d0e0fae",
       "size": 494456,
