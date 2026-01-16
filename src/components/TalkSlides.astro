@@ -77,19 +77,18 @@ const totalSlides = resolvedSlides.length;
 const containerId = `talk-slides-${talkId}`;
 ---
 
-<div id={containerId} class="talk-slides not-prose h-full flex flex-col" tabindex="0">
-  <div class="slide-container border-2 border-fg-2 relative flex-1 group" style="cursor: pointer; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+<div id={containerId} class="talk-slides not-prose flex flex-col h-full min-h-0" tabindex="0">
+  <div class="slide-container border-2 border-fg-2 relative flex-1 group cursor-pointer overflow-hidden min-h-0 flex items-center justify-center">
     <img
       src={resolvedSlides[0].url}
       alt="Slide 1"
-      class="slide-image w-full h-auto"
-      style="max-width: 100%; max-height: 100%; object-fit: contain;"
+      class="slide-image max-w-full max-h-full w-auto h-auto block flex-shrink"
     />
-    <div class="slide-nav-left" style="position: absolute; top: 0; bottom: 0; left: 0; right: 50%; display: flex; align-items: center; justify-content: flex-start; padding-left: 1ch; opacity: 0; transition: opacity 0.2s ease; pointer-events: auto; z-index: 100;">
-      <div class="i-pixel-arrow-alt-circle-left-solid" style="width: 3rem; height: 3rem; filter: drop-shadow(0 0 10px var(--background0)); pointer-events: none;"></div>
+    <div class="slide-nav-left absolute inset-y-0 left-0 right-1/2 flex items-center justify-start pl-[1ch] opacity-0 transition-opacity duration-200 pointer-events-auto z-100">
+      <div class="i-pixel-arrow-alt-circle-left-solid w-12 h-12 pointer-events-none" style="filter: drop-shadow(0 0 10px var(--background0));"></div>
     </div>
-    <div class="slide-nav-right" style="position: absolute; top: 0; bottom: 0; left: 50%; right: 0; display: flex; align-items: center; justify-content: flex-end; padding-right: 1ch; opacity: 0; transition: opacity 0.2s ease; pointer-events: auto; z-index: 100;">
-      <div class="i-pixel-arrow-alt-circle-right-solid" style="width: 3rem; height: 3rem; filter: drop-shadow(0 0 10px var(--background0)); pointer-events: none;"></div>
+    <div class="slide-nav-right absolute inset-y-0 left-1/2 right-0 flex items-center justify-end pr-[1ch] opacity-0 transition-opacity duration-200 pointer-events-auto z-100">
+      <div class="i-pixel-arrow-alt-circle-right-solid w-12 h-12 pointer-events-none" style="filter: drop-shadow(0 0 10px var(--background0));"></div>
     </div>
   </div>
 </div>
@@ -209,34 +208,44 @@ const containerId = `talk-slides-${talkId}`;
     navRight.style.opacity = '0';
   });
 
-  // Audio sync setup
-  if (syncWithAudio && audioPlayerId) {
-    const audioPlayerContainer = document.getElementById(audioPlayerId);
-    if (audioPlayerContainer) {
-      const audio = audioPlayerContainer.querySelector('audio');
-      if (audio) {
-        // Sync slides with audio playback
-        audio.addEventListener('timeupdate', () => {
-          if (!autoSyncEnabled) return;
+  // Audio sync setup - defer until DOM is ready to ensure audio element exists
+  function setupAudioSync() {
+    if (syncWithAudio && audioPlayerId) {
+      const audioPlayerContainer = document.getElementById(audioPlayerId);
+      if (audioPlayerContainer) {
+        const audio = audioPlayerContainer.querySelector('audio');
+        if (audio) {
+          // Sync slides with audio playback
+          audio.addEventListener('timeupdate', () => {
+            if (!autoSyncEnabled) return;
 
-          const time = audio.currentTime;
-          const targetSlide = findSlideIndexAtTime(time);
+            const time = audio.currentTime;
+            const targetSlide = findSlideIndexAtTime(time);
 
-          if (targetSlide !== currentSlide) {
+            if (targetSlide !== currentSlide) {
+              goToSlide(targetSlide, true);
+            }
+          });
+
+          // Also sync on seeking
+          audio.addEventListener('seeked', () => {
+            if (!autoSyncEnabled) return;
+
+            const time = audio.currentTime;
+            const targetSlide = findSlideIndexAtTime(time);
             goToSlide(targetSlide, true);
-          }
-        });
-
-        // Also sync on seeking
-        audio.addEventListener('seeked', () => {
-          if (!autoSyncEnabled) return;
-
-          const time = audio.currentTime;
-          const targetSlide = findSlideIndexAtTime(time);
-          goToSlide(targetSlide, true);
-        });
+          });
+        }
       }
     }
+  }
+
+  // Wait for DOM to be fully loaded before setting up audio sync
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupAudioSync);
+  } else {
+    // DOM is already loaded, setup immediately
+    setupAudioSync();
   }
 </script>
 

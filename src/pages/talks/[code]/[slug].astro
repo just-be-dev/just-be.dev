@@ -4,9 +4,10 @@ import FormattedDate from "@/components/FormattedDate.astro";
 import Link from "@/components/Link.astro";
 import MDContent from "@/components/MDContent.astro";
 import TalkSlides from "@/components/TalkSlides.astro";
-import AudioTranscript from "@/components/AudioTranscript.astro";
+import TUIAudioPlayer from "@/components/TUIAudioPlayer.astro";
 import Layout from "@/layouts/Layout.astro";
 import { Code } from "@/utils/code";
+import { resolveAssetUrl } from "@/utils/assets";
 
 export async function getStaticPaths() {
   const talks = await getCollection("talks");
@@ -27,6 +28,15 @@ const hasSlides = talk.data.slides !== undefined;
 const hasAudio = talk.data.audioPath !== undefined;
 const hasTranscript = talk.data.transcriptPath !== undefined;
 const hasInteractiveLayout = hasSlides && hasAudio && hasTranscript;
+
+// Resolve asset URLs if interactive layout
+let resolvedAudioUrl, resolvedTranscriptUrl;
+if (hasInteractiveLayout) {
+  const normalizedAudioPath = talk.data.audioPath.replace(/^\/assets\//, '');
+  const normalizedTranscriptPath = talk.data.transcriptPath.replace(/^\/assets\//, '');
+  resolvedAudioUrl = await resolveAssetUrl(normalizedAudioPath) ?? talk.data.audioPath;
+  resolvedTranscriptUrl = await resolveAssetUrl(normalizedTranscriptPath) ?? talk.data.transcriptPath;
+}
 ---
 
 <Layout title={`${talk.data.title} - Just Be`} description={talk.data.description}>
@@ -48,8 +58,9 @@ const hasInteractiveLayout = hasSlides && hasAudio && hasTranscript;
     </header>
 
     {hasInteractiveLayout ? (
-      <div class="talk-layout grid grid-cols-1 lg:grid-cols-2 gap-4 not-prose" style="margin-left: calc(-50vw + 50%); margin-right: calc(-50vw + 50%); padding-left: 1rem; padding-right: 1rem;">
-        <div class="slides-column flex flex-col min-h-0" style="height: 60vh; lg:height: calc(100vh - 8rem);">
+      <div id="talk-layout-container" class="talk-layout not-prose px-4" style="margin-left: calc(-50vw + 50%); margin-right: calc(-50vw + 50%);">
+        <!-- Slides -->
+        <div id="slides-section" class="slides-item">
           <TalkSlides
             slides={talk.data.slides}
             basePath={`/talks/${slug}`}
@@ -59,12 +70,21 @@ const hasInteractiveLayout = hasSlides && hasAudio && hasTranscript;
           />
         </div>
 
-        <div class="transcript-column flex flex-col min-h-0" style="height: 60vh; lg:height: calc(100vh - 8rem);">
-          <AudioTranscript
-            audioPath={talk.data.audioPath}
-            transcriptPath={talk.data.transcriptPath}
-            talkId={slug}
-          />
+        <!-- Audio Player -->
+        <div class="audio-item">
+          <TUIAudioPlayer audioPath={resolvedAudioUrl} playerId={`audio-player-${slug}`} />
+        </div>
+
+        <!-- Transcript -->
+        <div class="transcript-item">
+          <div is-="view" class="h-full border-2 border-fg-2 bg-0">
+            <div is-="view-content" class="transcript-container h-full overflow-y-auto">
+              <div class="transcript-loading text-fg-2 text-center py-2">
+                Loading transcript...
+              </div>
+              <div class="transcript-content hidden"></div>
+            </div>
+          </div>
         </div>
       </div>
     ) : (
@@ -73,15 +93,196 @@ const hasInteractiveLayout = hasSlides && hasAudio && hasTranscript;
   </article>
 </Layout>
 
-<style>{`
-  @media (min-width: 1024px) {
+<style is:global>
+  /* Transcript word highlighting */
+  .transcript-word {
+    display: inline;
+    transition: background-color 0.1s ease, color 0.1s ease;
+  }
+
+  .transcript-word.active {
+    background-color: var(--foreground0);
+    color: var(--background0);
+  }
+
+  .transcript-content {
+    line-height: 1.5;
+    padding: 1ch;
+  }
+
+  /* Mobile: Vertical stack - slides, audio, transcript */
+  @media (max-width: 1023px) {
     .talk-layout {
-      height: calc(100vh - 8rem);
-      grid-auto-rows: 1fr;
+      display: grid;
+      height: calc(100vh - 10lh);
+      grid-template-columns: 1fr;
+      grid-template-rows: 1fr auto 1fr;
+      gap: 1lh;
     }
-    .talk-layout .slides-column,
-    .talk-layout .transcript-column {
-      height: auto;
+
+    .talk-layout .slides-item {
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .talk-layout .audio-item {
+      /* Fixed height for audio player */
+    }
+
+    .talk-layout .transcript-item {
+      min-height: 0;
+      overflow: hidden;
     }
   }
-`}</style>
+
+  /* Desktop: Side-by-side with audio + transcript on right */
+  @media (min-width: 1024px) {
+    .talk-layout {
+      display: grid;
+      height: calc(100vh - 12lh);
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr;
+      gap: 1rem;
+    }
+
+    .talk-layout .slides-item {
+      grid-row: 1;
+      grid-column: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .talk-layout .audio-item {
+      grid-row: 1;
+      grid-column: 2;
+      align-self: start;
+    }
+
+    .talk-layout .transcript-item {
+      grid-row: 1;
+      grid-column: 2;
+      align-self: end;
+      min-height: 0;
+      height: calc(100% - 3lh); /* Full height minus audio player height and gap */
+    }
+  }
+</style>
+
+<script define:vars={{ slug, resolvedTranscriptUrl }}>
+  const audioPlayerId = `audio-player-${slug}`;
+  const slidesSection = document.getElementById('slides-section');
+  const audioPlayerContainer = document.getElementById(audioPlayerId);
+  const audio = audioPlayerContainer?.querySelector('audio');
+  const transcriptContent = document.querySelector('.transcript-content');
+  const transcriptLoading = document.querySelector('.transcript-loading');
+  const transcriptContainer = document.querySelector('.transcript-container');
+
+  let currentWordIndex = -1;
+  let autoscroll = true;
+  let wordElements = [];
+
+  // Scroll to slides when audio plays (mobile only)
+  if (slidesSection && audio) {
+    audio.addEventListener('play', () => {
+      if (window.innerWidth < 1024) {
+        slidesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  }
+
+  // Transcript word highlighting
+  function findWordIndexAtTime(time) {
+    if (!wordElements || wordElements.length === 0) return -1;
+    let left = 0;
+    let right = wordElements.length - 1;
+    let result = -1;
+    while (left <= right) {
+      const mid = Math.floor((left + right) / 2);
+      const wordData = wordElements[mid].dataset;
+      const wordStart = parseFloat(wordData.start);
+      const wordEnd = parseFloat(wordData.end);
+      if (time >= wordStart && time <= wordEnd) {
+        return mid;
+      } else if (time < wordStart) {
+        right = mid - 1;
+      } else {
+        result = mid;
+        left = mid + 1;
+      }
+    }
+    return result;
+  }
+
+  function highlightWord(index) {
+    if (index === currentWordIndex) return;
+    if (currentWordIndex >= 0 && wordElements[currentWordIndex]) {
+      wordElements[currentWordIndex].classList.remove('active');
+    }
+    if (index >= 0 && wordElements[index]) {
+      const wordEl = wordElements[index];
+      wordEl.classList.add('active');
+      if (autoscroll && transcriptContainer) {
+        const wordRect = wordEl.getBoundingClientRect();
+        const containerRect = transcriptContainer.getBoundingClientRect();
+        if (wordRect.top < containerRect.top || wordRect.bottom > containerRect.bottom) {
+          wordEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    }
+    currentWordIndex = index;
+  }
+
+  if (audio) {
+    audio.addEventListener('timeupdate', () => {
+      const index = findWordIndexAtTime(audio.currentTime);
+      highlightWord(index);
+    });
+    audio.addEventListener('seeked', () => {
+      const index = findWordIndexAtTime(audio.currentTime);
+      highlightWord(index);
+    });
+  }
+
+  // Load transcript
+  if (resolvedTranscriptUrl && transcriptContent && transcriptLoading) {
+    fetch(resolvedTranscriptUrl)
+      .then(res => {
+        if (!res.ok) throw new Error(`Failed to load transcript: ${res.status}`);
+        return res.json();
+      })
+      .then(data => {
+        const html = [];
+        wordElements = [];
+        data.segments.forEach((segment, segIndex) => {
+          if (segment.words && segment.words.length > 0) {
+            segment.words.forEach((wordData, wordIndex) => {
+              html.push(
+                `<span class="transcript-word text-fg-0 hocus:text-accent cursor-pointer" ` +
+                `data-start="${wordData.start}" data-end="${wordData.end}" data-segment="${segIndex}" data-word="${wordIndex}">` +
+                `${wordData.word}</span> `
+              );
+            });
+          } else {
+            html.push(`<span class="text-fg-0">${segment.text}</span>`);
+          }
+        });
+        transcriptContent.innerHTML = html.join('');
+        wordElements = Array.from(transcriptContent.querySelectorAll('.transcript-word'));
+        wordElements.forEach(wordEl => {
+          wordEl.addEventListener('click', () => {
+            if (audio) {
+              audio.currentTime = parseFloat(wordEl.dataset.start);
+              if (audio.paused) audio.play();
+            }
+          });
+        });
+        transcriptLoading.classList.add('hidden');
+        transcriptContent.classList.remove('hidden');
+      })
+      .catch(err => {
+        console.error('Failed to load transcript:', err);
+        transcriptLoading.textContent = 'Failed to load transcript.';
+        transcriptLoading.classList.add('text-fg-1');
+      });
+  }
+</script>
