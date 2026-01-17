@@ -1,15 +1,12 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:best-practices",
-    "mergeConfidence:all-badges"
-  ],
-  "minimumReleaseAge": "7 days 12 hours",
-  "packageRules": [
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: ["config:best-practices", "mergeConfidence:all-badges"],
+  minimumReleaseAge: "7 days 12 hours",
+  packageRules: [
     {
-      "description": "Automerge TypeScript type definitions if CI passes",
-      "matchPackagePatterns": ["^@types/"],
-      "automerge": true
-    }
-  ]
+      description: "Automerge TypeScript type definitions if CI passes",
+      automerge: true,
+      matchPackageNames: ["/^@types//"],
+    },
+  ],
 }
