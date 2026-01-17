@@ -2,6 +2,8 @@
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: ["config:best-practices", "mergeConfidence:all-badges"],
   minimumReleaseAge: "7 days 12 hours",
+  prCreation: "not-pending",
+  internalChecksFilter: "strict",
   packageRules: [
     {
       description: "Automerge TypeScript type definitions if CI passes",
