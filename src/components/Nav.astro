@@ -48,7 +48,7 @@ function highlightLabel(label: string, keyChar: string) {
 <nav
   class="bg-1 fixed top-0 right-0 left-0 z-10 flex h-lh items-center justify-between lg:justify-start"
 >
-  <div class="flex">
+  <div class="nav-tabs flex max-lg:overflow-x-auto">
     {
       tabs.map((tab) => {
         const active = isActive(tab.href, currentPath);
@@ -58,7 +58,10 @@ function highlightLabel(label: string, keyChar: string) {
           <a
             href={tab.href}
             data-key={tab.keyChar}
-            class:list={["nav-link bg-1 transition-filter flex items-center px-1", { active, current }]}
+            class:list={[
+              "nav-link bg-1 transition-filter flex shrink-0 items-center px-1",
+              { active, current },
+            ]}
             tabindex={current ? -1 : undefined}
           >
             {highlighted.before}
@@ -133,6 +136,15 @@ function highlightLabel(label: string, keyChar: string) {
 </nav>
 
 <style>
+  .nav-tabs {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+  }
+
+  .nav-tabs::-webkit-scrollbar {
+    display: none; /* Chrome/Safari/Opera */
+  }
+
   .nav-link {
     display: flex;
     align-items: center;
@@ -184,3 +196,11 @@ function highlightLabel(label: string, keyChar: string) {
     outline: none;
   }
 </style>
+
+<script>
+  // Scroll active tab into view on page load
+  const activeTab = document.querySelector(".nav-tabs .nav-link.active");
+  if (activeTab) {
+    activeTab.scrollIntoView({ inline: "center", block: "nearest" });
+  }
+</script>
