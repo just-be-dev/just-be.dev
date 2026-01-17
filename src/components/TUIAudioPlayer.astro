@@ -1,0 +1,152 @@
+---
+interface Props {
+  audioPath: string;
+  playerId: string;
+}
+
+const { audioPath, playerId } = Astro.props;
+---
+
+<div id={playerId} class="tui-audio-player bg-0 border-2 border-fg-2 px-1 py-0.5 font-mono text-sm w-full">
+  <audio class="hidden">
+    <source src={audioPath} type="audio/mp4" />
+    <source src={audioPath} type="audio/m4a" />
+    <source src={audioPath} type="audio/mpeg" />
+  </audio>
+
+  <div class="flex items-center gap-2">
+    <button class="play-pause-btn text-fg-0 px-1 outline-none" aria-label="Play/Pause">
+      ►
+    </button>
+
+    <span class="time-display text-fg-1 whitespace-nowrap">
+      <span class="current-time">00:00</span>
+      <span class="text-fg-2">/</span>
+      <span class="total-time">00:00</span>
+    </span>
+
+    <div class="progress-bar flex-1 cursor-pointer">
+      <span class="progress-display text-fg-0"></span>
+    </div>
+  </div>
+</div>
+
+<script define:vars={{ playerId }}>
+  const container = document.getElementById(playerId);
+  if (!container) throw new Error(`Audio player ${playerId} not found`);
+
+  const audio = container.querySelector('audio');
+  const playPauseBtn = container.querySelector('.play-pause-btn');
+  const currentTimeEl = container.querySelector('.current-time');
+  const totalTimeEl = container.querySelector('.total-time');
+  const progressBar = container.querySelector('.progress-bar');
+  const progressDisplay = container.querySelector('.progress-display');
+
+  let progressChars = 25; // Default, will be calculated dynamically
+
+  // Calculate how many characters fit in the progress bar
+  function calculateProgressChars() {
+    // Create a temporary span to measure character width
+    const tempSpan = document.createElement('span');
+    tempSpan.textContent = '█';
+    tempSpan.style.visibility = 'hidden';
+    tempSpan.style.position = 'absolute';
+    tempSpan.className = progressDisplay.className;
+    document.body.appendChild(tempSpan);
+
+    const charWidth = tempSpan.offsetWidth;
+    document.body.removeChild(tempSpan);
+
+    const availableWidth = progressBar.offsetWidth;
+    progressChars = Math.floor(availableWidth / charWidth);
+  }
+
+  function formatTime(seconds) {
+    if (!isFinite(seconds)) return '00:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+
+  function generateProgressBar(filled, total) {
+    const progress = total > 0 ? filled / total : 0;
+    const fillCount = Math.round(progress * progressChars);
+    const emptyCount = progressChars - fillCount;
+    return '█'.repeat(fillCount) + '░'.repeat(emptyCount);
+  }
+
+  function updateProgress() {
+    const progressText = generateProgressBar(audio.currentTime, audio.duration);
+    progressDisplay.textContent = progressText;
+    currentTimeEl.textContent = formatTime(audio.currentTime);
+  }
+
+  function updateTotalTime() {
+    totalTimeEl.textContent = formatTime(audio.duration);
+    updateProgress();
+  }
+
+  // Play/pause toggle
+  playPauseBtn.addEventListener('click', () => {
+    if (audio.paused) {
+      audio.play();
+    } else {
+      audio.pause();
+    }
+  });
+
+  // Update button state based on audio play/pause events
+  audio.addEventListener('play', () => {
+    playPauseBtn.textContent = '■';
+  });
+
+  audio.addEventListener('pause', () => {
+    playPauseBtn.textContent = '►';
+  });
+
+  // Update time display
+  audio.addEventListener('timeupdate', updateProgress);
+  audio.addEventListener('loadedmetadata', updateTotalTime);
+  audio.addEventListener('durationchange', updateTotalTime);
+
+  // Seek on progress bar click
+  progressBar.addEventListener('click', (e) => {
+    const rect = progressBar.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const progress = clickX / rect.width;
+    audio.currentTime = progress * audio.duration;
+  });
+
+  // Keyboard shortcuts
+  container.addEventListener('keydown', (e) => {
+    if (e.key === ' ') {
+      e.preventDefault();
+      playPauseBtn.click();
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      audio.currentTime = Math.max(0, audio.currentTime - 5);
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      audio.currentTime = Math.min(audio.duration, audio.currentTime + 5);
+    }
+  });
+
+  // Calculate progress bar width and initialize
+  calculateProgressChars();
+
+  if (audio.readyState >= 1) {
+    updateTotalTime();
+  }
+
+  // Recalculate on window resize
+  window.addEventListener('resize', () => {
+    calculateProgressChars();
+    updateProgress();
+  });
+</script>
+
+<style>
+  .tui-audio-player {
+    user-select: none;
+  }
+</style>

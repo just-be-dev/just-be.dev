@@ -1,0 +1,239 @@
+---
+import TUIAudioPlayer from "./TUIAudioPlayer.astro";
+import { resolveAssetUrl } from "@/utils/assets";
+
+interface Word {
+  word: string;
+  start: number;
+  end: number;
+}
+
+interface Segment {
+  start: number;
+  end: number;
+  text: string;
+  words: Word[];
+}
+
+interface Transcript {
+  language: string;
+  duration: number;
+  segments: Segment[];
+}
+
+interface Props {
+  audioPath: string;
+  transcriptPath: string;
+  talkId: string;
+  class?: string;
+}
+
+const { audioPath, transcriptPath, talkId, class: className } = Astro.props;
+const containerId = `audio-transcript-${talkId}`;
+const playerId = `audio-player-${talkId}`;
+
+// Resolve asset URLs with local-first fallback
+// Remove leading /assets/ if present to get the path relative to public/assets
+const normalizedAudioPath = audioPath.replace(/^\/assets\//, '');
+const normalizedTranscriptPath = transcriptPath.replace(/^\/assets\//, '');
+const resolvedAudioUrl = await resolveAssetUrl(normalizedAudioPath) ?? audioPath;
+const resolvedTranscriptUrl = await resolveAssetUrl(normalizedTranscriptPath) ?? transcriptPath;
+---
+
+<div id={containerId} class:list={["audio-transcript not-prose h-full flex flex-col", className]}>
+  <!-- TUI Audio Player -->
+  <div class="mb-1">
+    <TUIAudioPlayer audioPath={resolvedAudioUrl} playerId={playerId} />
+  </div>
+
+  <!-- Transcript with WebTUI View -->
+  <div is-="view" class="flex-1 overflow-hidden border-2 border-fg-2 bg-0">
+    <div is-="view-content" class="transcript-container h-full overflow-y-auto" style="position: relative;">
+      <div class="transcript-loading text-fg-2 text-center py-2">
+        Loading transcript...
+      </div>
+      <div class="transcript-content hidden"></div>
+    </div>
+  </div>
+</div>
+
+<style set:html={`
+  .transcript-word {
+    display: inline;
+  }
+
+  .transcript-word.active {
+    background-color: var(--foreground0);
+    color: var(--background0);
+  }
+`}></style>
+
+<script define:vars={{ containerId, playerId, resolvedTranscriptUrl }}>
+  const container = document.getElementById(containerId);
+  if (!container) throw new Error(`Container ${containerId} not found`);
+
+  const audioPlayer = document.getElementById(playerId);
+  const audio = audioPlayer.querySelector('audio');
+  const transcriptContent = container.querySelector('.transcript-content');
+  const transcriptLoading = container.querySelector('.transcript-loading');
+  const transcriptContainer = container.querySelector('.transcript-container');
+
+  let transcript = null;
+  let currentWordIndex = -1;
+  let autoscroll = true;
+  let wordElements = [];
+
+  // Binary search to find current word index based on time
+  function findWordIndexAtTime(time) {
+    if (!wordElements || wordElements.length === 0) return -1;
+
+    let left = 0;
+    let right = wordElements.length - 1;
+    let result = -1;
+
+    while (left <= right) {
+      const mid = Math.floor((left + right) / 2);
+      const wordData = wordElements[mid].dataset;
+      const wordStart = parseFloat(wordData.start);
+      const wordEnd = parseFloat(wordData.end);
+
+      if (time >= wordStart && time <= wordEnd) {
+        return mid;
+      } else if (time < wordStart) {
+        right = mid - 1;
+      } else {
+        result = mid;
+        left = mid + 1;
+      }
+    }
+
+    return result;
+  }
+
+  // Highlight word at index
+  function highlightWord(index) {
+    if (index === currentWordIndex) return;
+
+    // Remove previous active class
+    if (currentWordIndex >= 0 && wordElements[currentWordIndex]) {
+      wordElements[currentWordIndex].classList.remove('active');
+    }
+
+    // Add new highlight
+    if (index >= 0 && wordElements[index]) {
+      const wordEl = wordElements[index];
+      wordEl.classList.add('active');
+
+      // Scroll into view if autoscroll enabled
+      if (autoscroll) {
+        const wordRect = wordEl.getBoundingClientRect();
+        const transcriptContainerRect = transcriptContainer.getBoundingClientRect();
+
+        // Check if word is outside visible area
+        if (wordRect.top < transcriptContainerRect.top || wordRect.bottom > transcriptContainerRect.bottom) {
+          wordEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    }
+
+    currentWordIndex = index;
+  }
+
+  // Handle audio timeupdate
+  audio.addEventListener('timeupdate', () => {
+    const time = audio.currentTime;
+    const index = findWordIndexAtTime(time);
+    highlightWord(index);
+  });
+
+  // Handle seeking
+  audio.addEventListener('seeked', () => {
+    const time = audio.currentTime;
+    const index = findWordIndexAtTime(time);
+    highlightWord(index);
+  });
+
+  // Load transcript
+  fetch(resolvedTranscriptUrl)
+    .then(res => {
+      if (!res.ok) {
+        throw new Error(`Failed to load transcript: ${res.status} ${res.statusText}`);
+      }
+      return res.json();
+    })
+    .then(data => {
+      transcript = data;
+      renderTranscript();
+      transcriptLoading.classList.add('hidden');
+      transcriptContent.classList.remove('hidden');
+    })
+    .catch(err => {
+      console.error('Failed to load transcript:', err);
+      transcriptLoading.textContent = 'Failed to load transcript. The transcription may still be processing.';
+      transcriptLoading.classList.add('text-fg-1');
+    });
+
+  function renderTranscript() {
+    const html = [];
+    wordElements = [];
+
+    transcript.segments.forEach((segment, segIndex) => {
+      if (segment.words && segment.words.length > 0) {
+        segment.words.forEach((wordData, wordIndex) => {
+          const word = wordData.word;
+          const start = wordData.start;
+          const end = wordData.end;
+
+          html.push(
+            `<span class="transcript-word text-fg-0 hocus:text-accent cursor-pointer" ` +
+            `data-start="${start}" data-end="${end}" data-segment="${segIndex}" data-word="${wordIndex}">` +
+            `${word}</span> `  // Added space after closing tag
+          );
+        });
+      } else {
+        // Fallback to segment text if no word-level timestamps
+        html.push(`<span class="text-fg-0">${segment.text}</span>`);
+      }
+    });
+
+    transcriptContent.innerHTML = html.join('');
+
+    // Cache word elements
+    wordElements = Array.from(transcriptContent.querySelectorAll('.transcript-word'));
+
+    // Add click handlers to seek to word
+    wordElements.forEach(wordEl => {
+      wordEl.addEventListener('click', () => {
+        const start = parseFloat(wordEl.dataset.start);
+        audio.currentTime = start;
+        if (audio.paused) {
+          audio.play();
+        }
+      });
+    });
+  }
+</script>
+
+<style is:global>
+  .audio-transcript {
+    max-width: 100%;
+  }
+
+  .audio-container audio {
+    display: block;
+  }
+
+  .transcript-word {
+    display: inline;
+    transition: background-color 0.1s ease, color 0.1s ease;
+  }
+
+  .transcript-word.active {
+    background-color: var(--foreground0);
+    color: var(--background0);
+  }
+
+  .transcript-content {
+    line-height: 1;
+  }
+</style>

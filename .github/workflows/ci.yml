@@ -3,6 +3,9 @@ name: CI
 on:
   push:
 
+env:
+  MISE_DISABLE_TOOLS: ffmpeg
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest

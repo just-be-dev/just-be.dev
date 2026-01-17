@@ -1,10 +1,10 @@
 #!/usr/bin/env bun
 
 /**
- * Upload assets (images, audio) from public/assets to Cloudflare R2
+ * Upload assets (images, audio, transcripts) from public/assets to Cloudflare R2
  *
  * This script:
- * - Scans public/assets for media files (images: png, jpg, jpeg, webp, gif, svg; audio: m4a, mp3, wav, ogg)
+ * - Scans public/assets for media files (images: png, jpg, jpeg, webp, gif, svg; audio: m4a, mp3, wav, ogg; transcripts: json)
  * - Generates SHA-256 hash for each file
  * - Uploads to R2 with content-addressable key (hash.ext)
  * - Creates manifest mapping original paths to R2 URLs
@@ -30,11 +30,11 @@ import { join, relative } from "path";
 const BUCKET_NAME = "just-be-dev-assets";
 const CUSTOM_DOMAIN = "https://assets.just-be.dev";
 const ASSETS_DIR = join(import.meta.dir, "../public/assets");
-const MANIFEST_PATH = join(import.meta.dir, "../src/content/image-manifest.json");
+const MANIFEST_PATH = join(import.meta.dir, "../src/content/manifest.json");
 
 interface AssetManifest {
   version: string;
-  images: Record<string, {
+  assets: Record<string, {
     hash: string;
     size: number;
     ext: string;
@@ -51,7 +51,9 @@ async function findAssets(dir: string): Promise<string[]> {
     // Images
     '.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg',
     // Audio
-    '.m4a', '.mp3', '.wav', '.ogg', '.aac', '.flac'
+    '.m4a', '.mp3', '.wav', '.ogg', '.aac', '.flac',
+    // Transcripts
+    '.json'
   ];
   const results: string[] = [];
 
@@ -96,7 +98,7 @@ async function uploadAssets() {
 
   const manifest: AssetManifest = {
     version: "1.0",
-    images: {},
+    assets: {},
   };
 
   let uploadCount = 0;
@@ -122,7 +124,7 @@ async function uploadAssets() {
     }
 
     const stats = await Bun.file(assetPath).stat();
-    manifest.images[originalPath] = {
+    manifest.assets[originalPath] = {
       hash,
       size: stats.size,
       ext,

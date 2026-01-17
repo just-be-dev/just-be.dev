@@ -1,6 +1,9 @@
 [tools]
 bun = "1.3.5"
 lefthook = "2.0.13"
+python = "3.11"
+ffmpeg = "latest"
+uv = "latest"
 
 [settings]
 experimental = true
@@ -43,3 +46,7 @@ description = "Upload assets (images, audio) to R2 and update manifest"
 [tasks.deploy]
 run = "wrangler deploy"
 depends = ["build"]
+
+[tasks.transcribe]
+run = "uv run --with openai-whisper python scripts/transcribe.py"
+description = "Generate word-level transcript from audio/video"

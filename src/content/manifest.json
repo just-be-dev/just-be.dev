@@ -1,7 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2025-12-23T06:30:13.000Z",
-  "images": {
+  "assets": {
     "talks/codegen-in-rust/codegen-12.png": {
       "hash": "24fb1576348cd7ef61c14a9f0b1e36f7e041402016044170d75b06002d0e0fae",
       "size": 494456,
@@ -117,6 +116,11 @@
       "size": 348305,
       "ext": "png"
     },
+    "talks/codegen-in-rust/audio.m4a": {
+      "hash": "47bc75d9c85e4e741cf40e0b0930b90552a0a2d550be0412c5ac54695c0c5ca9",
+      "size": 40263262,
+      "ext": "m4a"
+    },
     "talks/codegen-in-rust/codegen-51.png": {
       "hash": "3bcd2c5c41ba8b5ce1d9ef6d78b280ee110519263067553aa0aa25c16c05cd6c",
       "size": 361947,
@@ -146,6 +150,11 @@
       "hash": "e2ba17220515aa85a548990240329b2c28f54a60e36f2c63ebd5beb812783c96",
       "size": 211241,
       "ext": "png"
+    },
+    "talks/codegen-in-rust/transcript.json": {
+      "hash": "0f340aaa4c3a847e5e9f2db704a762ca0017e609acf871ce653e5e82c6a7d45f",
+      "size": 794127,
+      "ext": "json"
     },
     "talks/codegen-in-rust/codegen-42.png": {
       "hash": "7d6b797c361d7f79a931b0121f1f5f0dc063b560f5c6df31635a1c056b2fb7f3",
