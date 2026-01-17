@@ -4,7 +4,7 @@
     "config:best-practices",
     "mergeConfidence:all-badges"
   ],
-  "minimumReleaseAge": "7 days",
+  "minimumReleaseAge": "7 days 12 hours",
   "packageRules": [
     {
       "description": "Automerge TypeScript type definitions if CI passes",
