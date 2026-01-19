@@ -3,7 +3,6 @@ import { glob, file } from "astro/loaders";
 import { feedLoader } from "@ascorbic/feed-loader";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { readmeLoader } from "./loaders/readme-loader";
 
 const blog = defineCollection({
   loader: glob({ base: "./src/content/blog", pattern: "**/*.{md,mdx}" }),
@@ -106,14 +105,4 @@ const assets = defineCollection({
   }),
 });
 
-const readmes = defineCollection({
-  loader: readmeLoader(),
-  schema: z.object({
-    repo: z.string(),
-    url: z.string().url(),
-    branch: z.string(),
-    fetchedAt: z.date(),
-  }),
-});
-
-export const collections = { blog, projects, research, pages, devtools, talks, assets, readmes };
+export const collections = { blog, projects, research, pages, devtools, talks, assets };

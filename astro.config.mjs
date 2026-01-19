@@ -15,6 +15,9 @@ export default defineConfig({
   site: "https://just-be.dev",
   output: "static",
   adapter: cloudflare(),
+  experimental: {
+    liveContentCollections: true,
+  },
   integrations: [
     sentry({
       dsn: process.env.PUBLIC_SENTRY_DSN,

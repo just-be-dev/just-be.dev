@@ -7,14 +7,23 @@ import MDContent from "@/components/MDContent.astro";
 import Layout from "@/layouts/Layout.astro";
 import { Code } from "@/utils/code";
 
-export async function getStaticPaths() {
-  const projects = await getCollection("projects");
-  return Code.getStaticPaths(projects);
+// Disable prerendering to use live content collections for READMEs
+export const prerender = false;
+
+// Get route parameters
+const { code: codeParam, slug } = Astro.params;
+
+// Find the project by code and slug
+const projects = await getCollection("projects");
+const project = projects.find((p) => {
+  const { code, slug: projectSlug } = Code.parseId(p.id);
+  return code.toString().toUpperCase() === codeParam?.toUpperCase() && projectSlug === slug;
+});
+
+if (!project) {
+  return Astro.redirect("/404");
 }
 
-type Props = Awaited<ReturnType<typeof getStaticPaths>>[number]["props"];
-
-const project = Astro.props;
 const { Content } = await render(project);
 
 // Extract code from filename
