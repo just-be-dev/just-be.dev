@@ -131,6 +131,7 @@ The project uses Vitest with inline tests enabled (`vitest.config.ts`). Tests ca
 ## Monitoring
 
 Sentry is integrated for error tracking. Configuration requires:
+
 - `PUBLIC_SENTRY_DSN` (public DSN)
 - `SENTRY_PROJECT` (project name)
 - `SENTRY_AUTH_TOKEN` (for source map uploads)

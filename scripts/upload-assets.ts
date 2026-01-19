@@ -34,11 +34,14 @@ const MANIFEST_PATH = join(import.meta.dir, "../src/content/manifest.json");
 
 interface AssetManifest {
   version: string;
-  assets: Record<string, {
-    hash: string;
-    size: number;
-    ext: string;
-  }>;
+  assets: Record<
+    string,
+    {
+      hash: string;
+      size: number;
+      ext: string;
+    }
+  >;
 }
 
 async function hashFile(filePath: string): Promise<string> {
@@ -49,11 +52,21 @@ async function hashFile(filePath: string): Promise<string> {
 async function findAssets(dir: string): Promise<string[]> {
   const assetExtensions = [
     // Images
-    '.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg',
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".webp",
+    ".gif",
+    ".svg",
     // Audio
-    '.m4a', '.mp3', '.wav', '.ogg', '.aac', '.flac',
+    ".m4a",
+    ".mp3",
+    ".wav",
+    ".ogg",
+    ".aac",
+    ".flac",
     // Transcripts
-    '.json'
+    ".json",
   ];
   const results: string[] = [];
 
@@ -64,7 +77,7 @@ async function findAssets(dir: string): Promise<string[]> {
       if (entry.isDirectory()) {
         await walk(fullPath);
       } else if (entry.isFile()) {
-        const ext = entry.name.toLowerCase().slice(entry.name.lastIndexOf('.'));
+        const ext = entry.name.toLowerCase().slice(entry.name.lastIndexOf("."));
         if (assetExtensions.includes(ext)) {
           results.push(fullPath);
         }

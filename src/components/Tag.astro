@@ -22,7 +22,9 @@ const tagUrl = `${url}?tag=${encodeURIComponent(tag)}`;
   <span class="px-[1ch]">{tag}</span>
   {
     count !== undefined && (
-      <span class="text-fg-2 bg-1 border-l-2 border-fg-0 group-hocus:bg-2 group-hocus:text-accent px-[1ch]">{count}</span>
+      <span class="text-fg-2 bg-1 border-l-2 border-fg-0 group-hocus:bg-2 group-hocus:text-accent px-[1ch]">
+        {count}
+      </span>
     )
   }
 </a>
