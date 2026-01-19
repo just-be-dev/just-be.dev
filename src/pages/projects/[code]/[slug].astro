@@ -12,9 +12,20 @@ export async function getStaticPaths() {
   return Code.getStaticPaths(projects);
 }
 
-type Props = Awaited<ReturnType<typeof getStaticPaths>>[number]["props"];
+// Get route parameters
+const { code: codeParam, slug } = Astro.params;
 
-const project = Astro.props;
+// Find the project by code and slug
+const projects = await getCollection("projects");
+const project = projects.find((p) => {
+  const { code, slug: projectSlug } = Code.parseId(p.id);
+  return code.toString().toUpperCase() === codeParam?.toUpperCase() && projectSlug === slug;
+});
+
+if (!project) {
+  return Astro.redirect("/404");
+}
+
 const { Content } = await render(project);
 
 // Extract code from filename

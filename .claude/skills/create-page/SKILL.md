@@ -36,8 +36,8 @@ You are helping create a new content page for this Astro website.
    - Include in frontmatter:
      - `title`: from user
      - `description`: empty string or infer from context if possible
-     - `url`: (leave empty)
-     - `repository`: omit (leave empty)
+     - `url`: (leave empty or full URL if known)
+     - `repository`: omit (leave empty) - must be a full URL if provided (e.g., "https://github.com/user/repo")
      - `status`: `"active"`
      - `date`: current date
 

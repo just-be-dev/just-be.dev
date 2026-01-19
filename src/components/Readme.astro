@@ -1,0 +1,36 @@
+---
+import { getLiveEntry } from "astro:content";
+
+interface Props {
+  repo: string; // Format: "owner/repo-name" or just "repo-name"
+}
+
+const { repo: repoParam } = Astro.props;
+
+// Parse repo parameter - can be "owner/repo" or just "repo"
+const [owner, repo] = repoParam.includes("/") ? repoParam.split("/") : ["just-be-dev", repoParam];
+
+// Query the live readme collection
+const { entry, error } = await getLiveEntry("readme", { owner, repo });
+
+if (error) {
+  console.warn(`README error for ${owner}/${repo}:`, error);
+}
+---
+
+{
+  entry?.rendered?.html ? (
+    <div class="readme-content my-2lh" set:html={entry.rendered.html} />
+  ) : (
+    <div class="my-2lh p-2 bg-0 text-fg-2">
+      <p>
+        README not available for{" "}
+        <code>
+          {owner}/{repo}
+        </code>
+        .
+      </p>
+      <p class="mt-1">{error?.message || "The README may not exist or failed to load."}</p>
+    </div>
+  )
+}
