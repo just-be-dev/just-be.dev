@@ -1,0 +1,44 @@
+---
+title: "Build Yourself a Claude Code Plugin Marketplace"
+description: "The utility of a plugin marketplace for Claude Code and why you should make one"
+date: 2026-01-19
+tags: []
+draft: true
+defs:
+  cc: Claude Code
+---
+
+There's a lot of ways to configure [Claude Code](https://code.claude.com/docs/en/overview) (CC) now. There are [custom slash commands](https://code.claude.com/docs/en/slash-commands), [skills](https://code.claude.com/docs/en/skills#agent-skills), [hooks](https://code.claude.com/docs/en/hooks-guide), [subagents](https://code.claude.com/docs/en/sub-agents), and [mcp servers](https://code.claude.com/docs/en/mcp).
+
+I've found myself with different permutations of these primitives scattered throughout my projects and wanted a way to organize and share them between machines. :def[CC]{:title=defs.cc} has a notion of a [plugin](https://code.claude.com/docs/en/plugins) which is a container for all the above capabilities. Anthropic enables the distribution of plugins through a [marketplace](https://code.claude.com/docs/en/plugin-marketplaces), GitHub repo with specific configuration that can explose plugins to the outside world. I've created my own at [just-be-dev/ccpm](https://github.com/just-be-dev/ccpm).
+
+Anthropic also has an _official_ plugin marketplace at [anthropics/claude-plugins-official](https://github.com/anthropics/claude-plugins-official). (I'm still unclear on why they need to specify it's official, I digress).
+
+## Anatomy of a Marketplace
+
+Marketplace repos are comprised of a few things:
+
+- A `.claude-plugin/marketplace.json` configuration file that name's the marketplace and lists its available plugins.
+- A (configurable) directory of plugins.
+
+Anthropic has the [marketplace configuration](https://code.claude.com/docs/en/plugin-marketplaces) documented, but they don't have an actual json spec published. If you check their official marketplace you'll see a link to [`https://anthropic.com/claude-code/marketplace.schema.json`](https://anthropic.com/claude-code/marketplace.schema.json) in their marketplace.json, but it doesn't actually exist. I'm assuming that's just an agent hallucination they haven't got around to fixing.
+
+I will note that you can validate both the marketplace and plugin json configs with `claude plugin validate <path>`.
+
+### Plugin Structure
+
+Plugins are comprised of its top level config and capabilities.
+
+| Path              | Purpose                                         |
+| ----------------- | ----------------------------------------------- |
+| `.claude-plugin/` | Contains the `plugin.json` configuration file   |
+| `commands/`       | Slash commands as Markdown files                |
+| `agents/`         | Custom agent definitions                        |
+| `skills/`         | Agent Skills with SKILL.md files                |
+| `hooks/`          | Event handlers in hooks.json                    |
+| `.mcp.json`       | MCP server configurations                       |
+| `.lsp.json`       | LSP server configurations for code intelligence |
+
+The `plugin.json` file contains metadata about the plugin, such as its name, version, and description.
+
+I'm not going to go into each of the specific capabilities of the plugin. If you want to learn more, check out the [plugin creation guide](https://code.claude.com/docs/en/plugins).
