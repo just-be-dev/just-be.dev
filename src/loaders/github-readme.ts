@@ -3,26 +3,6 @@ import { marked } from "marked";
 
 const DEFAULT_OWNER = "just-be-dev";
 
-// Custom renderer to style links like the Link component
-const renderer = new marked.Renderer();
-const originalLinkRenderer = renderer.link.bind(renderer);
-
-renderer.link = function (href, title, text) {
-  const isExternal = href?.startsWith("http");
-  const html = originalLinkRenderer(href, title, text);
-
-  // Add Link component styling classes and external link handling
-  const styledHtml = html.replace(
-    /<a /,
-    `<a class="text-fg-0 link hocus:px-0.5 hocus:-mx-0.5 hocus:bg-0 hocus:invert decoration-current font-bold focus-visible:outline-none underline decoration-2" ${
-      isExternal ? 'target="_blank" rel="noopener noreferrer"' : ""
-    } `
-  );
-
-  // Add arrow for external links
-  return isExternal ? styledHtml.replace(/<\/a>/, "↗</a>") : styledHtml;
-};
-
 /**
  * Strips the first H1 heading from markdown content
  */
@@ -130,11 +110,10 @@ export function githubReadmeLoader(): LiveLoader<ReadmeData, EntryFilter, Collec
         // Strip the first H1 heading
         const markdownWithoutH1 = stripFirstH1(readmeMarkdown);
 
-        // Parse markdown to HTML using marked with custom renderer
+        // Parse markdown to HTML using marked
         marked.setOptions({
           gfm: true,
           breaks: true,
-          renderer: renderer,
         });
         const renderedHtml = await marked.parse(markdownWithoutH1);
 

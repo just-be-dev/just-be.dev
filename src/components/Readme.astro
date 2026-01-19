@@ -34,3 +34,36 @@ if (error) {
     </div>
   )
 }
+
+<style>
+  .readme-content :global(a) {
+    color: var(--foreground0);
+    font-weight: 700;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-decoration-color: currentColor;
+  }
+
+  .readme-content :global(a:hover),
+  .readme-content :global(a:focus) {
+    padding-inline: 0.5ch;
+    margin-inline: -0.5ch;
+    background-color: var(--background0);
+    filter: invert(1);
+    outline: none;
+  }
+
+  /* Add arrow indicator for external links */
+  .readme-content :global(a[href^="http"]::after),
+  .readme-content :global(a[href^="https"]::after) {
+    content: "↗";
+  }
+</style>
+
+<script>
+  // Open external links in new tabs
+  document.querySelectorAll(".readme-content a[href^='http']").forEach((link) => {
+    link.setAttribute("target", "_blank");
+    link.setAttribute("rel", "noopener noreferrer");
+  });
+</script>
