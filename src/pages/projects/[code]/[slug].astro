@@ -7,8 +7,10 @@ import MDContent from "@/components/MDContent.astro";
 import Layout from "@/layouts/Layout.astro";
 import { Code } from "@/utils/code";
 
-// Disable prerendering to use live content collections for READMEs
-// export const prerender = false;
+export async function getStaticPaths() {
+  const projects = await getCollection("projects");
+  return Code.getStaticPaths(projects);
+}
 
 // Get route parameters
 const { code: codeParam, slug } = Astro.params;
