@@ -154,6 +154,30 @@ article ol:not(:is(.not-prose *)) ol li:last-child {
   margin-bottom: 0;
 }
 
+/* README content link styles */
+.readme-content a {
+  color: var(--foreground0);
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-decoration-color: currentColor;
+}
+
+.readme-content a:hover,
+.readme-content a:focus {
+  padding-inline: 0.5ch;
+  margin-inline: -0.5ch;
+  background-color: var(--background0);
+  filter: invert(1);
+  outline: none;
+}
+
+/* Add arrow indicator for external links */
+.readme-content a[href^="http"]::after,
+.readme-content a[href^="https"]::after {
+  content: "↗";
+}
+
 /* Buffer utilities */
 .buffer {
   margin-left: calc(var(--spacing) * -0.5);
