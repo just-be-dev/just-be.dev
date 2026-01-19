@@ -21,7 +21,7 @@ interface CollectionFilter {
 
 export function githubReadmeLoader(): LiveLoader<ReadmeData, EntryFilter, CollectionFilter, Error> {
   return {
-    name: "github-readme-live-loader",
+    name: "github-readme",
 
     async loadCollection({ filter }) {
       const owner = filter?.owner || DEFAULT_OWNER;
