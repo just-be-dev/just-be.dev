@@ -3,6 +3,14 @@ import { marked } from "marked";
 
 const DEFAULT_OWNER = "just-be-dev";
 
+/**
+ * Strips the first H1 heading from markdown content
+ */
+function stripFirstH1(markdown: string): string {
+  // Match the first H1 (# heading) and remove it along with trailing newlines
+  return markdown.replace(/^#\s+.*?(\r?\n)+/, "");
+}
+
 interface ReadmeData {
   repo: string;
   url: string;
@@ -99,12 +107,15 @@ export function githubReadmeLoader(): LiveLoader<ReadmeData, EntryFilter, Collec
         // Decode base64 content
         const readmeMarkdown = atob(readmeData.content);
 
+        // Strip the first H1 heading
+        const markdownWithoutH1 = stripFirstH1(readmeMarkdown);
+
         // Parse markdown to HTML using marked
         marked.setOptions({
           gfm: true,
           breaks: true,
         });
-        const renderedHtml = await marked.parse(readmeMarkdown);
+        const renderedHtml = await marked.parse(markdownWithoutH1);
 
         // Get the default branch from the API response
         const repoResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}`);
