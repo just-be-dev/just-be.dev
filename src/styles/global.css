@@ -164,6 +164,10 @@ article ol:not(:is(.not-prose *)) ol li:last-child {
   margin-bottom: 0;
 }
 
+article table:not(:is(.not-prose *)) {
+  margin-bottom: 1lh;
+}
+
 /* Buffer utilities */
 .buffer {
   margin-left: calc(var(--spacing) * -0.5);

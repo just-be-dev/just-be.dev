@@ -3,42 +3,76 @@ title: "Build Yourself a Claude Code Plugin Marketplace"
 description: "The utility of a plugin marketplace for Claude Code and why you should make one"
 date: 2026-01-19
 tags: []
-draft: true
 defs:
   cc: Claude Code
 ---
 
 There's a lot of ways to configure [Claude Code](https://code.claude.com/docs/en/overview) (CC) now. There are [custom slash commands](https://code.claude.com/docs/en/slash-commands), [skills](https://code.claude.com/docs/en/skills#agent-skills), [hooks](https://code.claude.com/docs/en/hooks-guide), [subagents](https://code.claude.com/docs/en/sub-agents), and [mcp servers](https://code.claude.com/docs/en/mcp).
 
-I've found myself with different permutations of these primitives scattered throughout my projects and wanted a way to organize and share them between machines. :def[CC]{:title=defs.cc} has a notion of a [plugin](https://code.claude.com/docs/en/plugins) which is a container for all the above capabilities. Anthropic enables the distribution of plugins through a [marketplace](https://code.claude.com/docs/en/plugin-marketplaces), GitHub repo with specific configuration that can explose plugins to the outside world. I've created my own at [just-be-dev/ccpm](https://github.com/just-be-dev/ccpm).
+I've found myself with different permutations of these primitives scattered throughout my projects and wanted a way to organize and share them between machines. :def[CC]{:title=defs.cc} has a concept of a [plugin](https://code.claude.com/docs/en/plugins) which wraps the above capabilities in a single consumable artifact. Anthropic enables the distribution of plugins through a [marketplace](https://code.claude.com/docs/en/plugin-marketplaces), a GitHub repo with specific configuration that can expose plugins to the outside world. I've created my own at [just-be-dev/ccpm](https://github.com/just-be-dev/ccpm) (short for Claude Code Plugin Marketplace, if that wasn't already clear).
 
-Anthropic also has an _official_ plugin marketplace at [anthropics/claude-plugins-official](https://github.com/anthropics/claude-plugins-official). (I'm still unclear on why they need to specify it's official, I digress).
+Anthropic also has an _official_ plugin marketplace at [anthropics/claude-plugins-official](https://github.com/anthropics/claude-plugins-official). I'm still unclear on why they need to specify it as official when it's in their repo but I digress.
+
+## Consuming plugins from a Marketplace
+
+Before diving into the details of how Marketplaces are constructed, I just wanted to demonstrate how they're used. I have a plugin called `mise` in my `ccpm` repo that has a `setup` slash command. So if I wanted to use that on a new computer I'd...
+
+1. Fire up claude code
+2. Run `/plugin marketplace add just-be-dev/ccpm`
+3. Run `/plugin install mise@just-be`. 
+
+The mise plugin's `setup` command is now available by running `/mise:setup` in a CC session. Note that it's namespaced behind the plugin's name but not the marketplace's name. 
+
+The marketplace add command is fairly basic, it just installs the marketplace from `https://github.com/just-be-dev/ccpm`. They do offer the ability to auto update a marketplace which will automatically refresh the marketplace's manifest and update any plugins you have installed from that marketplace. It goes without saying that you should be _extremely_ careful with this given it's an easy way to give someone overprivileged access to your machine.
+
+The `mise@just-be` bit of the plugin install looks a little strange. The `just-be` portion is actually the _name_ of the marketplace (as specified by the `marketplace.json` in the repo) which doesn't have to make the repo's name.
 
 ## Anatomy of a Marketplace
 
 Marketplace repos are comprised of a few things:
 
-- A `.claude-plugin/marketplace.json` configuration file that name's the marketplace and lists its available plugins.
-- A (configurable) directory of plugins.
+- A `.claude-plugin/marketplace.json` file that includes basic metadata and a list of the plugins that the marketplace provides. 
+- A collection of plugins in the paths specified by the marketplace.json file.
 
-Anthropic has the [marketplace configuration](https://code.claude.com/docs/en/plugin-marketplaces) documented, but they don't have an actual json spec published. If you check their official marketplace you'll see a link to [`https://anthropic.com/claude-code/marketplace.schema.json`](https://anthropic.com/claude-code/marketplace.schema.json) in their marketplace.json, but it doesn't actually exist. I'm assuming that's just an agent hallucination they haven't got around to fixing.
+Anthropic has the [marketplace schema](https://code.claude.com/docs/en/plugin-marketplaces) documented, but they don't have an actual json spec published. If you check their official marketplace you'll see a link to [`https://anthropic.com/claude-code/marketplace.schema.json`](https://anthropic.com/claude-code/marketplace.schema.json) in their marketplace.json, but it doesn't actually exist. I think it's just a hallucination and there are a [few](https://github.com/anthropics/claude-plugins-official/issues/45) [issues](https://github.com/anthropics/claude-code/issues/9686) open for it, but they haven't got around to addressing them.
 
-I will note that you can validate both the marketplace and plugin json configs with `claude plugin validate <path>`.
+One other odd thing I'll note is that marketplaces have an _optional_ version field, but so far as I can tell it's not used anywhere. Anthropic themselves never increment the version field in their marketplace.json, so I assume it's unlikely to ever be used. 
+
+::callout{type="tip"}
+Use the claude cli to validate the marketplace and plugin json configs
+```
+claude plugin validate <path>
+```
+::
 
 ### Plugin Structure
 
 Plugins are comprised of its top level config and capabilities.
 
-| Path              | Purpose                                         |
-| ----------------- | ----------------------------------------------- |
-| `.claude-plugin/` | Contains the `plugin.json` configuration file   |
-| `commands/`       | Slash commands as Markdown files                |
-| `agents/`         | Custom agent definitions                        |
-| `skills/`         | Agent Skills with SKILL.md files                |
-| `hooks/`          | Event handlers in hooks.json                    |
-| `.mcp.json`       | MCP server configurations                       |
-| `.lsp.json`       | LSP server configurations for code intelligence |
+| Path            | Purpose                                         |
+| --------------- | ----------------------------------------------- |
+| .claude-plugin/ | Contains the `plugin.json` configuration file   |
+| commands/       | Slash commands as Markdown files                |
+| agents/         | Custom agent definitions                        |
+| skills/         | Agent Skills with SKILL.md files                |
+| hooks/          | Event handlers in hooks.json                    |
+| .mcp.json       | MCP server configurations                       |
+| .lsp.json       | LSP server configurations for code intelligence |
 
 The `plugin.json` file contains metadata about the plugin, such as its name, version, and description.
 
 I'm not going to go into each of the specific capabilities of the plugin. If you want to learn more, check out the [plugin creation guide](https://code.claude.com/docs/en/plugins).
+
+The one thing I will callout is that a plugin's `version` field _is_ required and is what CC uses to determine if a plugin needs updates.
+
+## Marketplace Development Lifecycle
+
+In my marketplace repo I have a series of scripts to help automate the development process. Here's the list straight from the README:
+
+- **`changed-plugins.ts`** - Detect which plugins have changed
+- **`validate-schemas.ts`** - Validate marketplace.json and plugin.json files 
+- **`check-plugin-versions.ts`** - Check if plugin versions need to be updated
+- **`validate-plugin-version.ts`** - Validate if a change requires a version bump
+- **`bump-plugin-version.ts`** - Automatically determine and apply version bumps
+
+The `validate-schemas` script runs the `claude plugin validate` script I mentioned previously on the marketplace.json file and all the plugin.json files. I have a GitHub action setup to run that in CI just to make sure I don't accidentally merge something invalid.

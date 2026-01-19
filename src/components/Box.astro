@@ -1,0 +1,27 @@
+---
+export interface Props {
+  badge?: string;
+  class?: string;
+}
+
+const { badge, class: className } = Astro.props;
+
+const hasBadge = badge || Astro.slots.has("badge");
+---
+
+<aside class:list={["box mb-1", className]} box-="square" shear-="top" role="note">
+  {
+    hasBadge && (
+      <div class="header">
+        <span is-="badge" variant-="foreground0">
+          <span class="flex items-center gap-1 font-bold">
+            <slot name="badge">{badge}</slot>
+          </span>
+        </span>
+      </div>
+    )
+  }
+  <div class="not-prose mx-2 mt-1">
+    <slot />
+  </div>
+</aside>
