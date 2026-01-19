@@ -59,11 +59,3 @@ if (error) {
     content: "↗";
   }
 </style>
-
-<script>
-  // Open external links in new tabs
-  document.querySelectorAll(".readme-content a[href^='http']").forEach((link) => {
-    link.setAttribute("target", "_blank");
-    link.setAttribute("rel", "noopener noreferrer");
-  });
-</script>

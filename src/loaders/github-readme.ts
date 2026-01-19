@@ -3,6 +3,22 @@ import { marked } from "marked";
 
 const DEFAULT_OWNER = "just-be-dev";
 
+// Custom renderer to add target="_blank" and rel="noopener noreferrer" to external links
+const renderer = new marked.Renderer();
+const originalLinkRenderer = renderer.link.bind(renderer);
+
+renderer.link = function (token) {
+  const html = originalLinkRenderer(token);
+  const href = token.href;
+
+  // Add target and rel attributes for external links
+  if (href?.startsWith("http")) {
+    return html.replace(/<a /, '<a target="_blank" rel="noopener noreferrer" ');
+  }
+
+  return html;
+};
+
 /**
  * Strips the first H1 heading from markdown content
  */
@@ -114,6 +130,7 @@ export function githubReadmeLoader(): LiveLoader<ReadmeData, EntryFilter, Collec
         marked.setOptions({
           gfm: true,
           breaks: true,
+          renderer: renderer,
         });
         const renderedHtml = await marked.parse(markdownWithoutH1);
 
