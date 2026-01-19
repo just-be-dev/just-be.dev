@@ -1,0 +1,35 @@
+---
+import { getEntry, render } from "astro:content";
+
+interface Props {
+  repo: string; // Format: "owner/repo-name"
+}
+
+const { repo } = Astro.props;
+
+// Query the readmes collection
+const readme = await getEntry("readmes", repo);
+
+// If README not found, show error message
+if (!readme) {
+  console.warn(`README not found for repository: ${repo}`);
+}
+
+// Render the content if available
+const { Content } = readme ? await render(readme) : { Content: null };
+---
+
+{
+  Content ? (
+    <div class="readme-content my-2lh">
+      <Content />
+    </div>
+  ) : (
+    <div class="my-2lh p-2 bg-0 text-fg-2">
+      <p>
+        README not available for <code>{repo}</code>.
+      </p>
+      <p class="mt-1">The README may not exist or failed to load during the build.</p>
+    </div>
+  )
+}
