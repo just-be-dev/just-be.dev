@@ -3,21 +3,44 @@ import { marked } from "marked";
 
 const DEFAULT_OWNER = "just-be-dev";
 
-// Custom renderer to add target="_blank" and rel="noopener noreferrer" to external links
-const renderer = new marked.Renderer();
-const originalLinkRenderer = renderer.link.bind(renderer);
+/**
+ * Creates a custom renderer that handles both external and relative links
+ */
+function createRenderer(owner: string, repo: string, branch: string) {
+  const renderer = new marked.Renderer();
+  const originalLinkRenderer = renderer.link.bind(renderer);
 
-renderer.link = function (token) {
-  const html = originalLinkRenderer(token);
-  const href = token.href;
+  renderer.link = function (token) {
+    const html = originalLinkRenderer(token);
+    let href = token.href;
 
-  // Add target and rel attributes for external links
-  if (href?.startsWith("http")) {
-    return html.replace(/<a /, '<a target="_blank" rel="noopener noreferrer" ');
-  }
+    if (!href) {
+      return html;
+    }
 
-  return html;
-};
+    // Handle absolute external links
+    if (href.startsWith("http://") || href.startsWith("https://")) {
+      return html.replace(/<a /, '<a target="_blank" rel="noopener noreferrer" ');
+    }
+
+    // Handle anchor links (keep as is)
+    if (href.startsWith("#")) {
+      return html;
+    }
+
+    // Convert relative links to absolute GitHub URLs
+    // Remove leading ./ if present
+    const cleanPath = href.replace(/^\.\//, "");
+    const absoluteUrl = `https://github.com/${owner}/${repo}/blob/${branch}/${cleanPath}`;
+
+    return html.replace(
+      /href="[^"]*"/,
+      `href="${absoluteUrl}" target="_blank" rel="noopener noreferrer"`
+    );
+  };
+
+  return renderer;
+}
 
 /**
  * Strips the first H1 heading from markdown content
@@ -96,6 +119,11 @@ export function githubReadmeLoader(): LiveLoader<ReadmeData, EntryFilter, Collec
       const repo = filter.repo;
 
       try {
+        // Get the default branch from the API response first
+        const repoResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}`);
+        const repoInfo = repoResponse.ok ? await repoResponse.json() : { default_branch: "main" };
+        const branch = repoInfo.default_branch || "main";
+
         // Fetch README from GitHub API
         const readmeResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/readme`, {
           headers: {
@@ -126,6 +154,9 @@ export function githubReadmeLoader(): LiveLoader<ReadmeData, EntryFilter, Collec
         // Strip the first H1 heading
         const markdownWithoutH1 = stripFirstH1(readmeMarkdown);
 
+        // Create renderer with repo context for relative links
+        const renderer = createRenderer(owner, repo, branch);
+
         // Parse markdown to HTML using marked
         marked.setOptions({
           gfm: true,
@@ -134,16 +165,12 @@ export function githubReadmeLoader(): LiveLoader<ReadmeData, EntryFilter, Collec
         });
         const renderedHtml = await marked.parse(markdownWithoutH1);
 
-        // Get the default branch from the API response
-        const repoResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}`);
-        const repoInfo = repoResponse.ok ? await repoResponse.json() : { default_branch: "main" };
-
         return {
           id: `${owner}/${repo}`,
           data: {
             repo,
             url: `https://github.com/${owner}/${repo}`,
-            branch: repoInfo.default_branch || "main",
+            branch,
             owner,
           },
           rendered: {
