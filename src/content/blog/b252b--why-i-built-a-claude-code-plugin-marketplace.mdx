@@ -2,7 +2,7 @@
 title: "Build Yourself a Claude Code Plugin Marketplace"
 description: "The utility of a plugin marketplace for Claude Code and why you should make one"
 date: 2026-01-19
-tags: []
+tags: [ai, claude]
 defs:
   cc: Claude Code
 ---
@@ -19,9 +19,9 @@ Before diving into the details of how Marketplaces are constructed, I just wante
 
 1. Fire up claude code
 2. Run `/plugin marketplace add just-be-dev/ccpm`
-3. Run `/plugin install mise@just-be`. 
+3. Run `/plugin install mise@just-be`.
 
-The mise plugin's `setup` command is now available by running `/mise:setup` in a CC session. Note that it's namespaced behind the plugin's name but not the marketplace's name. 
+The mise plugin's `setup` command is now available by running `/mise:setup` in a CC session. Note that it's namespaced behind the plugin's name but not the marketplace's name.
 
 The marketplace add command is fairly basic, it just installs the marketplace from `https://github.com/just-be-dev/ccpm`. They do offer the ability to auto update a marketplace which will automatically refresh the marketplace's manifest and update any plugins you have installed from that marketplace. It goes without saying that you should be _extremely_ careful with this given it's an easy way to give someone overprivileged access to your machine.
 
@@ -31,18 +31,20 @@ The `mise@just-be` bit of the plugin install looks a little strange. The `just-b
 
 Marketplace repos are comprised of a few things:
 
-- A `.claude-plugin/marketplace.json` file that includes basic metadata and a list of the plugins that the marketplace provides. 
+- A `.claude-plugin/marketplace.json` file that includes basic metadata and a list of the plugins that the marketplace provides.
 - A collection of plugins in the paths specified by the marketplace.json file.
 
 Anthropic has the [marketplace schema](https://code.claude.com/docs/en/plugin-marketplaces) documented, but they don't have an actual json spec published. If you check their official marketplace you'll see a link to [`https://anthropic.com/claude-code/marketplace.schema.json`](https://anthropic.com/claude-code/marketplace.schema.json) in their marketplace.json, but it doesn't actually exist. I think it's just a hallucination and there are a [few](https://github.com/anthropics/claude-plugins-official/issues/45) [issues](https://github.com/anthropics/claude-code/issues/9686) open for it, but they haven't got around to addressing them.
 
-One other odd thing I'll note is that marketplaces have an _optional_ version field, but so far as I can tell it's not used anywhere. Anthropic themselves never increment the version field in their marketplace.json, so I assume it's unlikely to ever be used. 
+One other odd thing I'll note is that marketplaces have an _optional_ version field, but so far as I can tell it's not used anywhere. Anthropic themselves never increment the version field in their marketplace.json, so I assume it's unlikely to ever be used.
 
 ::callout{type="tip"}
 Use the claude cli to validate the marketplace and plugin json configs
+
 ```
 claude plugin validate <path>
 ```
+
 ::
 
 ### Plugin Structure
@@ -70,7 +72,7 @@ The one thing I will callout is that a plugin's `version` field _is_ required an
 In my marketplace repo I have a series of scripts to help automate the development process. Here's the list straight from the README:
 
 - **`changed-plugins.ts`** - Detect which plugins have changed
-- **`validate-schemas.ts`** - Validate marketplace.json and plugin.json files 
+- **`validate-schemas.ts`** - Validate marketplace.json and plugin.json files
 - **`check-plugin-versions.ts`** - Check if plugin versions need to be updated
 - **`validate-plugin-version.ts`** - Validate if a change requires a version bump
 - **`bump-plugin-version.ts`** - Automatically determine and apply version bumps
