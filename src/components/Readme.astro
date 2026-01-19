@@ -10,8 +10,8 @@ const { repo: repoParam } = Astro.props;
 // Parse repo parameter - can be "owner/repo" or just "repo"
 const [owner, repo] = repoParam.includes("/") ? repoParam.split("/") : ["just-be-dev", repoParam];
 
-// Query the live readmes collection
-const { entry, error } = await getLiveEntry("readmes", { owner, repo });
+// Query the live readme collection
+const { entry, error } = await getLiveEntry("readme", { owner, repo });
 
 if (error) {
   console.warn(`README error for ${owner}/${repo}:`, error);

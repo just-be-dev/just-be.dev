@@ -2,7 +2,7 @@ import { defineLiveCollection } from "astro:content";
 import { z } from "astro:content";
 import { githubReadmeLoader } from "./loaders/github-readme";
 
-const readmes = defineLiveCollection({
+const readme = defineLiveCollection({
   loader: githubReadmeLoader(),
   schema: z.object({
     repo: z.string(),
@@ -12,4 +12,4 @@ const readmes = defineLiveCollection({
   }),
 });
 
-export const collections = { readmes };
+export const collections = { readme };
