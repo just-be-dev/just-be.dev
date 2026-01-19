@@ -1,29 +1,44 @@
 import type { Loader } from "astro/loaders";
+import { readdir, readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 export function readmeLoader(): Loader {
   return {
     name: "github-readme-loader",
     load: async ({ store, renderMarkdown, logger }) => {
-      // Import getCollection dynamically to ensure projects collection is available
-      const { getCollection } = await import("astro:content");
+      // Read project files directly from filesystem
+      const projectsDir = join(process.cwd(), "src/content/projects");
+      const files = await readdir(projectsDir);
+      const mdxFiles = files.filter((f) => f.endsWith(".mdx") || f.endsWith(".md"));
 
-      // Get all projects
-      const projects = await getCollection("projects");
+      // Parse frontmatter to extract repository URLs
+      const githubRepos: string[] = [];
 
-      // Filter projects with GitHub repository URLs
-      const githubProjects = projects.filter((project) => {
-        const repo = project.data.repository;
-        return repo && typeof repo === "string" && repo.includes("github.com");
-      });
+      for (const file of mdxFiles) {
+        try {
+          const content = await readFile(join(projectsDir, file), "utf-8");
+          const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
 
-      logger.info(`Found ${githubProjects.length} projects with GitHub repositories`);
+          if (frontmatterMatch) {
+            const frontmatter = frontmatterMatch[1];
+            const repoMatch = frontmatter.match(/repository:\s*["']?(https:\/\/github\.com\/[^"'\n]+)["']?/);
+
+            if (repoMatch) {
+              githubRepos.push(repoMatch[1]);
+            }
+          }
+        } catch (error) {
+          logger.warn(`Failed to parse ${file}: ${error}`);
+        }
+      }
+
+      logger.info(`Found ${githubRepos.length} projects with GitHub repositories`);
 
       // Clear existing entries
       store.clear();
 
       // Fetch README for each GitHub project
-      for (const project of githubProjects) {
-        const repoUrl = project.data.repository as string;
+      for (const repoUrl of githubRepos) {
 
         // Extract owner/repo from GitHub URL
         const match = repoUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
