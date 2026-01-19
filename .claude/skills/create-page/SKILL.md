@@ -106,6 +106,7 @@ You are helping create a new content page for this Astro website.
 ## Example Workflow
 
 User wants to create a blog post titled "Getting Started with Astro":
+
 1. Get current date: `date +%Y-%m-%d` → "2026-01-19"
 2. Ask for title: "Getting Started with Astro"
 3. Generate filename: "getting-started-with-astro.mdx"
@@ -119,4 +120,5 @@ User wants to create a blog post titled "Getting Started with Astro":
 6. File is renamed to something like `b232f--getting-started-with-astro.mdx`
 
 If the user had said "I want to write a blog post about learning Astro framework", you could infer:
+
 - `description: "A guide to learning the Astro framework"`

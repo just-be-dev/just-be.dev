@@ -32,10 +32,11 @@ const hasInteractiveLayout = hasSlides && hasAudio && hasTranscript;
 // Resolve asset URLs if interactive layout
 let resolvedAudioUrl, resolvedTranscriptUrl;
 if (hasInteractiveLayout) {
-  const normalizedAudioPath = talk.data.audioPath.replace(/^\/assets\//, '');
-  const normalizedTranscriptPath = talk.data.transcriptPath.replace(/^\/assets\//, '');
-  resolvedAudioUrl = await resolveAssetUrl(normalizedAudioPath) ?? talk.data.audioPath;
-  resolvedTranscriptUrl = await resolveAssetUrl(normalizedTranscriptPath) ?? talk.data.transcriptPath;
+  const normalizedAudioPath = talk.data.audioPath.replace(/^\/assets\//, "");
+  const normalizedTranscriptPath = talk.data.transcriptPath.replace(/^\/assets\//, "");
+  resolvedAudioUrl = (await resolveAssetUrl(normalizedAudioPath)) ?? talk.data.audioPath;
+  resolvedTranscriptUrl =
+    (await resolveAssetUrl(normalizedTranscriptPath)) ?? talk.data.transcriptPath;
 }
 ---
 
@@ -57,39 +58,45 @@ if (hasInteractiveLayout) {
       </div>
     </header>
 
-    {hasInteractiveLayout ? (
-      <div id="talk-layout-container" class="talk-layout not-prose px-4" style="margin-left: calc(-50vw + 50%); margin-right: calc(-50vw + 50%);">
-        <!-- Slides -->
-        <div id="slides-section" class="slides-item">
-          <TalkSlides
-            slides={talk.data.slides}
-            basePath={`/talks/${slug}`}
-            talkId={slug}
-            syncWithAudio={true}
-            audioPlayerId={`audio-player-${slug}`}
-          />
-        </div>
+    {
+      hasInteractiveLayout ? (
+        <div
+          id="talk-layout-container"
+          class="talk-layout not-prose px-4"
+          style="margin-left: calc(-50vw + 50%); margin-right: calc(-50vw + 50%);"
+        >
+          {/* Slides */}
+          <div id="slides-section" class="slides-item">
+            <TalkSlides
+              slides={talk.data.slides}
+              basePath={`/talks/${slug}`}
+              talkId={slug}
+              syncWithAudio={true}
+              audioPlayerId={`audio-player-${slug}`}
+            />
+          </div>
 
-        <!-- Audio Player -->
-        <div class="audio-item">
-          <TUIAudioPlayer audioPath={resolvedAudioUrl} playerId={`audio-player-${slug}`} />
-        </div>
+          {/* Audio Player */}
+          <div class="audio-item">
+            <TUIAudioPlayer audioPath={resolvedAudioUrl} playerId={`audio-player-${slug}`} />
+          </div>
 
-        <!-- Transcript -->
-        <div class="transcript-item">
-          <div is-="view" class="h-full border-2 border-fg-2 bg-0">
-            <div is-="view-content" class="transcript-container h-full overflow-y-auto">
-              <div class="transcript-loading text-fg-2 text-center py-2">
-                Loading transcript...
+          {/* Transcript */}
+          <div class="transcript-item">
+            <div is-="view" class="h-full border-2 border-fg-2 bg-0">
+              <div is-="view-content" class="transcript-container h-full overflow-y-auto">
+                <div class="transcript-loading text-fg-2 text-center py-2">
+                  Loading transcript...
+                </div>
+                <div class="transcript-content hidden" />
               </div>
-              <div class="transcript-content hidden"></div>
             </div>
           </div>
         </div>
-      </div>
-    ) : (
-      <MDContent Content={Content} components={{ a: Link }} />
-    )}
+      ) : (
+        <MDContent Content={Content} components={{ a: Link }} />
+      )
+    }
   </article>
 </Layout>
 
@@ -97,7 +104,9 @@ if (hasInteractiveLayout) {
   /* Transcript word highlighting */
   .transcript-word {
     display: inline;
-    transition: background-color 0.1s ease, color 0.1s ease;
+    transition:
+      background-color 0.1s ease,
+      color 0.1s ease;
   }
 
   .transcript-word.active {
@@ -170,12 +179,12 @@ if (hasInteractiveLayout) {
 
 <script define:vars={{ slug, resolvedTranscriptUrl }}>
   const audioPlayerId = `audio-player-${slug}`;
-  const slidesSection = document.getElementById('slides-section');
+  const slidesSection = document.getElementById("slides-section");
   const audioPlayerContainer = document.getElementById(audioPlayerId);
-  const audio = audioPlayerContainer?.querySelector('audio');
-  const transcriptContent = document.querySelector('.transcript-content');
-  const transcriptLoading = document.querySelector('.transcript-loading');
-  const transcriptContainer = document.querySelector('.transcript-container');
+  const audio = audioPlayerContainer?.querySelector("audio");
+  const transcriptContent = document.querySelector(".transcript-content");
+  const transcriptLoading = document.querySelector(".transcript-loading");
+  const transcriptContainer = document.querySelector(".transcript-container");
 
   let currentWordIndex = -1;
   let autoscroll = true;
@@ -183,9 +192,9 @@ if (hasInteractiveLayout) {
 
   // Scroll to slides when audio plays (mobile only)
   if (slidesSection && audio) {
-    audio.addEventListener('play', () => {
+    audio.addEventListener("play", () => {
       if (window.innerWidth < 1024) {
-        slidesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        slidesSection.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     });
   }
@@ -216,16 +225,16 @@ if (hasInteractiveLayout) {
   function highlightWord(index) {
     if (index === currentWordIndex) return;
     if (currentWordIndex >= 0 && wordElements[currentWordIndex]) {
-      wordElements[currentWordIndex].classList.remove('active');
+      wordElements[currentWordIndex].classList.remove("active");
     }
     if (index >= 0 && wordElements[index]) {
       const wordEl = wordElements[index];
-      wordEl.classList.add('active');
+      wordEl.classList.add("active");
       if (autoscroll && transcriptContainer) {
         const wordRect = wordEl.getBoundingClientRect();
         const containerRect = transcriptContainer.getBoundingClientRect();
         if (wordRect.top < containerRect.top || wordRect.bottom > containerRect.bottom) {
-          wordEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          wordEl.scrollIntoView({ behavior: "smooth", block: "center" });
         }
       }
     }
@@ -233,11 +242,11 @@ if (hasInteractiveLayout) {
   }
 
   if (audio) {
-    audio.addEventListener('timeupdate', () => {
+    audio.addEventListener("timeupdate", () => {
       const index = findWordIndexAtTime(audio.currentTime);
       highlightWord(index);
     });
-    audio.addEventListener('seeked', () => {
+    audio.addEventListener("seeked", () => {
       const index = findWordIndexAtTime(audio.currentTime);
       highlightWord(index);
     });
@@ -246,11 +255,11 @@ if (hasInteractiveLayout) {
   // Load transcript
   if (resolvedTranscriptUrl && transcriptContent && transcriptLoading) {
     fetch(resolvedTranscriptUrl)
-      .then(res => {
+      .then((res) => {
         if (!res.ok) throw new Error(`Failed to load transcript: ${res.status}`);
         return res.json();
       })
-      .then(data => {
+      .then((data) => {
         const html = [];
         wordElements = [];
         data.segments.forEach((segment, segIndex) => {
@@ -258,31 +267,31 @@ if (hasInteractiveLayout) {
             segment.words.forEach((wordData, wordIndex) => {
               html.push(
                 `<span class="transcript-word text-fg-0 hocus:text-accent cursor-pointer" ` +
-                `data-start="${wordData.start}" data-end="${wordData.end}" data-segment="${segIndex}" data-word="${wordIndex}">` +
-                `${wordData.word}</span> `
+                  `data-start="${wordData.start}" data-end="${wordData.end}" data-segment="${segIndex}" data-word="${wordIndex}">` +
+                  `${wordData.word}</span> `
               );
             });
           } else {
             html.push(`<span class="text-fg-0">${segment.text}</span>`);
           }
         });
-        transcriptContent.innerHTML = html.join('');
-        wordElements = Array.from(transcriptContent.querySelectorAll('.transcript-word'));
-        wordElements.forEach(wordEl => {
-          wordEl.addEventListener('click', () => {
+        transcriptContent.innerHTML = html.join("");
+        wordElements = Array.from(transcriptContent.querySelectorAll(".transcript-word"));
+        wordElements.forEach((wordEl) => {
+          wordEl.addEventListener("click", () => {
             if (audio) {
               audio.currentTime = parseFloat(wordEl.dataset.start);
               if (audio.paused) audio.play();
             }
           });
         });
-        transcriptLoading.classList.add('hidden');
-        transcriptContent.classList.remove('hidden');
+        transcriptLoading.classList.add("hidden");
+        transcriptContent.classList.remove("hidden");
       })
-      .catch(err => {
-        console.error('Failed to load transcript:', err);
-        transcriptLoading.textContent = 'Failed to load transcript.';
-        transcriptLoading.classList.add('text-fg-1');
+      .catch((err) => {
+        console.error("Failed to load transcript:", err);
+        transcriptLoading.textContent = "Failed to load transcript.";
+        transcriptLoading.classList.add("text-fg-1");
       });
   }
 </script>

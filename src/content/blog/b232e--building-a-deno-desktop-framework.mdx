@@ -6,15 +6,15 @@ title: Building a Deno Desktop Framework
 
 ## Goal
 
-Build a cross platform desktop application framework in Deno that uses the native system webview to display UI. I want it to be incredibly simple. It should be as easy to create a small desktop app as it is to create a CLI too. The reason I'm choosing Deno as the target is because it allows running code from urls (`Deno run <url>`) which means desktop apps could be distributed as URLs. I'm not trying to reinvent the wheel here, so I want to use existing tech and boring decisions to make it as simple as is feasible. 
+Build a cross platform desktop application framework in Deno that uses the native system webview to display UI. I want it to be incredibly simple. It should be as easy to create a small desktop app as it is to create a CLI too. The reason I'm choosing Deno as the target is because it allows running code from urls (`Deno run <url>`) which means desktop apps could be distributed as URLs. I'm not trying to reinvent the wheel here, so I want to use existing tech and boring decisions to make it as simple as is feasible.
 
 ## Prior Art
 
-There's an Electron alternative called [Tauri](https://tauri.app/)[^1] that focuses on building secure applications that integrate with the native system webview instead of shipping chromium. If you're building a desktop app as a product, Tauri is probably the right choice. For me though, it's a little heavy and slow to get started with. It also requires users to write the "backend" part of the app in Rust which isn't a desirable trait for my goals. That said, they have some really solid open source crates that I plan to use. 
+There's an Electron alternative called [Tauri](https://tauri.app/)[^1] that focuses on building secure applications that integrate with the native system webview instead of shipping chromium. If you're building a desktop app as a product, Tauri is probably the right choice. For me though, it's a little heavy and slow to get started with. It also requires users to write the "backend" part of the app in Rust which isn't a desirable trait for my goals. That said, they have some really solid open source crates that I plan to use.
 
 ## Building a Webview Binding
 
-The first deliverable is being able to render UI in an OS-specific Webview from Deno. I'll note that [@webview/webview](https://jsr.io/@webview/webview) exists and is likely a viable option for simple setups. I'd like to build my own version though because I want to have deeper control over the shell of the application which that library doesn't allow. The plan is to use [Wry](https://github.com/tauri-apps/wry) to interact with the OS's native webview and [Tao](https://github.com/tauri-apps/tao) to manage the OS window. 
+The first deliverable is being able to render UI in an OS-specific Webview from Deno. I'll note that [@webview/webview](https://jsr.io/@webview/webview) exists and is likely a viable option for simple setups. I'd like to build my own version though because I want to have deeper control over the shell of the application which that library doesn't allow. The plan is to use [Wry](https://github.com/tauri-apps/wry) to interact with the OS's native webview and [Tao](https://github.com/tauri-apps/tao) to manage the OS window.
 
 ::callout{info}
 The complete code for this section is available [here](https://github.com/zephraph/webview/blob/20643ba6c0b28d6be1170165fd7c496423a2e7d9/src/main.rs).
@@ -27,7 +27,7 @@ Wry is written in rust so there are two ways I could interface with it:
 1. Use Deno's FFI to write a rust binding to call Wry directly
 2. Compile the Wry side into an executable and execute it as a subprocess communicating over stdin/stdout[^2]
 
-I've played with this idea already. In my initial experiments with the FFI approach I learned that when rendering native UI on OSX, the OS wants it done on the main thread of the process. When trying to invoke the webview in a separate thread I'd get a panic with an error saying it needed to be run from the main thread. Of course, running it from the main thread means that the Deno process was locked up (which isn't what I want). I'd found a crate called [crossmist](https://github.com/purplesyringa/crossmist) which defined a macro that would enable creating a separate process from a single rust file while providing an IPC mechanism. This approach _feels_ like it would be satisfying to just say that I got it working, but realistically it's overly complex. Another point against doing FFI is that Deno's own bindgen library is a little [broken](https://github.com/denoland/deno_bindgen/issues/148). That's really just an aid to helping make rust FFI easier, but it's kind of unfortunate that they've let it bit rot. The last bit here is that Deno's FFI is still behind an unstable flag which doesn't feel the best. Also, it's pretty easy to spin up a subprocess in about every language, so the library will be a bit more portable that way. 
+I've played with this idea already. In my initial experiments with the FFI approach I learned that when rendering native UI on OSX, the OS wants it done on the main thread of the process. When trying to invoke the webview in a separate thread I'd get a panic with an error saying it needed to be run from the main thread. Of course, running it from the main thread means that the Deno process was locked up (which isn't what I want). I'd found a crate called [crossmist](https://github.com/purplesyringa/crossmist) which defined a macro that would enable creating a separate process from a single rust file while providing an IPC mechanism. This approach _feels_ like it would be satisfying to just say that I got it working, but realistically it's overly complex. Another point against doing FFI is that Deno's own bindgen library is a little [broken](https://github.com/denoland/deno_bindgen/issues/148). That's really just an aid to helping make rust FFI easier, but it's kind of unfortunate that they've let it bit rot. The last bit here is that Deno's FFI is still behind an unstable flag which doesn't feel the best. Also, it's pretty easy to spin up a subprocess in about every language, so the library will be a bit more portable that way.
 
 As an aside, I was wondering how the previously mentioned webview library on Deno was being distributed on [JSR](https://jsr.io/) because as far as I'm aware JSR doesn't support random binary files like NPM does[^3]. Evidently they're just running [`Deno.dlopen`](https://docs.deno.com/api/deno/~/Deno.dlopen) on a [URL](https://jsr.io/@webview/webview/0.8.0/src/ffi.ts#L103)? That's both neat and absolutely terrifying, haha. So, of course I'm going to do something similar. While `Deno.Command`[^4] takes a URL, it only accepts file URLs and not http URLs. [Under the hood](https://jsr.io/@webview/webview/0.8.0/src/ffi.ts#L3) the webview library is using a library called [@denosaurs/plug](https://jsr.io/@denosaurs/plug) which mimics deno's FFI function (`dlopen`) but takes web URLs to resolve it. I wrote my own instead of using that.
 
@@ -35,13 +35,13 @@ So my plan is this:
 
 - Write a rust program that uses Wry to have some hooks to create a webview / do other stuff
 - Set up the Deno library in a way that on dev calls to a locally built binary and on prod calls out to GitHub releases
-- Figure out some restricted message passing format they can use to communicate. 
+- Figure out some restricted message passing format they can use to communicate.
 
 ### Building the Webview
 
-The first step is to actually write the rust to control the webview. 
+The first step is to actually write the rust to control the webview.
 
-This section is going to be Rust heavy, but I'll try to break the parts down in a way that even if you don't have Rust experience it still should be understandable. 
+This section is going to be Rust heavy, but I'll try to break the parts down in a way that even if you don't have Rust experience it still should be understandable.
 
 #### Deconstructing a Wry Example
 
@@ -58,7 +58,7 @@ let window = WindowBuilder::new().build(&event_loop).unwrap();
 let builder = WebViewBuilder::new(&window);
 ```
 
-I'm going to skip over the drag and drop code from this example as it's not entirely relevant at the moment. There are two ways to initialize the webview, either [`with_url`](https://rust-unofficial.github.io/patterns/patterns/creational/builder.html) as this example code uses or [`with_html`](https://docs.rs/wry/latest/wry/struct.WebViewBuilder.html#method.with_html). To simplify down the example here's the webview with just a URL configured. 
+I'm going to skip over the drag and drop code from this example as it's not entirely relevant at the moment. There are two ways to initialize the webview, either [`with_url`](https://rust-unofficial.github.io/patterns/patterns/creational/builder.html) as this example code uses or [`with_html`](https://docs.rs/wry/latest/wry/struct.WebViewBuilder.html#method.with_html). To simplify down the example here's the webview with just a URL configured.
 
 ```rust
 let _webview = builder
@@ -108,16 +108,20 @@ There are really only two main functions of this program
 
 As mentioned earlier, this'll be compiled to a binary and will use stdin/stdout for communication with its host process. The easiest way to get data into the program for the initialization phase is just passing it as an arg. That's a fairly well known problem so I'll just come back to it when I talk about communicating with the Rust subprocess.
 
-##  Communicating with the Rust Subprocess
-
+## Communicating with the Rust Subprocess
 
 As far as I'm aware, stdin and stdout don't really have a way of saying a write is _done_ until the stream itself is closed. Once closed, you can't really re-open it. That's a bit of a problem because Typical expects to take a `reader` interface that either has the bytes it expects and is coerced into a known type or results in an error. It's not really intended to operate on a non-ending stream of information that may at any one point only contain a partial payload. I would somehow need to read the Typical headers and buffer until the message is complete which somewhat defeats the purpose of using it to begin with. I didn't want to leak Typical's internals into my codebase.
 
 Giving up Typical can't mean giving up types though. I evaluated various options and went back to some solutions I'm readily familiar with from my time at [Oxide](https://oxide.computer/): [serde](https://crates.io/crates/serde) and [schemars](https://crates.io/crates/schemars). Serde is the most popular JSON serialization/deserialization library for rust and Schemars is a library for generating JSON schemas from rust data types.
 
-[^1]: I recorded a DevTools.fm episode with the [Tauri creators](https://www.devtools.fm/episode/82) 
+[^1]: I recorded a DevTools.fm episode with the [Tauri creators](https://www.devtools.fm/episode/82)
+
 [^2]: I did think about using [named pipes](https://en.wikipedia.org/wiki/Named_pipe) but I wanted to keep the interface as simple as possible
-[^3]: Turns out you *can* include binaries on JSR
+
+[^3]: Turns out you _can_ include binaries on JSR
+
 [^4]: How subprocesses are created in Deno. Similar to [`child_process.spawn`](https://nodejs.org/api/child_process.html#child_processspawncommand-args-options) in Node.js
+
 [^5]: Read [this guide](https://rust-unofficial.github.io/patterns/patterns/creational/builder.html) to learn more about the builder pattern in rust
+
 [^6]: VSCode extensions aren't sandboxed either

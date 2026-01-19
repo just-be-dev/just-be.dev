@@ -175,7 +175,9 @@ export class Code {
    * @param collection - The collection to get entries from
    * @returns Array of path objects with code/slug params and entry props
    */
-  static async getStaticPaths<T>(collection: Awaited<ReturnType<typeof import("astro:content").getCollection<any>>>) {
+  static async getStaticPaths<T>(
+    collection: Awaited<ReturnType<typeof import("astro:content").getCollection<any>>>
+  ) {
     return collection.map((entry) => {
       const { code, slug } = Code.parseId(entry.id);
       return {
@@ -282,23 +284,33 @@ if (import.meta.vitest) {
     });
 
     it("should reject codes that are too short", () => {
-      expect(() => Code.fromCode("B23")).toThrow("Code must be exactly 5 characters (1 kind + 4 date)");
+      expect(() => Code.fromCode("B23")).toThrow(
+        "Code must be exactly 5 characters (1 kind + 4 date)"
+      );
     });
 
     it("should reject codes that are too long", () => {
-      expect(() => Code.fromCode("B23456")).toThrow("Code must be exactly 5 characters (1 kind + 4 date)");
+      expect(() => Code.fromCode("B23456")).toThrow(
+        "Code must be exactly 5 characters (1 kind + 4 date)"
+      );
     });
 
     it("should reject codes with invalid kind", () => {
-      expect(() => Code.fromCode("X2391")).toThrow(`Invalid kind 'X'. Must be one of: ${VALID_KINDS.join(", ")}`);
+      expect(() => Code.fromCode("X2391")).toThrow(
+        `Invalid kind 'X'. Must be one of: ${VALID_KINDS.join(", ")}`
+      );
     });
 
     it("should reject codes with non-hex characters in date portion", () => {
-      expect(() => Code.fromCode("B239G")).toThrow("Date code must contain only hex characters (0-9, A-F)");
+      expect(() => Code.fromCode("B239G")).toThrow(
+        "Date code must contain only hex characters (0-9, A-F)"
+      );
     });
 
     it("should reject codes with invalid characters", () => {
-      expect(() => Code.fromCode("B239!")).toThrow("Date code must contain only hex characters (0-9, A-F)");
+      expect(() => Code.fromCode("B239!")).toThrow(
+        "Date code must contain only hex characters (0-9, A-F)"
+      );
     });
 
     it("should accept all valid kinds", () => {
@@ -393,9 +405,7 @@ if (import.meta.vitest) {
     });
 
     it("should reject IDs without separator", () => {
-      expect(() => Code.parseId("b2392noseparator")).toThrow(
-        "ID does not contain '--' separator"
-      );
+      expect(() => Code.parseId("b2392noseparator")).toThrow("ID does not contain '--' separator");
     });
   });
 

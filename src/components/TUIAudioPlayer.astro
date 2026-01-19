@@ -7,7 +7,10 @@ interface Props {
 const { audioPath, playerId } = Astro.props;
 ---
 
-<div id={playerId} class="tui-audio-player bg-0 border-2 border-fg-2 px-1 py-0.5 font-mono text-sm w-full">
+<div
+  id={playerId}
+  class="tui-audio-player bg-0 border-2 border-fg-2 px-1 py-0.5 font-mono text-sm w-full"
+>
   <audio class="hidden">
     <source src={audioPath} type="audio/mp4" />
     <source src={audioPath} type="audio/m4a" />
@@ -15,9 +18,7 @@ const { audioPath, playerId } = Astro.props;
   </audio>
 
   <div class="flex items-center gap-2">
-    <button class="play-pause-btn text-fg-0 px-1 outline-none" aria-label="Play/Pause">
-      ►
-    </button>
+    <button class="play-pause-btn text-fg-0 px-1 outline-none" aria-label="Play/Pause"> ► </button>
 
     <span class="time-display text-fg-1 whitespace-nowrap">
       <span class="current-time">00:00</span>
@@ -35,22 +36,22 @@ const { audioPath, playerId } = Astro.props;
   const container = document.getElementById(playerId);
   if (!container) throw new Error(`Audio player ${playerId} not found`);
 
-  const audio = container.querySelector('audio');
-  const playPauseBtn = container.querySelector('.play-pause-btn');
-  const currentTimeEl = container.querySelector('.current-time');
-  const totalTimeEl = container.querySelector('.total-time');
-  const progressBar = container.querySelector('.progress-bar');
-  const progressDisplay = container.querySelector('.progress-display');
+  const audio = container.querySelector("audio");
+  const playPauseBtn = container.querySelector(".play-pause-btn");
+  const currentTimeEl = container.querySelector(".current-time");
+  const totalTimeEl = container.querySelector(".total-time");
+  const progressBar = container.querySelector(".progress-bar");
+  const progressDisplay = container.querySelector(".progress-display");
 
   let progressChars = 25; // Default, will be calculated dynamically
 
   // Calculate how many characters fit in the progress bar
   function calculateProgressChars() {
     // Create a temporary span to measure character width
-    const tempSpan = document.createElement('span');
-    tempSpan.textContent = '█';
-    tempSpan.style.visibility = 'hidden';
-    tempSpan.style.position = 'absolute';
+    const tempSpan = document.createElement("span");
+    tempSpan.textContent = "█";
+    tempSpan.style.visibility = "hidden";
+    tempSpan.style.position = "absolute";
     tempSpan.className = progressDisplay.className;
     document.body.appendChild(tempSpan);
 
@@ -62,17 +63,17 @@ const { audioPath, playerId } = Astro.props;
   }
 
   function formatTime(seconds) {
-    if (!isFinite(seconds)) return '00:00';
+    if (!isFinite(seconds)) return "00:00";
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   }
 
   function generateProgressBar(filled, total) {
     const progress = total > 0 ? filled / total : 0;
     const fillCount = Math.round(progress * progressChars);
     const emptyCount = progressChars - fillCount;
-    return '█'.repeat(fillCount) + '░'.repeat(emptyCount);
+    return "█".repeat(fillCount) + "░".repeat(emptyCount);
   }
 
   function updateProgress() {
@@ -87,7 +88,7 @@ const { audioPath, playerId } = Astro.props;
   }
 
   // Play/pause toggle
-  playPauseBtn.addEventListener('click', () => {
+  playPauseBtn.addEventListener("click", () => {
     if (audio.paused) {
       audio.play();
     } else {
@@ -96,21 +97,21 @@ const { audioPath, playerId } = Astro.props;
   });
 
   // Update button state based on audio play/pause events
-  audio.addEventListener('play', () => {
-    playPauseBtn.textContent = '■';
+  audio.addEventListener("play", () => {
+    playPauseBtn.textContent = "■";
   });
 
-  audio.addEventListener('pause', () => {
-    playPauseBtn.textContent = '►';
+  audio.addEventListener("pause", () => {
+    playPauseBtn.textContent = "►";
   });
 
   // Update time display
-  audio.addEventListener('timeupdate', updateProgress);
-  audio.addEventListener('loadedmetadata', updateTotalTime);
-  audio.addEventListener('durationchange', updateTotalTime);
+  audio.addEventListener("timeupdate", updateProgress);
+  audio.addEventListener("loadedmetadata", updateTotalTime);
+  audio.addEventListener("durationchange", updateTotalTime);
 
   // Seek on progress bar click
-  progressBar.addEventListener('click', (e) => {
+  progressBar.addEventListener("click", (e) => {
     const rect = progressBar.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const progress = clickX / rect.width;
@@ -118,14 +119,14 @@ const { audioPath, playerId } = Astro.props;
   });
 
   // Keyboard shortcuts
-  container.addEventListener('keydown', (e) => {
-    if (e.key === ' ') {
+  container.addEventListener("keydown", (e) => {
+    if (e.key === " ") {
       e.preventDefault();
       playPauseBtn.click();
-    } else if (e.key === 'ArrowLeft') {
+    } else if (e.key === "ArrowLeft") {
       e.preventDefault();
       audio.currentTime = Math.max(0, audio.currentTime - 5);
-    } else if (e.key === 'ArrowRight') {
+    } else if (e.key === "ArrowRight") {
       e.preventDefault();
       audio.currentTime = Math.min(audio.duration, audio.currentTime + 5);
     }
@@ -139,7 +140,7 @@ const { audioPath, playerId } = Astro.props;
   }
 
   // Recalculate on window resize
-  window.addEventListener('resize', () => {
+  window.addEventListener("resize", () => {
     calculateProgressChars();
     updateProgress();
   });

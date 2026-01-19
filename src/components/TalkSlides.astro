@@ -50,14 +50,15 @@ function parseTimestamp(timestamp: number | string | undefined): number | undefi
 }
 
 // Normalize slides to array format
-const slideList: Slide[] = typeof slides === "number"
-  ? Array.from({ length: slides }, (_, i) => ({
-      image: `codegen-${i + 1}.png`,
-    }))
-  : slides.map(slide => ({
-      ...slide,
-      timestamp: parseTimestamp(slide.timestamp),
-    }));
+const slideList: Slide[] =
+  typeof slides === "number"
+    ? Array.from({ length: slides }, (_, i) => ({
+        image: `codegen-${i + 1}.png`,
+      }))
+    : slides.map((slide) => ({
+        ...slide,
+        timestamp: parseTimestamp(slide.timestamp),
+      }));
 
 // Resolve image URLs with local-first fallback
 // Priority: 1) Local file in /assets/, 2) R2 URL from manifest, 3) Fallback path
@@ -78,17 +79,31 @@ const containerId = `talk-slides-${talkId}`;
 ---
 
 <div id={containerId} class="talk-slides not-prose flex flex-col h-full min-h-0" tabindex="0">
-  <div class="slide-container border-2 border-fg-2 relative flex-1 group cursor-pointer overflow-hidden min-h-0 flex items-center justify-center">
+  <div
+    class="slide-container border-2 border-fg-2 relative flex-1 group cursor-pointer overflow-hidden min-h-0 flex items-center justify-center"
+  >
     <img
       src={resolvedSlides[0].url}
       alt="Slide 1"
       class="slide-image max-w-full max-h-full w-auto h-auto block flex-shrink"
     />
-    <div class="slide-nav-left absolute inset-y-0 left-0 right-1/2 flex items-center justify-start pl-[1ch] opacity-0 transition-opacity duration-200 pointer-events-auto z-100">
-      <div class="i-pixel-arrow-alt-circle-left-solid w-12 h-12 pointer-events-none" style="filter: drop-shadow(0 0 10px var(--background0));"></div>
+    <div
+      class="slide-nav-left absolute inset-y-0 left-0 right-1/2 flex items-center justify-start pl-[1ch] opacity-0 transition-opacity duration-200 pointer-events-auto z-100"
+    >
+      <div
+        class="i-pixel-arrow-alt-circle-left-solid w-12 h-12 pointer-events-none"
+        style="filter: drop-shadow(0 0 10px var(--background0));"
+      >
+      </div>
     </div>
-    <div class="slide-nav-right absolute inset-y-0 left-1/2 right-0 flex items-center justify-end pr-[1ch] opacity-0 transition-opacity duration-200 pointer-events-auto z-100">
-      <div class="i-pixel-arrow-alt-circle-right-solid w-12 h-12 pointer-events-none" style="filter: drop-shadow(0 0 10px var(--background0));"></div>
+    <div
+      class="slide-nav-right absolute inset-y-0 left-1/2 right-0 flex items-center justify-end pr-[1ch] opacity-0 transition-opacity duration-200 pointer-events-auto z-100"
+    >
+      <div
+        class="i-pixel-arrow-alt-circle-right-solid w-12 h-12 pointer-events-none"
+        style="filter: drop-shadow(0 0 10px var(--background0));"
+      >
+      </div>
     </div>
   </div>
 </div>
@@ -113,15 +128,15 @@ const containerId = `talk-slides-${talkId}`;
     // Don't set opacity here - let hover handlers manage it
     // Just ensure the arrows can be shown/hidden based on position
     if (currentSlide === 0) {
-      navLeft.setAttribute('data-disabled', 'true');
+      navLeft.setAttribute("data-disabled", "true");
     } else {
-      navLeft.removeAttribute('data-disabled');
+      navLeft.removeAttribute("data-disabled");
     }
 
     if (currentSlide === totalSlides - 1) {
-      navRight.setAttribute('data-disabled', 'true');
+      navRight.setAttribute("data-disabled", "true");
     } else {
-      navRight.removeAttribute('data-disabled');
+      navRight.removeAttribute("data-disabled");
     }
   }
 
@@ -188,24 +203,24 @@ const containerId = `talk-slides-${talkId}`;
   updateSlide();
 
   // Handle hover to show/hide arrows based on zone
-  navLeft.addEventListener('mouseenter', () => {
-    if (!navLeft.hasAttribute('data-disabled')) {
-      navLeft.style.opacity = '0.7';
+  navLeft.addEventListener("mouseenter", () => {
+    if (!navLeft.hasAttribute("data-disabled")) {
+      navLeft.style.opacity = "0.7";
     }
   });
 
-  navLeft.addEventListener('mouseleave', () => {
-    navLeft.style.opacity = '0';
+  navLeft.addEventListener("mouseleave", () => {
+    navLeft.style.opacity = "0";
   });
 
-  navRight.addEventListener('mouseenter', () => {
-    if (!navRight.hasAttribute('data-disabled')) {
-      navRight.style.opacity = '0.7';
+  navRight.addEventListener("mouseenter", () => {
+    if (!navRight.hasAttribute("data-disabled")) {
+      navRight.style.opacity = "0.7";
     }
   });
 
-  navRight.addEventListener('mouseleave', () => {
-    navRight.style.opacity = '0';
+  navRight.addEventListener("mouseleave", () => {
+    navRight.style.opacity = "0";
   });
 
   // Audio sync setup - defer until DOM is ready to ensure audio element exists
@@ -213,10 +228,10 @@ const containerId = `talk-slides-${talkId}`;
     if (syncWithAudio && audioPlayerId) {
       const audioPlayerContainer = document.getElementById(audioPlayerId);
       if (audioPlayerContainer) {
-        const audio = audioPlayerContainer.querySelector('audio');
+        const audio = audioPlayerContainer.querySelector("audio");
         if (audio) {
           // Sync slides with audio playback
-          audio.addEventListener('timeupdate', () => {
+          audio.addEventListener("timeupdate", () => {
             if (!autoSyncEnabled) return;
 
             const time = audio.currentTime;
@@ -228,7 +243,7 @@ const containerId = `talk-slides-${talkId}`;
           });
 
           // Also sync on seeking
-          audio.addEventListener('seeked', () => {
+          audio.addEventListener("seeked", () => {
             if (!autoSyncEnabled) return;
 
             const time = audio.currentTime;
@@ -241,8 +256,8 @@ const containerId = `talk-slides-${talkId}`;
   }
 
   // Wait for DOM to be fully loaded before setting up audio sync
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', setupAudioSync);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", setupAudioSync);
   } else {
     // DOM is already loaded, setup immediately
     setupAudioSync();

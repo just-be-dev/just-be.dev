@@ -34,10 +34,10 @@ const playerId = `audio-player-${talkId}`;
 
 // Resolve asset URLs with local-first fallback
 // Remove leading /assets/ if present to get the path relative to public/assets
-const normalizedAudioPath = audioPath.replace(/^\/assets\//, '');
-const normalizedTranscriptPath = transcriptPath.replace(/^\/assets\//, '');
-const resolvedAudioUrl = await resolveAssetUrl(normalizedAudioPath) ?? audioPath;
-const resolvedTranscriptUrl = await resolveAssetUrl(normalizedTranscriptPath) ?? transcriptPath;
+const normalizedAudioPath = audioPath.replace(/^\/assets\//, "");
+const normalizedTranscriptPath = transcriptPath.replace(/^\/assets\//, "");
+const resolvedAudioUrl = (await resolveAssetUrl(normalizedAudioPath)) ?? audioPath;
+const resolvedTranscriptUrl = (await resolveAssetUrl(normalizedTranscriptPath)) ?? transcriptPath;
 ---
 
 <div id={containerId} class:list={["audio-transcript not-prose h-full flex flex-col", className]}>
@@ -48,16 +48,19 @@ const resolvedTranscriptUrl = await resolveAssetUrl(normalizedTranscriptPath) ??
 
   <!-- Transcript with WebTUI View -->
   <div is-="view" class="flex-1 overflow-hidden border-2 border-fg-2 bg-0">
-    <div is-="view-content" class="transcript-container h-full overflow-y-auto" style="position: relative;">
-      <div class="transcript-loading text-fg-2 text-center py-2">
-        Loading transcript...
-      </div>
+    <div
+      is-="view-content"
+      class="transcript-container h-full overflow-y-auto"
+      style="position: relative;"
+    >
+      <div class="transcript-loading text-fg-2 text-center py-2">Loading transcript...</div>
       <div class="transcript-content hidden"></div>
     </div>
   </div>
 </div>
 
-<style set:html={`
+<style
+  set:html={`
   .transcript-word {
     display: inline;
   }
@@ -66,17 +69,18 @@ const resolvedTranscriptUrl = await resolveAssetUrl(normalizedTranscriptPath) ??
     background-color: var(--foreground0);
     color: var(--background0);
   }
-`}></style>
+`}
+></style>
 
 <script define:vars={{ containerId, playerId, resolvedTranscriptUrl }}>
   const container = document.getElementById(containerId);
   if (!container) throw new Error(`Container ${containerId} not found`);
 
   const audioPlayer = document.getElementById(playerId);
-  const audio = audioPlayer.querySelector('audio');
-  const transcriptContent = container.querySelector('.transcript-content');
-  const transcriptLoading = container.querySelector('.transcript-loading');
-  const transcriptContainer = container.querySelector('.transcript-container');
+  const audio = audioPlayer.querySelector("audio");
+  const transcriptContent = container.querySelector(".transcript-content");
+  const transcriptLoading = container.querySelector(".transcript-loading");
+  const transcriptContainer = container.querySelector(".transcript-container");
 
   let transcript = null;
   let currentWordIndex = -1;
@@ -116,13 +120,13 @@ const resolvedTranscriptUrl = await resolveAssetUrl(normalizedTranscriptPath) ??
 
     // Remove previous active class
     if (currentWordIndex >= 0 && wordElements[currentWordIndex]) {
-      wordElements[currentWordIndex].classList.remove('active');
+      wordElements[currentWordIndex].classList.remove("active");
     }
 
     // Add new highlight
     if (index >= 0 && wordElements[index]) {
       const wordEl = wordElements[index];
-      wordEl.classList.add('active');
+      wordEl.classList.add("active");
 
       // Scroll into view if autoscroll enabled
       if (autoscroll) {
@@ -130,8 +134,11 @@ const resolvedTranscriptUrl = await resolveAssetUrl(normalizedTranscriptPath) ??
         const transcriptContainerRect = transcriptContainer.getBoundingClientRect();
 
         // Check if word is outside visible area
-        if (wordRect.top < transcriptContainerRect.top || wordRect.bottom > transcriptContainerRect.bottom) {
-          wordEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (
+          wordRect.top < transcriptContainerRect.top ||
+          wordRect.bottom > transcriptContainerRect.bottom
+        ) {
+          wordEl.scrollIntoView({ behavior: "smooth", block: "center" });
         }
       }
     }
@@ -140,14 +147,14 @@ const resolvedTranscriptUrl = await resolveAssetUrl(normalizedTranscriptPath) ??
   }
 
   // Handle audio timeupdate
-  audio.addEventListener('timeupdate', () => {
+  audio.addEventListener("timeupdate", () => {
     const time = audio.currentTime;
     const index = findWordIndexAtTime(time);
     highlightWord(index);
   });
 
   // Handle seeking
-  audio.addEventListener('seeked', () => {
+  audio.addEventListener("seeked", () => {
     const time = audio.currentTime;
     const index = findWordIndexAtTime(time);
     highlightWord(index);
@@ -155,22 +162,23 @@ const resolvedTranscriptUrl = await resolveAssetUrl(normalizedTranscriptPath) ??
 
   // Load transcript
   fetch(resolvedTranscriptUrl)
-    .then(res => {
+    .then((res) => {
       if (!res.ok) {
         throw new Error(`Failed to load transcript: ${res.status} ${res.statusText}`);
       }
       return res.json();
     })
-    .then(data => {
+    .then((data) => {
       transcript = data;
       renderTranscript();
-      transcriptLoading.classList.add('hidden');
-      transcriptContent.classList.remove('hidden');
+      transcriptLoading.classList.add("hidden");
+      transcriptContent.classList.remove("hidden");
     })
-    .catch(err => {
-      console.error('Failed to load transcript:', err);
-      transcriptLoading.textContent = 'Failed to load transcript. The transcription may still be processing.';
-      transcriptLoading.classList.add('text-fg-1');
+    .catch((err) => {
+      console.error("Failed to load transcript:", err);
+      transcriptLoading.textContent =
+        "Failed to load transcript. The transcription may still be processing.";
+      transcriptLoading.classList.add("text-fg-1");
     });
 
   function renderTranscript() {
@@ -186,8 +194,8 @@ const resolvedTranscriptUrl = await resolveAssetUrl(normalizedTranscriptPath) ??
 
           html.push(
             `<span class="transcript-word text-fg-0 hocus:text-accent cursor-pointer" ` +
-            `data-start="${start}" data-end="${end}" data-segment="${segIndex}" data-word="${wordIndex}">` +
-            `${word}</span> `  // Added space after closing tag
+              `data-start="${start}" data-end="${end}" data-segment="${segIndex}" data-word="${wordIndex}">` +
+              `${word}</span> ` // Added space after closing tag
           );
         });
       } else {
@@ -196,14 +204,14 @@ const resolvedTranscriptUrl = await resolveAssetUrl(normalizedTranscriptPath) ??
       }
     });
 
-    transcriptContent.innerHTML = html.join('');
+    transcriptContent.innerHTML = html.join("");
 
     // Cache word elements
-    wordElements = Array.from(transcriptContent.querySelectorAll('.transcript-word'));
+    wordElements = Array.from(transcriptContent.querySelectorAll(".transcript-word"));
 
     // Add click handlers to seek to word
-    wordElements.forEach(wordEl => {
-      wordEl.addEventListener('click', () => {
+    wordElements.forEach((wordEl) => {
+      wordEl.addEventListener("click", () => {
         const start = parseFloat(wordEl.dataset.start);
         audio.currentTime = start;
         if (audio.paused) {
@@ -225,7 +233,9 @@ const resolvedTranscriptUrl = await resolveAssetUrl(normalizedTranscriptPath) ??
 
   .transcript-word {
     display: inline;
-    transition: background-color 0.1s ease, color 0.1s ease;
+    transition:
+      background-color 0.1s ease,
+      color 0.1s ease;
   }
 
   .transcript-word.active {
