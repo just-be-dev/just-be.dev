@@ -3,6 +3,7 @@ import { glob, file } from "astro/loaders";
 import { feedLoader } from "@ascorbic/feed-loader";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { load as loadYAML } from "js-yaml";
 
 const blog = defineCollection({
   loader: glob({ base: "./src/content/blog", pattern: "**/*.{md,mdx}" }),
@@ -13,6 +14,7 @@ const blog = defineCollection({
     tags: z.array(z.string()).default([]),
     draft: z.boolean().default(false),
     code: z.string().optional(),
+    slugs: z.array(z.string()).optional(),
   }),
 });
 
@@ -26,6 +28,7 @@ const projects = defineCollection({
     status: z.enum(["active", "completed", "archived", "maintenance"]).default("active"),
     date: z.coerce.date(),
     code: z.string().optional(),
+    slugs: z.array(z.string()).optional(),
   }),
 });
 
@@ -39,6 +42,7 @@ const research = defineCollection({
     status: z.enum(["draft", "published", "archived"]).default("draft"),
     topics: z.array(z.string()).default([]),
     code: z.string().optional(),
+    slugs: z.array(z.string()).optional(),
   }),
 });
 
@@ -64,6 +68,7 @@ const talks = defineCollection({
     audioPath: z.string().optional(),
     transcriptPath: z.string().optional(),
     code: z.string().optional(),
+    slugs: z.array(z.string()).optional(),
   }),
 });
 
@@ -109,4 +114,34 @@ const assets = defineCollection({
   }),
 });
 
-export const collections = { blog, projects, research, pages, devtools, talks, assets };
+const urls = defineCollection({
+  loader: {
+    name: "url-manifest-loader",
+    load: ({ store, logger }) => {
+      logger.info("Loading URL manifest");
+
+      const manifestPath = join(process.cwd(), "src/content/url-manifest.yaml");
+      const manifestContent = readFileSync(manifestPath, "utf-8");
+      const manifest = loadYAML(manifestContent) as { codes: Record<string, string[]> };
+
+      // Transform {codes: {code: [slugs]}} to array of {id: slug, code}
+      let urlCount = 0;
+      for (const [code, slugs] of Object.entries(manifest.codes)) {
+        for (const slug of slugs) {
+          store.set({
+            id: slug,
+            data: { code },
+          });
+          urlCount++;
+        }
+      }
+
+      logger.info(`Loaded ${urlCount} URLs from ${Object.keys(manifest.codes).length} codes`);
+    },
+  },
+  schema: z.object({
+    code: z.string(),
+  }),
+});
+
+export const collections = { blog, projects, research, pages, devtools, talks, assets, urls };

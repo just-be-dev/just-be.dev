@@ -11,7 +11,10 @@ import { resolveAssetUrl } from "@/utils/assets";
 
 export async function getStaticPaths() {
   const talks = await getCollection("talks");
-  return Code.getStaticPaths(talks);
+  return talks.map((talk) => ({
+    params: { slug: talk.id },
+    props: talk,
+  }));
 }
 
 type Props = Awaited<ReturnType<typeof getStaticPaths>>[number]["props"];
