@@ -1,88 +1,30 @@
 import { defineMiddleware } from "astro:middleware";
-import { getCollection, getEntry } from "astro:content";
-import { Code, KIND_TO_COLLECTION, type Kind, type Collection } from "@/utils/code";
+import { getCollection } from "astro:content";
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const url = new URL(context.request.url);
-  const kindChars = Object.keys(KIND_TO_COLLECTION).join("").toLowerCase();
-  const collections = Object.values(KIND_TO_COLLECTION).join("|");
+  const pathSegments = url.pathname.split("/").filter(Boolean);
 
-  // Handle old code-based URLs like /blog/b2405/slug -> /blog/slug
-  // Check this first since it doesn't need manifest lookup
-  const oldCodePattern = new RegExp(
-    `^\\/(${collections})\\/([${kindChars}][0-9a-f]{4})\\/([^\/]+)\\/?$`,
-    "i"
-  );
-  const oldCodeMatch = url.pathname.match(oldCodePattern);
-  if (oldCodeMatch) {
-    const collection = oldCodeMatch[1];
-    const slug = oldCodeMatch[3];
-    const newUrl = new URL(url);
-    newUrl.pathname = `/${collection}/${slug}`;
-    return context.redirect(newUrl.toString(), 301);
-  }
+  // Check if first or second path segment is a code (format: [brpt][0-9a-f]{4})
+  const codePattern = /^[brpt][0-9a-f]{4}$/i;
+  const firstSegmentIsCode = pathSegments[0] && codePattern.test(pathSegments[0]);
+  const secondSegmentIsCode = pathSegments[1] && codePattern.test(pathSegments[1]);
 
-  // For short codes and custom slugs, we need to load the manifest
-  const shortCodePattern = new RegExp(`^\\/([${kindChars}][0-9a-f]{4})\\/?$`, "i");
-  const shortCodeMatch = url.pathname.match(shortCodePattern);
+  if (firstSegmentIsCode || secondSegmentIsCode) {
+    const code = (firstSegmentIsCode ? pathSegments[0] : pathSegments[1]).toLowerCase();
 
-  // Check if URL could potentially need a redirect (short code, custom slug, or legacy code-based URL)
-  // We need to check the manifest for collection paths to handle legacy URLs like /projects/p1e73
-  const isCollectionPath = url.pathname.match(new RegExp(`^\\/(${collections})\\/[^\\/]+\\/?$`));
-  const needsManifest = shortCodeMatch || isCollectionPath || url.pathname.length > 1;
-
-  if (needsManifest) {
+    // Load the URL manifest to find the canonical page
     const entries = await getCollection("urls");
-
-    // Handle short code URLs like /b232e -> /blog/slug
-    if (shortCodeMatch) {
-      const shortCode = shortCodeMatch[1].toLowerCase();
-      const kindChar = shortCode[0].toUpperCase() as Kind;
-      const collection = KIND_TO_COLLECTION[kindChar];
-
-      const matchingEntry = entries.find((entry) => entry.data.code === shortCode);
-
-      if (matchingEntry) {
-        // Extract slug from the manifest ID (which is /{collection}/{slug})
-        const slug = matchingEntry.id.replace(`/${collection}/`, "");
-        const newUrl = new URL(url);
-        newUrl.pathname = `/${collection}/${slug}`;
-        return context.redirect(newUrl.toString(), 301);
-      }
-
-      // No match, continue to 404
-      return next();
-    }
-
-    // Handle custom slug redirects like /ccpm -> /projects/ccpm
-    const currentPath = url.pathname.replace(/\/$/, ""); // Remove trailing slash for comparison
-
-    // Find if current path matches any manifest entry
-    const matchingEntry = entries.find((entry) => {
-      const entryPath = entry.id.replace(/\/$/, "");
-      return entryPath === currentPath;
-    });
+    const matchingEntry = entries.find((entry) => entry.data.code === code);
 
     if (matchingEntry) {
-      // Get all URLs for this code
-      const code = matchingEntry.data.code;
-      const allUrlsForCode = entries.filter((e) => e.data.code === code);
-
-      // Find the canonical URL (should match /{collection}/{slug} pattern)
-      const canonicalEntry = allUrlsForCode.find((e) => {
-        const entryPath = e.id.replace(/\/$/, "");
-        return new RegExp(`^\\/(${collections})\\/[^\\/]+$`).test(entryPath);
-      });
-
-      // If we found a canonical URL and it's different from current path, redirect
-      if (canonicalEntry && canonicalEntry.id !== matchingEntry.id) {
-        const newUrl = new URL(url);
-        newUrl.pathname = canonicalEntry.id;
-        return context.redirect(newUrl.toString(), 301);
-      }
+      // The manifest ID is the canonical URL path (e.g., "/blog/slug")
+      const newUrl = new URL(url);
+      newUrl.pathname = matchingEntry.id;
+      return context.redirect(newUrl.toString(), 301);
     }
   }
 
-  // All other URLs pass through (including canonical slug-based URLs)
+  // All other URLs pass through
   return next();
 });
