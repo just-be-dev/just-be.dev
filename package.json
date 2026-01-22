@@ -25,7 +25,7 @@
     "astro": "astro",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "prefix-codes": "bun scripts/prefix-codes.ts"
+    "gen-codes": "bun scripts/gen-codes.ts"
   },
   "type": "module",
   "devDependencies": {

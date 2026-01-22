@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { existsSync, readdirSync, readFileSync, writeFileSync, renameSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { Code, type Kind } from "../src/utils/code";
 
@@ -125,27 +125,6 @@ function updateFrontmatterCode(content: string, code: string): string {
 }
 
 /**
- * Check if filename already has a code prefix (5 chars: kind + hex date followed by --)
- */
-function hasCodePrefix(filename: string): boolean {
-  return /^[BRPTbrpt][0-9A-Fa-f]{4}--/.test(filename);
-}
-
-/**
- * Check if filename has an uppercase code prefix
- */
-function hasUppercasePrefix(filename: string): boolean {
-  return /^[BRPT][0-9A-F]{4}--/.test(filename) && /[A-F]/.test(filename.substring(1, 5));
-}
-
-/**
- * Check if filename has old 4-char base-36 code prefix (needs migration)
- */
-function hasOldCodePrefix(filename: string): boolean {
-  return /^[0-9A-Za-z]{4}--/.test(filename) && !/^[BRPT][0-9A-Fa-f]{4}--/.test(filename);
-}
-
-/**
  * Process files in a single directory
  */
 function processDirectory(dir: string) {
@@ -179,54 +158,18 @@ function processDirectory(dir: string) {
     const filename = filePath.split("/").pop()!;
 
     try {
-      // Check if file has uppercase prefix that needs to be converted
-      if (hasUppercasePrefix(filename)) {
-        const lowercaseFilename = filename.substring(0, 5).toLowerCase() + filename.substring(5);
-        const newFilePath = filePath.replace(filename, lowercaseFilename);
-
-        // Read content and update frontmatter with code
-        const content = readFileSync(filePath, "utf-8");
-        const codeStr = lowercaseFilename.substring(0, 5);
-        const updatedContent = updateFrontmatterCode(content, codeStr);
-
-        // Write updated content
-        writeFileSync(filePath, updatedContent);
-
-        // Rename file
-        renameSync(filePath, newFilePath);
-        console.log(
-          `🔄 ${filename} → ${lowercaseFilename} (converted to lowercase, added code to frontmatter)`
-        );
-        processedCount++;
-        continue;
-      }
-
-      // Check if file already has new 5-char code prefix
-      if (hasCodePrefix(filename)) {
-        // Read content to check if code is in frontmatter
-        const content = readFileSync(filePath, "utf-8");
-        const codeStr = filename.substring(0, 5);
-
-        // Check if code field already exists in frontmatter
-        const { data } = parseFrontmatter(content);
-        if (data.code === codeStr) {
-          console.log(`⏭  Skipping ${filename} (already has code in filename and frontmatter)`);
-          skippedCount++;
-          continue;
-        }
-
-        // Add code to frontmatter
-        const updatedContent = updateFrontmatterCode(content, codeStr);
-        writeFileSync(filePath, updatedContent);
-        console.log(`✅ ${filename} (added code to frontmatter)`);
-        processedCount++;
-        continue;
-      }
-
       // Read file content
       const content = readFileSync(filePath, "utf-8");
+      const { data } = parseFrontmatter(content);
 
-      // Extract date from frontmatter
+      // Check if code already exists in frontmatter
+      if (data.code) {
+        console.log(`⏭  Skipping ${filename} (code already in frontmatter)`);
+        skippedCount++;
+        continue;
+      }
+
+      // Generate code from date
       const dateString = extractDate(content);
       if (!dateString) {
         console.log(`❌ No date found in ${filename}`);
@@ -240,27 +183,9 @@ function processDirectory(dir: string) {
 
       // Update frontmatter with code
       const updatedContent = updateFrontmatterCode(content, codeStr);
-
-      // Determine base filename (strip old code if present)
-      let baseFilename = filename;
-      if (hasOldCodePrefix(filename)) {
-        // Remove old 4-char base-36 code prefix
-        baseFilename = filename.substring(6); // Skip "XXXX--"
-        console.log(`🔄 Migrating from old base-36 code: ${filename.substring(0, 4)}`);
-      }
-
-      // Create new filename
-      const newFilename = `${codeStr}--${baseFilename}`;
-      const newFilePath = filePath.replace(filename, newFilename);
-
-      // Write updated content
       writeFileSync(filePath, updatedContent);
 
-      // Rename file if needed
-      if (filePath !== newFilePath) {
-        renameSync(filePath, newFilePath);
-      }
-      console.log(`✅ ${filename} → ${newFilename} (${dateString})`);
+      console.log(`✅ ${filename} (added code ${codeStr} to frontmatter)`);
       processedCount++;
     } catch (error) {
       console.error(
@@ -281,9 +206,9 @@ function processDirectory(dir: string) {
 }
 
 /**
- * Main function to prefix files with their date codes
+ * Main function to generate codes for all content files
  */
-function prefixCodes(dirs: string[]) {
+function genCodes(dirs: string[]) {
   console.log(`Content directory: ${CONTENT_DIR}`);
   console.log(`Directories to process: ${dirs.join(", ")}\n`);
   console.log("=".repeat(50) + "\n");
@@ -315,7 +240,7 @@ const dirs = process.argv.slice(2).length > 0 ? process.argv.slice(2) : DEFAULT_
 
 // Run the script
 try {
-  prefixCodes(dirs);
+  genCodes(dirs);
 } catch (error) {
   console.error("Fatal error:", error);
   process.exit(1);

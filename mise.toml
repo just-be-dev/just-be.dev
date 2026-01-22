@@ -36,8 +36,8 @@ run = "vitest"
 [tasks."test:ui"]
 run = "vitest --ui"
 
-[tasks.prefix-codes]
-run = "bun scripts/prefix-codes.ts"
+[tasks.gen-codes]
+run = "bun scripts/gen-codes.ts"
 
 [tasks.upload-assets]
 run = "bun scripts/upload-assets.ts"
