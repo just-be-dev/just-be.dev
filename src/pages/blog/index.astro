@@ -11,7 +11,9 @@ export const prerender = false;
 const selectedTag = Astro.url.searchParams.get("tag");
 
 // Get all blog posts
-const publishedPosts = (await getCollection("blog", ({ data }) => !data.draft))
+const publishedPosts = (
+  await getCollection("blog", ({ data }) => import.meta.env.DEV || !data.draft)
+)
   .map((post) => ({ ...post, code: Code.fromId(post.id) }))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 

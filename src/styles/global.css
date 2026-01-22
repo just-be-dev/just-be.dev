@@ -29,6 +29,16 @@
   border-color: var(--box-border-color, currentColor) !important;
 }
 
+/* Override UnoCSS reset for WebTUI tables */
+table::before,
+table th::before,
+table th::after,
+table td::before,
+table td::after {
+  border-width: var(--table-border-width, 2px) !important;
+  border-color: var(--table-border-color, var(--foreground2)) !important;
+}
+
 /* Font stack for terminal aesthetic */
 :root {
   /* ANSI Terminal Colors - Basic (0) and Bright (1) variants */
@@ -152,6 +162,10 @@ article ol:not(:is(.not-prose *)) ol ol {
 article ul:not(:is(.not-prose *)) ul li:last-child,
 article ol:not(:is(.not-prose *)) ol li:last-child {
   margin-bottom: 0;
+}
+
+article table:not(:is(.not-prose *)) {
+  margin-bottom: 1lh;
 }
 
 /* README content link styles */

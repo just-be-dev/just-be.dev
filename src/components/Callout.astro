@@ -1,0 +1,46 @@
+---
+import Box from "./Box.astro";
+
+export interface Props {
+  type?: "note" | "tip" | "important" | "caution" | "warning";
+  title?: string;
+  class?: string;
+}
+
+const { type = "note", title, class: className } = Astro.props;
+
+// Configuration for each callout type
+const typeConfig = {
+  note: {
+    icon: "i-pixel-info-circle-solid",
+    defaultTitle: "NOTE",
+  },
+  tip: {
+    icon: "i-pixel-lightbulb-solid",
+    defaultTitle: "TIP",
+  },
+  important: {
+    icon: "i-pixel-exclaimation-solid",
+    defaultTitle: "IMPORTANT",
+  },
+  caution: {
+    icon: "i-pixel-exclamation-triangle-solid",
+    defaultTitle: "CAUTION",
+  },
+  warning: {
+    icon: "i-pixel-octagon-times-solid",
+    defaultTitle: "WARNING",
+  },
+} as const;
+
+const config = typeConfig[type];
+const displayTitle = title || config.defaultTitle;
+---
+
+<Box class:list={["callout", `callout-${type}`, className]}>
+  <Fragment slot="badge">
+    <span class:list={[config.icon, "text-md"]} aria-hidden="true"></span>
+    <span>{displayTitle}</span>
+  </Fragment>
+  <slot />
+</Box>

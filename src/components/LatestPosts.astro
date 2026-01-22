@@ -9,7 +9,7 @@ interface Props {
 const { limit = 5 } = Astro.props;
 
 // Get latest published blog posts
-const latestPosts = (await getCollection("blog", ({ data }) => !data.draft))
+const latestPosts = (await getCollection("blog", ({ data }) => import.meta.env.DEV || !data.draft))
   .map((post) => ({ ...post, code: Code.fromId(post.id) }))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
   .slice(0, limit);
