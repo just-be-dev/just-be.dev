@@ -1,10 +1,13 @@
 ---
-title: "Build Yourself a Claude Code Plugin Marketplace"
-description: "The utility of a plugin marketplace for Claude Code and why you should make one"
+title: Build Yourself a Claude Code Plugin Marketplace
+description: The utility of a plugin marketplace for Claude Code and why you should make one
 date: 2026-01-19
-tags: [ai, claude]
+tags:
+  - ai
+  - claude
 defs:
   cc: Claude Code
+code: b252b
 ---
 
 There's a lot of ways to configure [Claude Code](https://code.claude.com/docs/en/overview) (:def[CC]{:title=defs.cc}) now. There are [custom slash commands](https://code.claude.com/docs/en/slash-commands), [skills](https://code.claude.com/docs/en/skills#agent-skills), [hooks](https://code.claude.com/docs/en/hooks-guide), [subagents](https://code.claude.com/docs/en/sub-agents), and [mcp servers](https://code.claude.com/docs/en/mcp).
@@ -69,7 +72,7 @@ The one thing I will callout is that a plugin's `version` field _is_ required an
 
 ## Uses for Marketplaces
 
-I'm just starting out, but there are a few things I'm already using marketplaces for. 
+I'm just starting out, but there are a few things I'm already using marketplaces for.
 
 ### Configuring Tools in New Projects
 
@@ -77,7 +80,7 @@ I use [Mise](https://github.com/jdx/mise) in essentially all of my projects now.
 
 ### Meta Marketplace Updates
 
-Another fun usage use my [meta plugin](https://github.com/just-be-dev/ccpm/tree/main/plugins/meta) which helps update the marketplace itself. I have a [create plugin](https://github.com/just-be-dev/ccpm/blob/main/plugins/meta/commands/create-plugin.md) command that uses the github CLI to open an issue on the marketplace repo and to invoke `@claude` which'll kick off the claude GitHub app. That'll only work for my user account. It's a fun (if convoluted) way of being able to add plugins to my marketplace from any claude instance. 
+Another fun usage use my [meta plugin](https://github.com/just-be-dev/ccpm/tree/main/plugins/meta) which helps update the marketplace itself. I have a [create plugin](https://github.com/just-be-dev/ccpm/blob/main/plugins/meta/commands/create-plugin.md) command that uses the github CLI to open an issue on the marketplace repo and to invoke `@claude` which'll kick off the claude GitHub app. That'll only work for my user account. It's a fun (if convoluted) way of being able to add plugins to my marketplace from any claude instance.
 
 ## Marketplace Maintenance
 

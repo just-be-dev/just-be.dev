@@ -28,8 +28,8 @@ if (!project) {
 
 const { Content } = await render(project);
 
-// Extract code from filename
-const code = Code.fromId(project.id);
+// Get code from frontmatter, fallback to parsing filename for backwards compatibility
+const code = project.data.code || Code.fromId(project.id).toString();
 ---
 
 <Layout title={`${project.data.title} - Just Be`} description={project.data.description}>

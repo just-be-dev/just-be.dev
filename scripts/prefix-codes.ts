@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 
-import { $ } from "bun";
+import { existsSync, readdirSync, readFileSync, writeFileSync, renameSync } from "node:fs";
+import { join } from "node:path";
 import { Code, type Kind } from "../src/utils/code";
 
 const CONTENT_DIR = `${import.meta.dir}/../src/content`;
@@ -25,18 +26,102 @@ function inferKind(dir: string): Kind {
 }
 
 /**
+ * Parse frontmatter from MDX content
+ */
+function parseFrontmatter(content: string): { data: Record<string, any>; body: string } {
+  const match = content.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+  if (!match) {
+    return { data: {}, body: content };
+  }
+
+  const yamlStr = match[1];
+  const body = match[2];
+  const data = Bun.YAML.parse(yamlStr) as Record<string, any>;
+
+  return { data, body };
+}
+
+/**
+ * Stringify a YAML value with proper indentation
+ */
+function stringifyYAMLValue(value: any, indent: number): string[] {
+  const lines: string[] = [];
+  const indentStr = "  ".repeat(indent);
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      if (typeof item === "object" && item !== null) {
+        lines.push(`${indentStr}-`);
+        for (const [k, v] of Object.entries(item)) {
+          if (typeof v === "object" && v !== null && !Array.isArray(v)) {
+            lines.push(`${indentStr}  ${k}:`);
+            lines.push(...stringifyYAMLValue(v, indent + 2));
+          } else if (Array.isArray(v)) {
+            lines.push(`${indentStr}  ${k}:`);
+            lines.push(...stringifyYAMLValue(v, indent + 2));
+          } else {
+            lines.push(`${indentStr}  ${k}: ${v}`);
+          }
+        }
+      } else {
+        lines.push(`${indentStr}- ${item}`);
+      }
+    }
+  } else if (typeof value === "object" && value !== null) {
+    for (const [k, v] of Object.entries(value)) {
+      if (typeof v === "object" && v !== null && !Array.isArray(v)) {
+        lines.push(`${indentStr}${k}:`);
+        lines.push(...stringifyYAMLValue(v, indent + 1));
+      } else if (Array.isArray(v)) {
+        lines.push(`${indentStr}${k}:`);
+        lines.push(...stringifyYAMLValue(v, indent + 1));
+      } else {
+        lines.push(`${indentStr}${k}: ${v}`);
+      }
+    }
+  }
+
+  return lines;
+}
+
+/**
+ * Stringify frontmatter data into YAML format
+ */
+function stringifyFrontmatter(data: Record<string, any>): string {
+  const lines: string[] = [];
+
+  for (const [key, value] of Object.entries(data)) {
+    if (Array.isArray(value)) {
+      lines.push(`${key}:`);
+      lines.push(...stringifyYAMLValue(value, 1));
+    } else if (typeof value === "object" && value !== null) {
+      lines.push(`${key}:`);
+      lines.push(...stringifyYAMLValue(value, 1));
+    } else {
+      lines.push(`${key}: ${value}`);
+    }
+  }
+
+  return lines.join("\n");
+}
+
+/**
  * Extract the date from MDX frontmatter
  */
 function extractDate(content: string): string | null {
-  const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
-  if (!frontmatterMatch) {
-    return null;
-  }
+  const { data } = parseFrontmatter(content);
+  return data.date ? String(data.date) : null;
+}
 
-  const frontmatter = frontmatterMatch[1];
-  const dateMatch = frontmatter.match(/^date:\s*(.+)$/m);
+/**
+ * Update or add the code field in frontmatter
+ */
+function updateFrontmatterCode(content: string, code: string): string {
+  const { data, body } = parseFrontmatter(content);
+  data.code = code;
 
-  return dateMatch ? dateMatch[1].trim() : null;
+  const frontmatter = stringifyFrontmatter(data);
+  return `---\n${frontmatter}\n---\n${body}`;
 }
 
 /**
@@ -63,13 +148,12 @@ function hasOldCodePrefix(filename: string): boolean {
 /**
  * Process files in a single directory
  */
-async function processDirectory(dir: string) {
-  const dirPath = `${CONTENT_DIR}/${dir}`;
+function processDirectory(dir: string) {
+  const dirPath = join(CONTENT_DIR, dir);
   const kind = inferKind(dir);
 
   // Check if directory exists
-  const exists = await $`test -d ${dirPath}`.nothrow().quiet();
-  if (exists.exitCode !== 0) {
+  if (!existsSync(dirPath)) {
     console.log(`⚠️  Directory ${dir} does not exist, skipping...\n`);
     return { processed: 0, skipped: 0, errors: 0, total: 0 };
   }
@@ -77,13 +161,15 @@ async function processDirectory(dir: string) {
   console.log(`Processing files in: ${dir} (kind: ${kind})\n`);
 
   // Get all .mdx files
-  const files = await $`ls ${dirPath}/*.mdx 2>/dev/null`.nothrow().quiet();
-  if (files.exitCode !== 0) {
+  const allFiles = readdirSync(dirPath);
+  const mdxFiles = allFiles
+    .filter((file) => file.endsWith(".mdx"))
+    .map((file) => join(dirPath, file));
+
+  if (mdxFiles.length === 0) {
     console.log(`No .mdx files found in ${dir}\n`);
     return { processed: 0, skipped: 0, errors: 0, total: 0 };
   }
-
-  const mdxFiles = files.text().trim().split("\n").filter(Boolean);
 
   let processedCount = 0;
   let skippedCount = 0;
@@ -97,21 +183,48 @@ async function processDirectory(dir: string) {
       if (hasUppercasePrefix(filename)) {
         const lowercaseFilename = filename.substring(0, 5).toLowerCase() + filename.substring(5);
         const newFilePath = filePath.replace(filename, lowercaseFilename);
-        await $`mv ${filePath} ${newFilePath}`;
-        console.log(`🔄 ${filename} → ${lowercaseFilename} (converted to lowercase)`);
+
+        // Read content and update frontmatter with code
+        const content = readFileSync(filePath, "utf-8");
+        const codeStr = lowercaseFilename.substring(0, 5);
+        const updatedContent = updateFrontmatterCode(content, codeStr);
+
+        // Write updated content
+        writeFileSync(filePath, updatedContent);
+
+        // Rename file
+        renameSync(filePath, newFilePath);
+        console.log(
+          `🔄 ${filename} → ${lowercaseFilename} (converted to lowercase, added code to frontmatter)`
+        );
         processedCount++;
         continue;
       }
 
-      // Skip if already has new 5-char code prefix
+      // Check if file already has new 5-char code prefix
       if (hasCodePrefix(filename)) {
-        console.log(`⏭  Skipping ${filename} (already has code prefix)`);
-        skippedCount++;
+        // Read content to check if code is in frontmatter
+        const content = readFileSync(filePath, "utf-8");
+        const codeStr = filename.substring(0, 5);
+
+        // Check if code field already exists in frontmatter
+        const { data } = parseFrontmatter(content);
+        if (data.code === codeStr) {
+          console.log(`⏭  Skipping ${filename} (already has code in filename and frontmatter)`);
+          skippedCount++;
+          continue;
+        }
+
+        // Add code to frontmatter
+        const updatedContent = updateFrontmatterCode(content, codeStr);
+        writeFileSync(filePath, updatedContent);
+        console.log(`✅ ${filename} (added code to frontmatter)`);
+        processedCount++;
         continue;
       }
 
       // Read file content
-      const content = await $`cat ${filePath}`.text();
+      const content = readFileSync(filePath, "utf-8");
 
       // Extract date from frontmatter
       const dateString = extractDate(content);
@@ -125,6 +238,9 @@ async function processDirectory(dir: string) {
       const code = Code.fromDateString(dateString, kind);
       const codeStr = code.toString().toLowerCase();
 
+      // Update frontmatter with code
+      const updatedContent = updateFrontmatterCode(content, codeStr);
+
       // Determine base filename (strip old code if present)
       let baseFilename = filename;
       if (hasOldCodePrefix(filename)) {
@@ -137,8 +253,13 @@ async function processDirectory(dir: string) {
       const newFilename = `${codeStr}--${baseFilename}`;
       const newFilePath = filePath.replace(filename, newFilename);
 
-      // Rename file
-      await $`mv ${filePath} ${newFilePath}`;
+      // Write updated content
+      writeFileSync(filePath, updatedContent);
+
+      // Rename file if needed
+      if (filePath !== newFilePath) {
+        renameSync(filePath, newFilePath);
+      }
       console.log(`✅ ${filename} → ${newFilename} (${dateString})`);
       processedCount++;
     } catch (error) {
@@ -162,7 +283,7 @@ async function processDirectory(dir: string) {
 /**
  * Main function to prefix files with their date codes
  */
-async function prefixCodes(dirs: string[]) {
+function prefixCodes(dirs: string[]) {
   console.log(`Content directory: ${CONTENT_DIR}`);
   console.log(`Directories to process: ${dirs.join(", ")}\n`);
   console.log("=".repeat(50) + "\n");
@@ -173,7 +294,7 @@ async function prefixCodes(dirs: string[]) {
   let totalFiles = 0;
 
   for (const dir of dirs) {
-    const result = await processDirectory(dir);
+    const result = processDirectory(dir);
     totalProcessed += result.processed;
     totalSkipped += result.skipped;
     totalErrors += result.errors;
@@ -193,7 +314,9 @@ async function prefixCodes(dirs: string[]) {
 const dirs = process.argv.slice(2).length > 0 ? process.argv.slice(2) : DEFAULT_DIRS;
 
 // Run the script
-prefixCodes(dirs).catch((error) => {
+try {
+  prefixCodes(dirs);
+} catch (error) {
   console.error("Fatal error:", error);
   process.exit(1);
-});
+}

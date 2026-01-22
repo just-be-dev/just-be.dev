@@ -12,6 +12,7 @@ const blog = defineCollection({
     date: z.coerce.date(),
     tags: z.array(z.string()).default([]),
     draft: z.boolean().default(false),
+    code: z.string().optional(),
   }),
 });
 
@@ -24,6 +25,7 @@ const projects = defineCollection({
     repository: z.string().url().optional(),
     status: z.enum(["active", "completed", "archived", "maintenance"]).default("active"),
     date: z.coerce.date(),
+    code: z.string().optional(),
   }),
 });
 
@@ -36,6 +38,7 @@ const research = defineCollection({
     lastUpdated: z.coerce.date().optional(),
     status: z.enum(["draft", "published", "archived"]).default("draft"),
     topics: z.array(z.string()).default([]),
+    code: z.string().optional(),
   }),
 });
 
@@ -60,6 +63,7 @@ const talks = defineCollection({
       .optional(),
     audioPath: z.string().optional(),
     transcriptPath: z.string().optional(),
+    code: z.string().optional(),
   }),
 });
 
