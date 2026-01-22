@@ -119,12 +119,11 @@ export class Code {
   /**
    * Build a URL path for a content entry
    * @param collection - The collection name (e.g., "blog", "projects")
-   * @param code - The code string (e.g., "b24f9")
    * @param slug - The slug (e.g., "the-values-i-build-by")
-   * @returns URL path (e.g., "/blog/b24f9/the-values-i-build-by/")
+   * @returns URL path (e.g., "/blog/the-values-i-build-by")
    */
-  static buildUrl(collection: string, code: string, slug: string): string {
-    return `/${collection}/${code}/${slug}/`;
+  static buildUrl(collection: string, slug: string): string {
+    return `/${collection}/${slug}`;
   }
 
   /**
