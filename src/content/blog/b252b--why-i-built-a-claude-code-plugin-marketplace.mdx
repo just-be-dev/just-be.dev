@@ -73,7 +73,11 @@ I'm just starting out, but there are a few things I'm already using marketplaces
 
 ### Configuring Tools in New Projects
 
-I use [Mise](https://github.com/jdx/mise) in essentially all of my projects now. It's just a tool for managing other tool versions (like node, pnpm, python, uv, etc). I have a very similar setup for every project, but it can change slightly based on the project's language and needs. Instead of writing a script that programmatically tries to figure out how the mise config needs to be setup, I just have a slash command called `setup` that has enough context to configure the tooling for the project.
+I use [Mise](https://github.com/jdx/mise) in essentially all of my projects now. It's just a tool for managing other tool versions (like node, pnpm, python, uv, etc). I have a very similar setup for every project, but it can change slightly based on the project's language and needs. Instead of writing a script that programmatically tries to figure out how the mise config needs to be setup, I just have a slash command called [`setup`](https://github.com/just-be-dev/ccpm/blob/main/plugins/mise/commands/setup.md) that has enough context to configure the tooling for the project.
+
+### Meta Marketplace Updates
+
+Another fun usage use my [meta plugin](https://github.com/just-be-dev/ccpm/tree/main/plugins/meta) which helps update the marketplace itself. I have a [create plugin](https://github.com/just-be-dev/ccpm/blob/main/plugins/meta/commands/create-plugin.md) command that uses the github CLI to open an issue on the marketplace repo and to invoke `@claude` which'll kick off the claude GitHub app. That'll only work for my user account. It's a fun (if convoluted) way of being able to add plugins to my marketplace from any claude instance. 
 
 ## Marketplace Maintenance
 
@@ -86,3 +90,7 @@ In my marketplace repo I have a series of scripts to help automate the developme
 - **`bump-plugin-version.ts`** - Automatically determine and apply version bumps
 
 The `validate-manifests` script runs the `claude plugin validate` script I mentioned previously on the marketplace.json file and all the plugin.json files. I have a GitHub action setup to run that in CI just to make sure I don't accidentally merge something invalid.
+
+## Fin
+
+That's it for now! If you have any questions or feedback, feel free to reach out to me on Twitter [@just_be_dev](https://twitter.com/just_be_dev) or BlueSky [@just-be.dev](https://bsky.app/profile/just-be.dev).
