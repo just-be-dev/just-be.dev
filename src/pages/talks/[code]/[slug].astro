@@ -21,7 +21,7 @@ const { Content } = await render(talk);
 
 // Get code from frontmatter and slug from ID
 const code = talk.data.code;
-const slug = talk.id; // ID is now just the slug
+const slug = talk.id;
 
 // Check if this talk has slides/audio/transcript
 const hasSlides = talk.data.slides !== undefined;

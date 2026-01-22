@@ -22,7 +22,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
     if (entry) {
       const code = entry.data.code;
-      const slug = entry.id; // ID is now just the slug
+      const slug = entry.id;
       const newUrl = new URL(url);
       newUrl.pathname = `/${collection}/${code}/${slug}/`;
       return context.redirect(newUrl.toString(), 301);
@@ -59,7 +59,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   if (entry) {
     const code = entry.data.code;
-    const slug = entry.id; // ID is now just the slug
+    const slug = entry.id;
     const correctPath = `/${matchedType}/${code}/${slug}/`;
 
     // Check if we're already on the correct path

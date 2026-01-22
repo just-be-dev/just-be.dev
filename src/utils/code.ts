@@ -179,7 +179,7 @@ export class Code {
     collection: Awaited<ReturnType<typeof import("astro:content").getCollection<any>>>
   ) {
     return collection.map((entry) => {
-      // Use code from frontmatter (entry.data.code), ID is now just the slug
+      // Use code from frontmatter (entry.data.code)
       const code = entry.data.code;
       const slug = entry.id.replace(/\.mdx?$/, ""); // Remove file extension if present
       return {
