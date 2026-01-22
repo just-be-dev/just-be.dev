@@ -14,7 +14,10 @@ const selectedTag = Astro.url.searchParams.get("tag");
 const publishedPosts = (
   await getCollection("blog", ({ data }) => import.meta.env.DEV || !data.draft)
 )
-  .map((post) => ({ ...post, code: Code.fromId(post.id) }))
+  .map((post) => ({
+    ...post,
+    code: post.data.code || Code.fromId(post.id).toString(),
+  }))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 
 // Filter posts if tag is selected
@@ -68,7 +71,7 @@ const sortedTags = Array.from(tagCounts.entries())
               href={Code.buildUrl("blog", post.id)}
               class="bg-0 hocus:invert group col-span-3 -mx-[1ch] grid grid-cols-subgrid px-[1ch] outline-none"
             >
-              <code class="text-fg-2 group-hocus:text-accent">{post.code.toString()}</code>
+              <code class="text-fg-2 group-hocus:text-accent">{post.code}</code>
               <span class="text-fg-2 group-hocus:text-accent whitespace-nowrap">{date}</span>
               <h2 class="font-bold whitespace-nowrap">{post.data.title}</h2>
             </a>

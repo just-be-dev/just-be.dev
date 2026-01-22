@@ -5,7 +5,10 @@ import ProjectStatus from "@/components/ProjectStatus.astro";
 import { Code } from "@/utils/code";
 
 const projects = (await getCollection("projects"))
-  .map((post) => ({ ...post, code: Code.fromId(post.id) }))
+  .map((post) => ({
+    ...post,
+    code: post.data.code || Code.fromId(post.id).toString(),
+  }))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 ---
 
@@ -22,7 +25,7 @@ const projects = (await getCollection("projects"))
             href={Code.buildUrl("projects", project.id)}
             class="bg-0 hocus:invert group col-span-3 -mx-[1ch] grid grid-cols-subgrid px-[1ch] outline-none"
           >
-            <code class="text-fg-2 group-hocus:text-accent">{project.code.toString()}</code>
+            <code class="text-fg-2 group-hocus:text-accent">{project.code}</code>
             <ProjectStatus status={project.data.status} />
             <h2 class="truncate font-bold">
               {project.data.title}

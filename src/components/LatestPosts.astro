@@ -10,7 +10,10 @@ const { limit = 5 } = Astro.props;
 
 // Get latest published blog posts
 const latestPosts = (await getCollection("blog", ({ data }) => import.meta.env.DEV || !data.draft))
-  .map((post) => ({ ...post, code: Code.fromId(post.id) }))
+  .map((post) => ({
+    ...post,
+    code: post.data.code || Code.fromId(post.id).toString(),
+  }))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
   .slice(0, limit);
 ---
@@ -27,7 +30,7 @@ const latestPosts = (await getCollection("blog", ({ data }) => import.meta.env.D
               href={Code.buildUrl("blog", post.id)}
               class="bg-0 hocus:invert group col-span-3 -mx-[1ch] grid grid-cols-subgrid outline-none"
             >
-              <code class="text-fg-2 group-hocus:text-accent">{post.code.toString()}</code>
+              <code class="text-fg-2 group-hocus:text-accent">{post.code}</code>
               <span class="text-fg-2 group-hocus:text-accent whitespace-nowrap">{date}</span>
               <h3 class="font-bold whitespace-nowrap mb-0">{post.data.title}</h3>
             </a>
