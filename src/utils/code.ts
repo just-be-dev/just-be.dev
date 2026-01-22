@@ -103,7 +103,7 @@ export class Code {
   /**
    * Parse an ID string into its code and slug components
    * @param id - ID string (e.g., "b24f9--the-values-i-build-by")
-   * @returns Object with code (e.g., "b24f9") and slug (e.g., "the-values-i-build-by")
+   * @returns Object with code (e.g., "B24F9") and slug (e.g., "the-values-i-build-by")
    */
   static parseId(id: string): { code: string; slug: string } {
     const separatorIndex = id.indexOf("--");
@@ -111,7 +111,7 @@ export class Code {
       throw new Error(`ID does not contain '--' separator: ${id}`);
     }
     return {
-      code: id.slice(0, separatorIndex),
+      code: id.slice(0, separatorIndex).toUpperCase(),
       slug: id.slice(separatorIndex + 2),
     };
   }
@@ -395,13 +395,13 @@ if (import.meta.vitest) {
   describe("Code.parseId()", () => {
     it("should parse ID into code and slug", () => {
       const result = Code.parseId("b24f9--the-values-i-build-by");
-      expect(result.code).toBe("b24f9");
+      expect(result.code).toBe("B24F9");
       expect(result.slug).toBe("the-values-i-build-by");
     });
 
     it("should handle IDs with multiple dashes in slug", () => {
       const result = Code.parseId("b2392--my-really-long-blog-post-title");
-      expect(result.code).toBe("b2392");
+      expect(result.code).toBe("B2392");
       expect(result.slug).toBe("my-really-long-blog-post-title");
     });
 

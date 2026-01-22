@@ -21,7 +21,7 @@ const project = Astro.props;
 const { Content } = await render(project);
 
 // Get code from frontmatter
-const code = project.data.code;
+const code = project.data.code?.toUpperCase();
 ---
 
 <Layout title={`${project.data.title} - Just Be`} description={project.data.description}>

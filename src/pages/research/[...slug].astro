@@ -1,0 +1,140 @@
+---
+import { getCollection, render } from "astro:content";
+import FormattedDate from "@/components/FormattedDate.astro";
+import ResearchStatus from "@/components/ResearchStatus.astro";
+import Layout from "@/layouts/Layout.astro";
+import { Code } from "@/utils/code";
+
+export async function getStaticPaths() {
+  const research = await getCollection("research");
+  return research.map((item) => ({
+    params: { slug: item.id },
+    props: item,
+  }));
+}
+
+type Props = Awaited<ReturnType<typeof getStaticPaths>>[number]["props"];
+
+const item = Astro.props;
+const { Content } = await render(item);
+
+// Get code from frontmatter
+const code = item.data.code?.toUpperCase();
+// Use lastUpdated if available, otherwise fall back to date
+const displayDate = item.data.lastUpdated || item.data.date;
+
+// Get subpages - check if any items start with this item's id + '/'
+const allResearch = await getCollection("research");
+const subpages = allResearch
+  .filter((subItem) => {
+    // Check if the subItem is a direct child (starts with parent path + '/')
+    // and is not a nested index
+    return subItem.id.startsWith(item.id + "/") && subItem.id !== item.id;
+  })
+  .sort((a, b) => {
+    const dateA = a.data.lastUpdated || a.data.date;
+    const dateB = b.data.lastUpdated || b.data.date;
+    if (!dateA && !dateB) return 0;
+    if (!dateA) return 1;
+    if (!dateB) return -1;
+    return dateB.valueOf() - dateA.valueOf();
+  });
+---
+
+<Layout title={`${item.data.title} - Just Be`} description={item.data.description}>
+  <article class="px-4 max-w-article mx-auto">
+    <header class="mb-2lh grid grid-cols-[1fr_auto] gap-x-2 not-prose">
+      <h1 class="mb-0 font-bold">{item.data.title}</h1>
+
+      {
+        item.data.status && (
+          <div class="flex gap-[1ch] justify-end">
+            <ResearchStatus status={item.data.status} />
+          </div>
+        )
+      }
+
+      <div class="flex gap-[1ch]">
+        <span class="text-fg-2">{code}</span>
+        <span class="opacity-25">|</span>
+        {displayDate && <FormattedDate date={displayDate} />}
+      </div>
+
+      {
+        item.data.tags && item.data.tags.length > 0 && (
+          <div class="tag-preview relative flex justify-end">
+            <div class="text-fg-2 flex items-center gap-[0.5ch] text-sm cursor-default">
+              <div class="i-pixel-tag" />
+              <span>{item.data.tags.length}</span>
+            </div>
+            <div class="tag-list hidden absolute right-0 top-full pt-1 z-10">
+              <div class="flex flex-wrap gap-2 bg-1 px-2 py-1">
+                {item.data.tags.map((tag) => (
+                  <span class="badge text-accent bg-2 px-[1ch] whitespace-nowrap">{tag}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+        )
+      }
+    </header>
+
+    <div class="max-w-none">
+      <Content />
+    </div>
+
+    {
+      subpages.length > 0 && (
+        <div class="mt-2lh border-t border-fg-2 pt-2lh">
+          <h2 class="mb-2 font-bold text-lg">Explorations</h2>
+          <ul class="list-none space-y-2">
+            {subpages.map((subpage) => {
+              const subCode = subpage.data.code
+                ? subpage.data.code.toUpperCase()
+                : Code.fromId(subpage.id).toString();
+              const subSlug = subpage.id.replace(/\/index$/, "");
+              return (
+                <li>
+                  <a
+                    href={`/research/${subSlug}`}
+                    class="group flex items-baseline gap-[1ch] hover:underline"
+                  >
+                    <code class="text-fg-2 group-hover:text-accent text-sm">{subCode}</code>
+                    {subpage.data.status && <ResearchStatus status={subpage.data.status} />}
+                    <span class="font-bold">{subpage.data.title}</span>
+                    {subpage.data.description && (
+                      <span class="text-fg-2 text-sm">— {subpage.data.description}</span>
+                    )}
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )
+    }
+
+    <div class="text-fg-0 mt-2lh">
+      <a href="/research" class="text-fg-0 link font-bold focus-visible:outline-none h-1lh">
+        ← Back to research
+      </a>
+    </div>
+  </article>
+</Layout>
+
+<style>
+  .link:hover,
+  .link:focus {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+    background-color: var(--background0);
+    filter: invert(1);
+  }
+
+  .tag-preview:hover .tag-list,
+  .tag-list:hover {
+    display: block;
+  }
+</style>

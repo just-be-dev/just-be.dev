@@ -23,7 +23,7 @@ const talk = Astro.props;
 const { Content } = await render(talk);
 
 // Get code from frontmatter and slug from ID
-const code = talk.data.code;
+const code = talk.data.code?.toUpperCase();
 const slug = talk.id;
 
 // Check if this talk has slides/audio/transcript

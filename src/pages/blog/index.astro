@@ -16,7 +16,7 @@ const publishedPosts = (
 )
   .map((post) => ({
     ...post,
-    code: post.data.code || Code.fromId(post.id).toString(),
+    code: post.data.code ? post.data.code.toUpperCase() : Code.fromId(post.id).toString(),
   }))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 

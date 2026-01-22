@@ -6,7 +6,7 @@ import { Code } from "@/utils/code";
 const talks = (await getCollection("talks"))
   .map((talk) => ({
     ...talk,
-    code: talk.data.code || Code.fromId(talk.id).toString(),
+    code: talk.data.code ? talk.data.code.toUpperCase() : Code.fromId(talk.id).toString(),
   }))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 ---
