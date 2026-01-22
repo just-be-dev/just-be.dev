@@ -12,7 +12,7 @@ const { limit = 5 } = Astro.props;
 const latestPosts = (await getCollection("blog", ({ data }) => import.meta.env.DEV || !data.draft))
   .map((post) => ({
     ...post,
-    code: post.data.code || Code.fromId(post.id).toString(),
+    code: post.data.code ? post.data.code.toUpperCase() : Code.fromId(post.id).toString(),
   }))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
   .slice(0, limit);

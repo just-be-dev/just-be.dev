@@ -1,13 +1,102 @@
 ---
+import { getCollection } from "astro:content";
 import Layout from "@/layouts/Layout.astro";
+import ResearchStatus from "@/components/ResearchStatus.astro";
+import { Code } from "@/utils/code";
+
+const allResearch = (await getCollection("research")).map((post) => ({
+  ...post,
+  code: post.data.code ? post.data.code.toUpperCase() : Code.fromId(post.id).toString(),
+}));
+
+// Separate parent items (no slash in ID) from children
+const parentItems = allResearch
+  .filter((item) => !item.id.includes("/"))
+  .sort((a, b) => {
+    const dateA = a.data.lastUpdated || a.data.date;
+    const dateB = b.data.lastUpdated || b.data.date;
+    if (!dateA && !dateB) return 0;
+    if (!dateA) return 1;
+    if (!dateB) return -1;
+    return dateB.valueOf() - dateA.valueOf();
+  });
+
+// Build a map of parent ID to children
+const childrenMap = new Map<string, typeof allResearch>();
+for (const item of allResearch) {
+  if (item.id.includes("/")) {
+    // Find the parent by getting everything before the first slash
+    const parentId = item.id.split("/")[0];
+    if (!childrenMap.has(parentId)) {
+      childrenMap.set(parentId, []);
+    }
+    childrenMap.get(parentId)!.push(item);
+  }
+}
+
+// Sort children by date
+for (const children of childrenMap.values()) {
+  children.sort((a, b) => {
+    const dateA = a.data.lastUpdated || a.data.date;
+    const dateB = b.data.lastUpdated || b.data.date;
+    if (!dateA && !dateB) return 0;
+    if (!dateA) return 1;
+    if (!dateB) return -1;
+    return dateB.valueOf() - dateA.valueOf();
+  });
+}
 ---
 
 <Layout title="Research - Just Be">
-  <header>
-    <h1 class="mb-4 font-bold">~/research</h1>
+  <header class="mb-2">
+    <h1 class="font-bold">~/research</h1>
   </header>
 
-  <div class="text-fg-2 py-12 text-center">
-    <p>Coming soon</p>
-  </div>
+  <ul class="grid grid-cols-[auto_auto_1fr] gap-x-1">
+    {
+      parentItems.map((parent) => {
+        const children = childrenMap.get(parent.id) || [];
+        return (
+          <>
+            <li class="contents before:content-none">
+              <a
+                href={Code.buildUrl("research", parent.id)}
+                class="bg-0 hocus:invert group col-span-3 -mx-[1ch] grid grid-cols-subgrid px-[1ch] outline-none"
+              >
+                <code class="text-fg-2 group-hocus:text-accent">{parent.code}</code>
+                <ResearchStatus status={parent.data.status} />
+                <h2 class="truncate font-bold">
+                  {parent.data.title}
+                  {parent.data.description && (
+                    <span class="text-fg-2 font-normal"> — {parent.data.description}</span>
+                  )}
+                </h2>
+              </a>
+            </li>
+            {children.map((child, index) => {
+              const isLast = index === children.length - 1;
+              const treeChar = isLast ? "└────" : "├────";
+              return (
+                <li class="contents before:content-none">
+                  <a
+                    href={Code.buildUrl("research", child.id)}
+                    class="bg-0 hocus:invert group col-span-3 -mx-[1ch] grid grid-cols-subgrid px-[1ch] outline-none"
+                  >
+                    <span class="text-fg-2">{treeChar}</span>
+                    <ResearchStatus status={child.data.status} />
+                    <h2 class="truncate font-bold">
+                      {child.data.title}
+                      {child.data.description && (
+                        <span class="text-fg-2 font-normal"> — {child.data.description}</span>
+                      )}
+                    </h2>
+                  </a>
+                </li>
+              );
+            })}
+          </>
+        );
+      })
+    }
+  </ul>
 </Layout>

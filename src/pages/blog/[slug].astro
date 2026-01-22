@@ -21,7 +21,7 @@ const post = Astro.props;
 const { Content } = await render(post);
 
 // Get code from frontmatter, fallback to parsing filename for backwards compatibility
-const code = post.data.code || Code.fromId(post.id).toString();
+const code = post.data.code ? post.data.code.toUpperCase() : Code.fromId(post.id).toString();
 ---
 
 <Layout title={`${post.data.title} - Just Be`} description={post.data.description}>
