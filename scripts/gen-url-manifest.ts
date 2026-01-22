@@ -65,7 +65,7 @@ function processCollection(
 
   for (const filePath of mdxFiles) {
     const filename = filePath.split("/").pop()!;
-    const slug = filename.replace(/\.(mdx?|md)$/, "");
+    const slug = filename.replace(/\.(mdx?|md)$/, "").toLowerCase();
 
     try {
       // Read file content
