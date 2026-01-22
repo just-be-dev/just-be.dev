@@ -119,11 +119,11 @@ export class Code {
   /**
    * Build a URL path for a content entry
    * @param collection - The collection name (e.g., "blog", "projects")
-   * @param id - The entry ID (e.g., "b24f9--the-values-i-build-by")
+   * @param code - The code string (e.g., "b24f9")
+   * @param slug - The slug (e.g., "the-values-i-build-by")
    * @returns URL path (e.g., "/blog/b24f9/the-values-i-build-by/")
    */
-  static buildUrl(collection: string, id: string): string {
-    const { code, slug } = Code.parseId(id);
+  static buildUrl(collection: string, code: string, slug: string): string {
     return `/${collection}/${code}/${slug}/`;
   }
 
@@ -179,7 +179,9 @@ export class Code {
     collection: Awaited<ReturnType<typeof import("astro:content").getCollection<any>>>
   ) {
     return collection.map((entry) => {
-      const { code, slug } = Code.parseId(entry.id);
+      // Use code from frontmatter (entry.data.code), ID is now just the slug
+      const code = entry.data.code;
+      const slug = entry.id.replace(/\.mdx?$/, ""); // Remove file extension if present
       return {
         params: { code, slug },
         props: entry,
@@ -411,17 +413,17 @@ if (import.meta.vitest) {
 
   describe("Code.buildUrl()", () => {
     it("should build URL path for blog", () => {
-      const url = Code.buildUrl("blog", "b24f9--the-values-i-build-by");
+      const url = Code.buildUrl("blog", "b24f9", "the-values-i-build-by");
       expect(url).toBe("/blog/b24f9/the-values-i-build-by/");
     });
 
     it("should build URL path for projects", () => {
-      const url = Code.buildUrl("projects", "p1e73--devtools-fm");
+      const url = Code.buildUrl("projects", "p1e73", "devtools-fm");
       expect(url).toBe("/projects/p1e73/devtools-fm/");
     });
 
     it("should build URL path for research", () => {
-      const url = Code.buildUrl("research", "r24e5--parsing-techniques");
+      const url = Code.buildUrl("research", "r24e5", "parsing-techniques");
       expect(url).toBe("/research/r24e5/parsing-techniques/");
     });
   });

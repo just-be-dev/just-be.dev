@@ -15,13 +15,14 @@ export const onRequest = defineMiddleware(async (context, next) => {
     const collection = KIND_TO_COLLECTION[kindChar];
 
     const entry = (
-      await getCollection(collection, ({ id }) => {
-        return shortCode === id.slice(0, 5).toLowerCase();
+      await getCollection(collection, ({ data }) => {
+        return data.code && shortCode === data.code.toLowerCase();
       })
     ).at(0);
 
     if (entry) {
-      const { code, slug } = Code.parseId(entry.id);
+      const code = entry.data.code;
+      const slug = entry.id; // ID is now just the slug
       const newUrl = new URL(url);
       newUrl.pathname = `/${collection}/${code}/${slug}/`;
       return context.redirect(newUrl.toString(), 301);
@@ -49,15 +50,16 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // Extract the code from the URL (first segment after collection name)
   const urlCode = parts[1];
 
-  // Find the entry by matching the code (first 5 characters of the ID)
+  // Find the entry by matching the code from frontmatter
   const entry = (
-    await getCollection(matchedType, ({ id }) => {
-      return urlCode.slice(0, 5).toLowerCase() === id.slice(0, 5).toLowerCase();
+    await getCollection(matchedType, ({ data }) => {
+      return data.code && urlCode.toLowerCase() === data.code.toLowerCase();
     })
   ).at(0);
 
   if (entry) {
-    const { code, slug } = Code.parseId(entry.id);
+    const code = entry.data.code;
+    const slug = entry.id; // ID is now just the slug
     const correctPath = `/${matchedType}/${code}/${slug}/`;
 
     // Check if we're already on the correct path
