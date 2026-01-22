@@ -13,7 +13,7 @@ const hasBadge = badge || Astro.slots.has("badge");
   {
     hasBadge && (
       <div class="header">
-        <span is-="badge" variant-="foreground0">
+        <span is-="badge" variant-="foreground0" class="ml-2">
           <span class="flex items-center gap-1 font-bold">
             <slot name="badge">{badge}</slot>
           </span>
@@ -21,7 +21,7 @@ const hasBadge = badge || Astro.slots.has("badge");
       </div>
     )
   }
-  <div class="not-prose mx-2 mt-1">
+  <div class="not-prose mx-2 mt-0.5">
     <slot />
   </div>
 </aside>

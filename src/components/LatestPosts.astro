@@ -27,7 +27,7 @@ const latestPosts = (await getCollection("blog", ({ data }) => import.meta.env.D
         return (
           <li class="contents before:content-none">
             <a
-              href={Code.buildUrl("blog", post.id)}
+              href={Code.buildUrl("blog", post.code, post.id)}
               class="bg-0 hocus:invert group col-span-3 -mx-[1ch] grid grid-cols-subgrid outline-none"
             >
               <code class="text-fg-2 group-hocus:text-accent">{post.code}</code>

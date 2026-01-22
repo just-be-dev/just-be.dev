@@ -43,8 +43,8 @@ mise run test
 # Run tests with UI
 mise run test:ui
 
-# Prefix content files with date codes
-mise run prefix-codes
+# Ensure content files have codes in frontmatter
+mise run gen-codes
 
 # Deploy to Cloudflare Workers
 mise run deploy
@@ -75,13 +75,16 @@ The plugin automatically imports components from `src/components/` based on usag
 
 ### File Naming Convention
 
-Content files use a specific naming convention: `{kind}{hex-date}--{slug}.mdx`
+Content files use simple slug-based filenames: `{slug}.mdx`
 
-- Kind prefix: `b` (blog), `r` (research), `p` (projects)
+Each file has a `code` field in its frontmatter containing a unique identifier:
+
+- Kind prefix: `b` (blog), `r` (research), `p` (projects), `t` (talks)
 - Hex date: 4-character lowercase hex timestamp derived from the date field
-- The `mise run prefix-codes` script automatically manages these prefixes
+- Format: `{kind}{hex-date}` (e.g., `b232e`)
+- The `mise run gen-codes` script ensures all files have a code in frontmatter
 
-Example: `b232e--building-a-deno-desktop-framework.mdx`
+Example filename: `building-a-deno-desktop-framework.mdx` with `code: b232e` in frontmatter
 
 ### Styling System
 

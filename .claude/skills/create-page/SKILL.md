@@ -78,14 +78,14 @@ You are helping create a new content page for this Astro website.
    - For pages, use the filename provided by the user
 
 5. **Create the file:**
-   - For blog/project/research/talk: Create as `src/content/{type}/{filename}.mdx` (WITHOUT the prefix)
+   - For blog/project/research/talk: Create as `src/content/{type}/{filename}.mdx`
    - For pages: Create as `src/content/pages/{filename}.mdx`
    - Include proper frontmatter based on the schema
    - Add a placeholder content section (e.g., "# {title}\n\nContent goes here.")
 
-6. **Add the date prefix (for blog/project/research/talk only):**
-   - Run `mise run prefix-codes` to automatically add the `{kind}{hex-date}--` prefix to the filename
-   - This will rename the file from `{filename}.mdx` to `{kind}{hex-date}--{filename}.mdx`
+6. **Ensure code is in frontmatter (for blog/project/research/talk only):**
+   - Run `mise run gen-codes` to automatically add the `code` field to the frontmatter
+   - This generates a unique code like `b232e` based on the date and content type
 
 7. **Confirm completion:**
    - Tell the user the final file path
@@ -94,7 +94,7 @@ You are helping create a new content page for this Astro website.
 ## Important Notes
 
 - Ensure the title is capitalized correctly. (e.g., "Getting Started with Astro" instead of "getting started with astro")
-- NEVER include the `{kind}{hex-date}--` prefix when creating the file - the `prefix-codes` script handles this automatically
+- NEVER include the `code` field when creating the file - the `gen-codes` script adds it automatically
 - Always use `.mdx` extension for content files
 - The date field is ALWAYS set to the current date (use `date +%Y-%m-%d`)
 - Blog posts are ALWAYS created with `draft: true`
@@ -116,8 +116,8 @@ User wants to create a blog post titled "Getting Started with Astro":
    - `date: 2026-01-19`
    - `tags: []`
    - `draft: true`
-5. Run `mise run prefix-codes`
-6. File is renamed to something like `b232f--getting-started-with-astro.mdx`
+5. Run `mise run gen-codes`
+6. Frontmatter is updated with `code: b232f`
 
 If the user had said "I want to write a blog post about learning Astro framework", you could infer:
 
