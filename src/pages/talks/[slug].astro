@@ -45,7 +45,9 @@ if (hasInteractiveLayout) {
 
 <Layout title={`${talk.data.title} - Just Be`} description={talk.data.description}>
   <article>
-    <header class="px-4 max-w-article mx-auto mb-2lh grid grid-cols-[1fr_auto] gap-x-2 not-prose">
+    <header
+      class="px-2 md:px-4 max-w-article mx-auto mb-2lh grid grid-cols-[1fr_auto] gap-x-2 not-prose"
+    >
       <h1 class="mb-0 font-bold">{talk.data.title}</h1>
 
       <div class="flex gap-[1ch] justify-end">
@@ -65,7 +67,7 @@ if (hasInteractiveLayout) {
       hasInteractiveLayout ? (
         <div
           id="talk-layout-container"
-          class="talk-layout not-prose px-4"
+          class="talk-layout not-prose px-2 md:px-4"
           style="margin-left: calc(-50vw + 50%); margin-right: calc(-50vw + 50%);"
         >
           {/* Slides */}
