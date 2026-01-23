@@ -29,29 +29,35 @@ const code = post.data.code ? post.data.code.toUpperCase() : Code.fromId(post.id
     <header class="mb-2lh grid grid-cols-1 md:grid-cols-[1fr_auto] gap-x-2 not-prose">
       <h1 class="mb-0 font-bold">{post.data.title}</h1>
 
-      <div class="flex gap-[1ch]">
-        <span class="text-fg-2">{code}</span>
-        <span class="opacity-25">|</span>
-        <FormattedDate date={post.data.date} />
-      </div>
+      <div class="flex justify-between items-center gap-2">
+        <div class="flex gap-[1ch]">
+          <span class="text-fg-2">{code}</span>
+          <span class="opacity-25">|</span>
+          <FormattedDate date={post.data.date} />
+        </div>
 
-      {
-        post.data.tags.length > 0 && (
-          <div class="tag-preview relative flex justify-end">
-            <div class="text-fg-2 flex items-center gap-[0.5ch] text-sm cursor-default">
-              <div class="i-pixel-tag" />
-              <span>{post.data.tags.length}</span>
-            </div>
-            <div class="tag-list hidden absolute right-0 top-full pt-1 z-10">
-              <div class="flex flex-wrap gap-2 bg-1 px-2 py-1">
-                {post.data.tags.map((tag) => (
-                  <Tag tag={tag} url="/blog" />
-                ))}
+        {
+          post.data.tags.length > 0 && (
+            <div class="tag-preview relative flex justify-end">
+              <button
+                type="button"
+                class="text-fg-2 flex items-center gap-[0.5ch] text-sm cursor-pointer bg-transparent border-none p-0"
+                aria-label="Show tags"
+              >
+                <div class="i-pixel-tag" />
+                <span>{post.data.tags.length}</span>
+              </button>
+              <div class="tag-list hidden absolute right-0 top-full pt-1 z-10">
+                <div class="flex flex-wrap gap-2 bg-1 px-2 py-1">
+                  {post.data.tags.map((tag) => (
+                    <Tag tag={tag} url="/blog" />
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        )
-      }
+          )
+        }
+      </div>
     </header>
 
     <div class="max-w-none">
@@ -75,5 +81,11 @@ const code = post.data.code ? post.data.code.toUpperCase() : Code.fromId(post.id
     margin-right: -0.5rem;
     background-color: var(--background0);
     filter: invert(1);
+  }
+
+  .tag-preview:hover .tag-list,
+  .tag-preview:focus-within .tag-list,
+  .tag-list:hover {
+    display: block;
   }
 </style>
