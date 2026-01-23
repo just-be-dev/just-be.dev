@@ -61,7 +61,7 @@ for (const children of childrenMap.values()) {
             <li class="contents before:content-none">
               <a
                 href={Code.buildUrl("research", parent.id)}
-                class="bg-0 hocus:invert group col-span-3 -mx-[1ch] grid grid-cols-subgrid px-[1ch] outline-none"
+                class="bg-0 hocus:invert group col-span-3 md:-mx-[1ch] grid grid-cols-subgrid md:px-[1ch] outline-none"
               >
                 <code class="text-fg-2 group-hocus:text-accent">{parent.code}</code>
                 <ResearchStatus status={parent.data.status} />
@@ -80,7 +80,7 @@ for (const children of childrenMap.values()) {
                 <li class="contents before:content-none">
                   <a
                     href={Code.buildUrl("research", child.id)}
-                    class="bg-0 hocus:invert group col-span-3 -mx-[1ch] grid grid-cols-subgrid px-[1ch] outline-none"
+                    class="bg-0 hocus:invert group col-span-3 md:-mx-[1ch] grid grid-cols-subgrid md:px-[1ch] outline-none"
                   >
                     <span class="text-fg-2">{treeChar}</span>
                     <ResearchStatus status={child.data.status} />
