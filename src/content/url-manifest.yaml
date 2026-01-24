@@ -19,6 +19,9 @@ codes:
   p252b:
     - /projects/ccpm
     - /ccpm
+  p2530:
+    - /projects/pex
+    - /pex
   p3a89:
     - /projects/webview
     - /webview
