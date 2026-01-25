@@ -16,7 +16,7 @@ postinstall = ["bun install", "lefthook install"]
 _.path = "node_modules/.bin"
 
 [tasks.dev]
-run = "astro dev"
+run = "astro dev --host"
 
 [tasks.gen-url-manifest]
 run = "bun scripts/gen-url-manifest.ts"
