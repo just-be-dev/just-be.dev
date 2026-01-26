@@ -1,21 +1,34 @@
 ---
 interface Props {
-  status: "proposed" | "active" | "dormant" | "abandoned" | "concluded";
+  status: "draft" | "working" | "final" | "archived";
 }
 
 const { status } = Astro.props;
 
-const statusColors = {
-  proposed: "bg-blue-500/20 text-blue-700 dark:text-blue-300",
-  active: "bg-green-500/20 text-green-700 dark:text-green-300",
-  dormant: "bg-yellow-500/20 text-yellow-700 dark:text-yellow-300",
-  abandoned: "bg-red-500/20 text-red-700 dark:text-red-300",
-  concluded: "bg-gray-500/20 text-gray-700 dark:text-gray-400",
+const statusConfig = {
+  draft: {
+    color: "bg-blue-500/20 text-blue-700 dark:text-blue-300",
+    description: "Unfinished work in progress",
+  },
+  working: {
+    color: "bg-green-500/20 text-green-700 dark:text-green-300",
+    description: "All main points are present but may be refined",
+  },
+  final: {
+    color: "bg-gray-500/20 text-gray-700 dark:text-gray-400",
+    description: "Considered complete and won't be changed",
+  },
+  archived: {
+    color: "bg-red-500/20 text-red-700 dark:text-red-300",
+    description: "Decided not to continue with this research",
+  },
 };
 
-const statusColor = statusColors[status] || "bg-1 text-fg-1";
+const config = statusConfig[status];
+const statusColor = config?.color || "bg-1 text-fg-1";
+const statusDescription = config?.description || "";
 ---
 
-<span class={`px-1 h-1lh inline-flex items-center ${statusColor}`}>
+<span class={`px-1 h-1lh inline-flex items-center ${statusColor}`} title={statusDescription}>
   {status}
 </span>
