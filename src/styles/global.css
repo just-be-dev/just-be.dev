@@ -168,6 +168,63 @@ article table:not(:is(.not-prose *)) {
   margin-bottom: 1lh;
 }
 
+article blockquote:not(:is(.not-prose *)) {
+  position: relative;
+  margin-bottom: 1lh;
+  padding-left: 3ch;
+  padding-right: 2ch;
+  padding-top: 1lh;
+  padding-bottom: 1lh;
+  background-color: var(--background1);
+  background-image: linear-gradient(var(--foreground2), var(--foreground2));
+  background-size: 1ch 100%;
+  background-repeat: no-repeat;
+  background-position: 0 0;
+}
+
+article blockquote:not(:is(.not-prose *))::before {
+  content: "▌";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  color: var(--foreground2);
+  font-size: 1rem;
+  line-height: 1;
+  overflow: hidden;
+}
+
+article blockquote:not(:is(.not-prose *)) a {
+  color: var(--foreground1);
+  text-decoration: underline;
+  font-weight: 700;
+}
+
+article blockquote:not(:is(.not-prose *)) a:hover,
+article blockquote:not(:is(.not-prose *)) a:focus {
+  background-color: var(--foreground0);
+  color: var(--background1);
+  outline: none;
+}
+
+article blockquote:not(:is(.not-prose *)) .blockquote-footer {
+  margin-top: 1lh;
+  color: var(--foreground1);
+  font-style: italic;
+}
+
+article a:not(:is(.not-prose *)) {
+  color: var(--foreground0);
+  text-decoration: underline;
+}
+
+article a:not(:is(.not-prose *)):hover,
+article a:not(:is(.not-prose *)):focus {
+  background-color: var(--foreground0);
+  color: var(--background0);
+  outline: none;
+}
+
 /* README content link styles */
 .readme-content a {
   color: var(--foreground0);

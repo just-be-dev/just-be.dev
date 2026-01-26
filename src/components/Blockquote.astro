@@ -1,0 +1,27 @@
+---
+export interface Props {
+  cite?: string;
+  attribution?: string;
+  class?: string;
+}
+
+const { cite, attribution, class: className } = Astro.props;
+---
+
+<blockquote cite={cite} class={className}>
+  <slot />
+  {
+    attribution && cite && (
+      <footer class="blockquote-footer">
+        — <cite><a href={cite}>{attribution}</a></cite>
+      </footer>
+    )
+  }
+  {
+    attribution && !cite && (
+      <footer class="blockquote-footer">
+        — <cite>{attribution}</cite>
+      </footer>
+    )
+  }
+</blockquote>
