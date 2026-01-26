@@ -1,6 +1,8 @@
 ---
 import { getCollection } from "astro:content";
 import Layout from "@/layouts/Layout.astro";
+import LinkList from "@/components/LinkList.astro";
+import type { LinkListItem } from "@/components/LinkList.astro";
 import { Code } from "@/utils/code";
 
 const talks = (await getCollection("talks"))
@@ -9,6 +11,17 @@ const talks = (await getCollection("talks"))
     code: talk.data.code ? talk.data.code.toUpperCase() : Code.fromId(talk.id).toString(),
   }))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+// Transform talks for LinkList
+const linkListItems: LinkListItem[] = talks.map((talk) => {
+  const date = `${talk.data.date.getFullYear()}-${String(talk.data.date.getMonth() + 1).padStart(2, "0")}-${String(talk.data.date.getDate()).padStart(2, "0")}`;
+  return {
+    code: talk.code,
+    slug: Code.buildUrl("talks", talk.id),
+    title: talk.data.title,
+    date,
+  };
+});
 ---
 
 <Layout title="Talks - Just Be">
@@ -16,23 +29,5 @@ const talks = (await getCollection("talks"))
     <h1 class="font-bold">~/talks</h1>
   </header>
 
-  <ul class="grid grid-cols-[auto_auto_1fr] gap-x-2">
-    {
-      talks.map((talk) => {
-        const date = `${talk.data.date.getFullYear()}-${String(talk.data.date.getMonth() + 1).padStart(2, "0")}-${String(talk.data.date.getDate()).padStart(2, "0")}`;
-        return (
-          <li class="contents before:content-none">
-            <a
-              href={Code.buildUrl("talks", talk.id)}
-              class="bg-0 hocus:invert group col-span-3 md:-mx-[1ch] grid grid-cols-subgrid md:px-[1ch] outline-none"
-            >
-              <code class="text-fg-2 group-hocus:text-accent">{talk.code}</code>
-              <span class="text-fg-2 group-hocus:text-accent whitespace-nowrap">{date}</span>
-              <h2 class="font-bold whitespace-nowrap">{talk.data.title}</h2>
-            </a>
-          </li>
-        );
-      })
-    }
-  </ul>
+  <LinkList items={linkListItems} columns={["code", "date", "title"]} variant="grid" gap="normal" />
 </Layout>

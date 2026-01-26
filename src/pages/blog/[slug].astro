@@ -3,6 +3,7 @@ import { getCollection, render } from "astro:content";
 import FormattedDate from "@/components/FormattedDate.astro";
 import Tag from "@/components/Tag.astro";
 import Link from "@/components/Link.astro";
+import BackLink from "@/components/BackLink.astro";
 import MDContent from "@/components/MDContent.astro";
 import Layout from "@/layouts/Layout.astro";
 import { Code } from "@/utils/code";
@@ -64,25 +65,11 @@ const code = post.data.code ? post.data.code.toUpperCase() : Code.fromId(post.id
       <MDContent Content={Content} components={{ a: Link }} />
     </div>
 
-    <div class="text-fg-0 mt-2lh">
-      <a href="/blog" class="text-fg-0 link font-bold focus-visible:outline-none h-1lh">
-        ← Back to blog
-      </a>
-    </div>
+    <BackLink href="/blog" label="Back to blog" />
   </article>
 </Layout>
 
 <style>
-  .link:hover,
-  .link:focus {
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
-    margin-left: -0.5rem;
-    margin-right: -0.5rem;
-    background-color: var(--background0);
-    filter: invert(1);
-  }
-
   .tag-preview:hover .tag-list,
   .tag-preview:focus-within .tag-list,
   .tag-list:hover {

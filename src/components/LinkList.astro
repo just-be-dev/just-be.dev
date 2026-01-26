@@ -1,0 +1,146 @@
+---
+import ProjectStatus from "@/components/ProjectStatus.astro";
+import ResearchStatus from "@/components/ResearchStatus.astro";
+
+export type ColumnType = "code" | "date" | "status" | "title" | "tree";
+
+export interface LinkListItem {
+  code?: string;
+  slug: string;
+  title: string;
+  date?: string;
+  status?: "active" | "completed" | "archived" | "maintenance" | "draft" | "working" | "final";
+  description?: string;
+  treeChar?: string;
+  isLast?: boolean;
+}
+
+export interface Props {
+  items: LinkListItem[];
+  columns: ColumnType[];
+  variant?: "grid" | "flex";
+  gap?: "tight" | "normal";
+  statusType?: "project" | "research";
+  headingLevel?: "h2" | "h3";
+  separator?: boolean;
+  class?: string;
+}
+
+const {
+  items,
+  columns,
+  variant = "grid",
+  gap = "normal",
+  statusType,
+  headingLevel = "h2",
+  separator = false,
+  class: className,
+} = Astro.props;
+
+const gapClass = gap === "tight" ? "gap-x-1" : "gap-x-2";
+const HeadingTag = headingLevel;
+---
+
+{
+  variant === "grid" ? (
+    <ul class:list={["grid grid-cols-[auto_auto_1fr]", gapClass, className]}>
+      {items.map((item) => (
+        <li class="contents before:content-none">
+          <a
+            href={item.slug}
+            class="bg-0 hocus:invert group col-span-3 md:-mx-[1ch] grid grid-cols-subgrid md:px-[1ch] outline-none"
+          >
+            {columns.map((col) => {
+              if (col === "code") {
+                // Show code if it exists, otherwise show tree char
+                if (item.code) {
+                  return <code class="text-fg-2 group-hocus:text-accent">{item.code}</code>;
+                } else if (item.treeChar) {
+                  return <span class="text-fg-2">{item.treeChar}</span>;
+                }
+              }
+              if (col === "tree" && item.treeChar) {
+                return <span class="text-fg-2">{item.treeChar}</span>;
+              }
+              if (col === "date" && item.date) {
+                return (
+                  <span class="text-fg-2 group-hocus:text-accent whitespace-nowrap">
+                    {item.date}
+                  </span>
+                );
+              }
+              if (col === "status" && item.status) {
+                if (statusType === "project") {
+                  return (
+                    <ProjectStatus
+                      status={item.status as "active" | "completed" | "archived" | "maintenance"}
+                    />
+                  );
+                } else if (statusType === "research") {
+                  return (
+                    <ResearchStatus
+                      status={item.status as "draft" | "working" | "final" | "archived"}
+                    />
+                  );
+                }
+              }
+              if (col === "title") {
+                return (
+                  <HeadingTag class="truncate font-bold">
+                    {item.title}
+                    {item.description && (
+                      <span class="text-fg-2 font-normal"> — {item.description}</span>
+                    )}
+                  </HeadingTag>
+                );
+              }
+              return null;
+            })}
+          </a>
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <div class:list={[separator && "border-t border-fg-2 pt-2lh", className]}>
+      <ul class="list-none space-y-2">
+        {items.map((item) => (
+          <li>
+            <a
+              href={item.slug}
+              class="group flex items-center gap-[1ch] bg-0 hocus:invert outline-none md:-mx-[1ch] md:px-[1ch]"
+            >
+              {columns.map((col) => {
+                if (col === "code" && item.code) {
+                  return (
+                    <code class="text-fg-2 group-hocus:text-accent text-sm flex-shrink-0">
+                      {item.code}
+                    </code>
+                  );
+                }
+                if (col === "status" && item.status) {
+                  if (statusType === "project") {
+                    return (
+                      <ProjectStatus
+                        status={item.status as "active" | "completed" | "archived" | "maintenance"}
+                      />
+                    );
+                  } else if (statusType === "research") {
+                    return (
+                      <ResearchStatus
+                        status={item.status as "draft" | "working" | "final" | "archived"}
+                      />
+                    );
+                  }
+                }
+                if (col === "title") {
+                  return <span class="font-bold truncate min-w-0">{item.title}</span>;
+                }
+                return null;
+              })}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}

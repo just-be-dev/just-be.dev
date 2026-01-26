@@ -1,7 +1,8 @@
 ---
 import { getCollection } from "astro:content";
 import Layout from "@/layouts/Layout.astro";
-import ResearchStatus from "@/components/ResearchStatus.astro";
+import LinkList from "@/components/LinkList.astro";
+import type { LinkListItem } from "@/components/LinkList.astro";
 import { Code } from "@/utils/code";
 
 const allResearch = (await getCollection("research")).map((post) => ({
@@ -45,6 +46,33 @@ for (const children of childrenMap.values()) {
     return dateB.valueOf() - dateA.valueOf();
   });
 }
+
+// Transform to LinkList items with tree structure
+const linkListItems: LinkListItem[] = [];
+for (const parent of parentItems) {
+  // Add parent
+  linkListItems.push({
+    code: parent.code,
+    slug: Code.buildUrl("research", parent.id),
+    title: parent.data.title,
+    status: parent.data.status,
+    description: parent.data.description,
+  });
+
+  // Add children with tree chars
+  const children = childrenMap.get(parent.id) || [];
+  children.forEach((child, index) => {
+    const isLast = index === children.length - 1;
+    const treeChar = isLast ? "└────" : "├────";
+    linkListItems.push({
+      treeChar,
+      slug: Code.buildUrl("research", child.id),
+      title: child.data.title,
+      status: child.data.status,
+      description: child.data.description,
+    });
+  });
+}
 ---
 
 <Layout title="Research - Just Be">
@@ -52,51 +80,11 @@ for (const children of childrenMap.values()) {
     <h1 class="font-bold">~/research</h1>
   </header>
 
-  <ul class="grid grid-cols-[auto_auto_1fr] gap-x-1">
-    {
-      parentItems.map((parent) => {
-        const children = childrenMap.get(parent.id) || [];
-        return (
-          <>
-            <li class="contents before:content-none">
-              <a
-                href={Code.buildUrl("research", parent.id)}
-                class="bg-0 hocus:invert group col-span-3 md:-mx-[1ch] grid grid-cols-subgrid md:px-[1ch] outline-none"
-              >
-                <code class="text-fg-2 group-hocus:text-accent">{parent.code}</code>
-                <ResearchStatus status={parent.data.status} />
-                <h2 class="truncate font-bold">
-                  {parent.data.title}
-                  {parent.data.description && (
-                    <span class="text-fg-2 font-normal"> — {parent.data.description}</span>
-                  )}
-                </h2>
-              </a>
-            </li>
-            {children.map((child, index) => {
-              const isLast = index === children.length - 1;
-              const treeChar = isLast ? "└────" : "├────";
-              return (
-                <li class="contents before:content-none">
-                  <a
-                    href={Code.buildUrl("research", child.id)}
-                    class="bg-0 hocus:invert group col-span-3 md:-mx-[1ch] grid grid-cols-subgrid md:px-[1ch] outline-none"
-                  >
-                    <span class="text-fg-2">{treeChar}</span>
-                    <ResearchStatus status={child.data.status} />
-                    <h2 class="truncate font-bold">
-                      {child.data.title}
-                      {child.data.description && (
-                        <span class="text-fg-2 font-normal"> — {child.data.description}</span>
-                      )}
-                    </h2>
-                  </a>
-                </li>
-              );
-            })}
-          </>
-        );
-      })
-    }
-  </ul>
+  <LinkList
+    items={linkListItems}
+    columns={["code", "status", "title"]}
+    variant="grid"
+    gap="tight"
+    statusType="research"
+  />
 </Layout>
