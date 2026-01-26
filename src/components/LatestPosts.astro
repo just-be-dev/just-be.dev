@@ -1,5 +1,7 @@
 ---
 import { getCollection } from "astro:content";
+import LinkList from "@/components/LinkList.astro";
+import type { LinkListItem } from "@/components/LinkList.astro";
 import { Code } from "@/utils/code";
 
 interface Props {
@@ -16,29 +18,29 @@ const latestPosts = (await getCollection("blog", ({ data }) => import.meta.env.D
   }))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
   .slice(0, limit);
+
+// Transform for LinkList
+const linkListItems: LinkListItem[] = latestPosts.map((post) => {
+  const date = `${post.data.date.getFullYear()}-${String(post.data.date.getMonth() + 1).padStart(2, "0")}-${String(post.data.date.getDate()).padStart(2, "0")}`;
+  return {
+    code: post.code,
+    slug: Code.buildUrl("blog", post.code, post.id),
+    title: post.data.title,
+    date,
+  };
+});
 ---
 
 <section class="not-prose flex flex-col gap-1 mt-2">
   <h2 class="font-bold">Latest Posts</h2>
-  <ul class="grid grid-cols-[auto_auto_1fr] gap-x-2 pl-1">
-    {
-      latestPosts.map((post) => {
-        const date = `${post.data.date.getFullYear()}-${String(post.data.date.getMonth() + 1).padStart(2, "0")}-${String(post.data.date.getDate()).padStart(2, "0")}`;
-        return (
-          <li class="contents before:content-none">
-            <a
-              href={Code.buildUrl("blog", post.code, post.id)}
-              class="bg-0 hocus:invert group col-span-3 -mx-[1ch] grid grid-cols-subgrid outline-none"
-            >
-              <code class="text-fg-2 group-hocus:text-accent">{post.code}</code>
-              <span class="text-fg-2 group-hocus:text-accent whitespace-nowrap">{date}</span>
-              <h3 class="font-bold whitespace-nowrap mb-0">{post.data.title}</h3>
-            </a>
-          </li>
-        );
-      })
-    }
-  </ul>
+  <LinkList
+    items={linkListItems}
+    columns={["code", "date", "title"]}
+    variant="grid"
+    gap="normal"
+    headingLevel="h3"
+    class="pl-1"
+  />
   <a href="/blog" class="text-fg-2 hover:text-accent hover:underline inline-block">
     View all posts →
   </a>

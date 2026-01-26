@@ -1,7 +1,8 @@
 ---
 import { getCollection } from "astro:content";
 import Layout from "@/layouts/Layout.astro";
-import ProjectStatus from "@/components/ProjectStatus.astro";
+import LinkList from "@/components/LinkList.astro";
+import type { LinkListItem } from "@/components/LinkList.astro";
 import { Code } from "@/utils/code";
 
 const projects = (await getCollection("projects"))
@@ -10,6 +11,15 @@ const projects = (await getCollection("projects"))
     code: post.data.code ? post.data.code.toUpperCase() : Code.fromId(post.id).toString(),
   }))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+// Transform projects for LinkList
+const linkListItems: LinkListItem[] = projects.map((project) => ({
+  code: project.code,
+  slug: Code.buildUrl("projects", project.id),
+  title: project.data.title,
+  status: project.data.status,
+  description: project.data.description,
+}));
 ---
 
 <Layout title="Projects - Just Be">
@@ -17,25 +27,11 @@ const projects = (await getCollection("projects"))
     <h1 class="font-bold">~/projects</h1>
   </header>
 
-  <ul class="grid grid-cols-[auto_auto_1fr] gap-x-1">
-    {
-      projects.map((project) => (
-        <li class="contents before:content-none">
-          <a
-            href={Code.buildUrl("projects", project.id)}
-            class="bg-0 hocus:invert group col-span-3 md:-mx-[1ch] grid grid-cols-subgrid md:px-[1ch] outline-none"
-          >
-            <code class="text-fg-2 group-hocus:text-accent">{project.code}</code>
-            <ProjectStatus status={project.data.status} />
-            <h2 class="truncate font-bold">
-              {project.data.title}
-              {project.data.description && (
-                <span class="text-fg-2 font-normal"> — {project.data.description}</span>
-              )}
-            </h2>
-          </a>
-        </li>
-      ))
-    }
-  </ul>
+  <LinkList
+    items={linkListItems}
+    columns={["code", "status", "title"]}
+    variant="grid"
+    gap="tight"
+    statusType="project"
+  />
 </Layout>

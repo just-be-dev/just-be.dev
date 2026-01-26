@@ -1,0 +1,27 @@
+---
+export interface Props {
+  href: string;
+  label: string;
+  class?: string;
+}
+
+const { href, label, class: className } = Astro.props;
+---
+
+<div class:list={["not-prose text-fg-0 mt-2lh", className]}>
+  <a href={href} class="text-fg-0 link font-bold focus-visible:outline-none h-1lh">
+    ← {label}
+  </a>
+</div>
+
+<style>
+  .link:hover,
+  .link:focus {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+    background-color: var(--background0);
+    filter: invert(1);
+  }
+</style>

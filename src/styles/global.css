@@ -213,13 +213,13 @@ article blockquote:not(:is(.not-prose *)) .blockquote-footer {
   font-style: italic;
 }
 
-article a:not(:is(.not-prose *)) {
+article a:not(:is(.not-prose *, .link)) {
   color: var(--foreground0);
   text-decoration: underline;
 }
 
-article a:not(:is(.not-prose *)):hover,
-article a:not(:is(.not-prose *)):focus {
+article a:not(:is(.not-prose *, .link)):hover,
+article a:not(:is(.not-prose *, .link)):focus {
   background-color: var(--foreground0);
   color: var(--background0);
   outline: none;

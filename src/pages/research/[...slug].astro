@@ -2,6 +2,11 @@
 import { getCollection, render } from "astro:content";
 import FormattedDate from "@/components/FormattedDate.astro";
 import ResearchStatus from "@/components/ResearchStatus.astro";
+import Link from "@/components/Link.astro";
+import BackLink from "@/components/BackLink.astro";
+import LinkList from "@/components/LinkList.astro";
+import type { LinkListItem } from "@/components/LinkList.astro";
+import MDContent from "@/components/MDContent.astro";
 import Layout from "@/layouts/Layout.astro";
 import { Code } from "@/utils/code";
 
@@ -39,6 +44,15 @@ const subpages = allResearch
     if (!dateB) return -1;
     return dateB.valueOf() - dateA.valueOf();
   });
+
+// Transform subpages for LinkList
+const explorations: LinkListItem[] = subpages.map((subpage) => ({
+  code: subpage.data.code ? subpage.data.code.toUpperCase() : Code.fromId(subpage.id).toString(),
+  slug: `/research/${subpage.id.replace(/\/index$/, "")}`,
+  title: subpage.data.title,
+  status: subpage.data.status,
+  description: subpage.data.description,
+}));
 ---
 
 <Layout title={`${item.data.title} - Just Be`} description={item.data.description}>
@@ -80,59 +94,29 @@ const subpages = allResearch
     </header>
 
     <div class="max-w-none">
-      <Content />
+      <MDContent Content={Content} components={{ a: Link }} />
     </div>
 
     {
-      subpages.length > 0 && (
-        <div class="mt-2lh border-t border-fg-2 pt-2lh">
+      explorations.length > 0 && (
+        <div class="not-prose mt-2lh">
           <h2 class="mb-2 font-bold text-lg">Explorations</h2>
-          <ul class="list-none space-y-2">
-            {subpages.map((subpage) => {
-              const subCode = subpage.data.code
-                ? subpage.data.code.toUpperCase()
-                : Code.fromId(subpage.id).toString();
-              const subSlug = subpage.id.replace(/\/index$/, "");
-              return (
-                <li>
-                  <a
-                    href={`/research/${subSlug}`}
-                    class="group flex items-baseline gap-[1ch] hover:underline"
-                  >
-                    <code class="text-fg-2 group-hover:text-accent text-sm">{subCode}</code>
-                    {subpage.data.status && <ResearchStatus status={subpage.data.status} />}
-                    <span class="font-bold">{subpage.data.title}</span>
-                    {subpage.data.description && (
-                      <span class="text-fg-2 text-sm">— {subpage.data.description}</span>
-                    )}
-                  </a>
-                </li>
-              );
-            })}
-          </ul>
+          <LinkList
+            items={explorations}
+            columns={["code", "status", "title"]}
+            variant="flex"
+            statusType="research"
+            separator={true}
+          />
         </div>
       )
     }
 
-    <div class="text-fg-0 mt-2lh">
-      <a href="/research" class="text-fg-0 link font-bold focus-visible:outline-none h-1lh">
-        ← Back to research
-      </a>
-    </div>
+    <BackLink href="/research" label="Back to research" />
   </article>
 </Layout>
 
 <style>
-  .link:hover,
-  .link:focus {
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
-    margin-left: -0.5rem;
-    margin-right: -0.5rem;
-    background-color: var(--background0);
-    filter: invert(1);
-  }
-
   .tag-preview:hover .tag-list,
   .tag-list:hover {
     display: block;
