@@ -1,6 +1,14 @@
 {
   "name": "just-be.dev",
   "version": "0.0.1",
+  "workspaces": {
+    "packages": [
+      "services/*"
+    ],
+    "catalog": {
+      "zod": "^4.1.13"
+    }
+  },
   "dependencies": {
     "@ascorbic/feed-loader": "^2.0.1",
     "@astrojs/cloudflare": "^12.6.12",
@@ -23,8 +31,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "test": "vitest",
-    "test:ui": "vitest --ui",
+    "test": "bun test",
     "gen-codes": "bun scripts/gen-codes.ts"
   },
   "type": "module",
@@ -35,7 +42,6 @@
     "prettier": "3.7.4",
     "prettier-plugin-astro": "0.14.1",
     "unocss": "66.5.10",
-    "vitest": "4.0.16",
     "wrangler": "4.48.0"
   }
 }

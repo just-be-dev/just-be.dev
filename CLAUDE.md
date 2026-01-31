@@ -164,7 +164,7 @@ Lefthook is configured (`lefthook.yml`) to run Prettier on staged files before c
 
 ## Testing
 
-The project uses Vitest with inline tests enabled (`vitest.config.ts`). Tests can be co-located with source code using `if (import.meta.vitest)` blocks.
+The project uses Bun's built-in test runner. Tests are located in `*.test.ts` files alongside the source code.
 
 ## Monitoring
 

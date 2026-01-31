@@ -36,10 +36,7 @@ run = "astro"
 run = "prettier -wl ."
 
 [tasks.test]
-run = "vitest"
-
-[tasks."test:ui"]
-run = "vitest --ui"
+run = "bun test"
 
 [tasks.gen-codes]
 run = "bun scripts/gen-codes.ts"
@@ -51,6 +48,10 @@ description = "Upload assets (images, audio) to R2 and update manifest"
 [tasks.deploy]
 run = "wrangler deploy"
 depends = ["build"]
+
+[tasks."deploy:wildcard"]
+run = "cd services/wildcard && bun run deploy"
+description = "Deploy wildcard subdomain service"
 
 [tasks.transcribe]
 run = "uv run --with openai-whisper python scripts/transcribe.py"
