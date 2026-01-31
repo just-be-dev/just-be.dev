@@ -11,11 +11,38 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          fetch-depth: 0
 
       - name: Setup mise
         uses: jdx/mise-action@146a28175021df8ca24f8ee1828cc2a60f980bd5 # v3
         with:
           experimental: true
+
+      - name: Lint changed files
+        run: |
+          # Determine base ref for comparison
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_REF="${{ github.event.pull_request.base.sha }}"
+          elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            # On main branch, compare with previous commit
+            BASE_REF="HEAD^"
+          else
+            # On other branches, compare with main
+            git fetch origin main:main
+            BASE_REF="main"
+          fi
+
+          # Get changed files that should be linted
+          CHANGED_FILES=$(git diff --name-only --diff-filter=ACMR $BASE_REF...HEAD | grep -E '\.(js|ts|jsx|tsx|astro)$' || true)
+
+          if [ -n "$CHANGED_FILES" ]; then
+            echo "Linting changed files:"
+            echo "$CHANGED_FILES"
+            echo "$CHANGED_FILES" | xargs mise run lint
+          else
+            echo "No lintable files changed"
+          fi
 
       - name: Build
         run: mise run build
