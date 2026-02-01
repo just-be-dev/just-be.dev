@@ -78,8 +78,19 @@ async function publishPackage(packageName: string, packagePath: string): Promise
 
   console.log(`   Publishing...`);
 
-  // Publish to npm (tolerate-republish provides safety net for edge cases)
-  await $`cd ${packagePath} && bun publish --access public --tolerate-republish`;
+  // Package with bun, then publish with npm to get provenance support
+  // npm's --provenance flag enables OIDC-based attestations
+  await $`cd ${packagePath} && bun pm pack`;
+
+  // Find the packed tarball (bun pm pack creates a .tgz file)
+  const files = await Array.fromAsync(new Bun.Glob("*.tgz").scan({ cwd: packagePath }));
+  if (files.length === 0) {
+    throw new Error("No tarball found after packing");
+  }
+  const tarball = files[0];
+
+  // Publish using npm with provenance
+  await $`cd ${packagePath} && bunx npm publish ${tarball} --access public --provenance`;
 
   // Create GitHub release (this creates the tag and release atomically)
   const tag = `${packageName}@${localVersion}`;
