@@ -51,7 +51,7 @@ async function publishPackage(packageName: string, packagePath: string): Promise
     npmVersion = "0.0.0";
   }
 
-  console.log(`\n📦 ${packageName}`);
+  console.log(`\n${packageName}`);
   console.log(`   Local version: ${localVersion}`);
   console.log(`   NPM version:   ${npmVersion}`);
 
@@ -64,7 +64,7 @@ async function publishPackage(packageName: string, packagePath: string): Promise
   }
 
   if (localVersion === npmVersion) {
-    console.log(`   ⏭️  Skipped (already published)`);
+    console.log(`   Skipped (already published)`);
     if (process.env.GITHUB_OUTPUT) {
       await appendFile(process.env.GITHUB_OUTPUT, `published=false\n`);
     }
@@ -76,9 +76,9 @@ async function publishPackage(packageName: string, packagePath: string): Promise
     };
   }
 
-  console.log(`   📤 Publishing...`);
+  console.log(`   Publishing...`);
 
-  // Publish to npm
+  // Publish to npm (tolerate-republish provides safety net for edge cases)
   await $`cd ${packagePath} && bun publish --access public --tolerate-republish`;
 
   // Create GitHub release (this creates the tag and release atomically)
@@ -88,7 +88,7 @@ async function publishPackage(packageName: string, packagePath: string): Promise
 
   await $`gh release create ${tag} --title ${releaseTitle} --notes ${releaseNotes}`;
 
-  console.log(`   ✅ Published`);
+  console.log(`   Published`);
 
   if (process.env.GITHUB_OUTPUT) {
     await appendFile(process.env.GITHUB_OUTPUT, `published=true\n`);
@@ -119,6 +119,6 @@ const packagePath = `packages/${name}`;
 try {
   await publishPackage(packageName, packagePath);
 } catch (error) {
-  console.error(`\n❌ Error publishing ${packageName}:`, error);
+  console.error(`\nError publishing ${packageName}:`, error);
   process.exit(1);
 }
