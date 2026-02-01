@@ -13,6 +13,7 @@
  */
 
 import { $ } from "bun";
+import { appendFile } from "node:fs/promises";
 import { join } from "node:path";
 import { z } from "zod";
 
@@ -56,17 +57,16 @@ async function publishPackage(packageName: string, packagePath: string): Promise
 
   // Set GitHub output
   if (process.env.GITHUB_OUTPUT) {
-    await Bun.write(
+    await appendFile(
       process.env.GITHUB_OUTPUT,
-      `local_version=${localVersion}\nnpm_version=${npmVersion}\n`,
-      { mode: "append" }
+      `local_version=${localVersion}\nnpm_version=${npmVersion}\n`
     );
   }
 
   if (localVersion === npmVersion) {
     console.log(`   ⏭️  Skipped (already published)`);
     if (process.env.GITHUB_OUTPUT) {
-      await Bun.write(process.env.GITHUB_OUTPUT, `published=false\n`, { mode: "append" });
+      await appendFile(process.env.GITHUB_OUTPUT, `published=false\n`);
     }
     return {
       packageName,
@@ -91,7 +91,7 @@ async function publishPackage(packageName: string, packagePath: string): Promise
   console.log(`   ✅ Published`);
 
   if (process.env.GITHUB_OUTPUT) {
-    await Bun.write(process.env.GITHUB_OUTPUT, `published=true\n`, { mode: "append" });
+    await appendFile(process.env.GITHUB_OUTPUT, `published=true\n`);
   }
 
   return {
