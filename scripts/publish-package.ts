@@ -90,7 +90,7 @@ async function publishPackage(packageName: string, packagePath: string): Promise
   const tarball = files[0];
 
   // Publish using npm with provenance
-  await $`cd ${packagePath} && bunx npm publish ${tarball} --access public`;
+  await $`cd ${packagePath} && bunx npm publish ${tarball} --provenance --access public`;
 
   // Create GitHub release (this creates the tag and release atomically)
   const tag = `${packageName}@${localVersion}`;
