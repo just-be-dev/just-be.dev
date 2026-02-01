@@ -1,0 +1,79 @@
+name: Publish NPM Packages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/**"
+
+env:
+  MISE_DISABLE_TOOLS: ffmpeg
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Required for OIDC
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup mise
+        uses: jdx/mise-action@146a28175021df8ca24f8ee1828cc2a60f980bd5 # v3
+        with:
+          experimental: true
+
+      - name: Install dependencies
+        run: mise install
+
+      - name: Run tests
+        run: mise run test
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Publish @just-be/wildcard
+        id: publish-wildcard
+        continue-on-error: true
+        run: bun scripts/publish-package.ts @just-be/wildcard packages/wildcard
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish @just-be/deploy
+        id: publish-deploy
+        continue-on-error: true
+        run: bun scripts/publish-package.ts @just-be/deploy packages/deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create workflow summary
+        run: |
+          echo "# NPM Publish Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## @just-be/wildcard" >> $GITHUB_STEP_SUMMARY
+          echo "- Local version: ${{ steps.publish-wildcard.outputs.local_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- NPM version: ${{ steps.publish-wildcard.outputs.npm_version }}" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.publish-wildcard.outputs.published }}" == "true" ]; then
+            echo "- **Status**: ✅ Published" >> $GITHUB_STEP_SUMMARY
+            echo "- [View on npm](https://www.npmjs.com/package/@just-be/wildcard/v/${{ steps.publish-wildcard.outputs.local_version }})" >> $GITHUB_STEP_SUMMARY
+            echo "- [View release](https://github.com/${{ github.repository }}/releases/tag/@just-be/wildcard@${{ steps.publish-wildcard.outputs.local_version }})" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Status**: ⏭️ Skipped (already published)" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## @just-be/deploy" >> $GITHUB_STEP_SUMMARY
+          echo "- Local version: ${{ steps.publish-deploy.outputs.local_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- NPM version: ${{ steps.publish-deploy.outputs.npm_version }}" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.publish-deploy.outputs.published }}" == "true" ]; then
+            echo "- **Status**: ✅ Published" >> $GITHUB_STEP_SUMMARY
+            echo "- [View on npm](https://www.npmjs.com/package/@just-be/deploy/v/${{ steps.publish-deploy.outputs.local_version }})" >> $GITHUB_STEP_SUMMARY
+            echo "- [View release](https://github.com/${{ github.repository }}/releases/tag/@just-be/deploy@${{ steps.publish-deploy.outputs.local_version }})" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Status**: ⏭️ Skipped (already published)" >> $GITHUB_STEP_SUMMARY
+          fi
