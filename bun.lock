@@ -32,10 +32,26 @@
         "wrangler": "4.48.0",
       },
     },
-    "services/wildcard": {
+    "packages/deploy": {
+      "name": "@just-be/deploy",
+      "version": "0.1.0",
+      "bin": "./index.ts",
+      "dependencies": {
+        "@just-be/wildcard": "workspace:*",
+      },
+    },
+    "packages/wildcard": {
       "name": "@just-be/wildcard",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "zod": "^3.0.0",
+      },
+    },
+    "services/wildcard": {
+      "name": "@just-be/wildcard-service",
       "version": "1.0.0",
       "dependencies": {
+        "@just-be/wildcard": "workspace:*",
         "zod": "catalog:",
       },
       "devDependencies": {
@@ -253,7 +269,11 @@
 
     "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
 
-    "@just-be/wildcard": ["@just-be/wildcard@workspace:services/wildcard"],
+    "@just-be/deploy": ["@just-be/deploy@workspace:packages/deploy"],
+
+    "@just-be/wildcard": ["@just-be/wildcard@workspace:packages/wildcard"],
+
+    "@just-be/wildcard-service": ["@just-be/wildcard-service@workspace:services/wildcard"],
 
     "@mdx-js/mdx": ["@mdx-js/mdx@3.1.1", "", { "dependencies": { "@types/estree": "^1.0.0", "@types/estree-jsx": "^1.0.0", "@types/hast": "^3.0.0", "@types/mdx": "^2.0.0", "acorn": "^8.0.0", "collapse-white-space": "^2.0.0", "devlop": "^1.0.0", "estree-util-is-identifier-name": "^3.0.0", "estree-util-scope": "^1.0.0", "estree-walker": "^3.0.0", "hast-util-to-jsx-runtime": "^2.0.0", "markdown-extensions": "^2.0.0", "recma-build-jsx": "^1.0.0", "recma-jsx": "^1.0.0", "recma-stringify": "^1.0.0", "rehype-recma": "^1.0.0", "remark-mdx": "^3.0.0", "remark-parse": "^11.0.0", "remark-rehype": "^11.0.0", "source-map": "^0.7.0", "unified": "^11.0.0", "unist-util-position-from-estree": "^2.0.0", "unist-util-stringify-position": "^4.0.0", "unist-util-visit": "^5.0.0", "vfile": "^6.0.0" } }, "sha512-f6ZO2ifpwAQIpzGWaBQT2TXxPv6z3RBzQKpVftEWN78Vl/YweF1uwussDx8ECAXVtr3Rs89fKyG9YlzUs9DyGQ=="],
 
