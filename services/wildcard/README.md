@@ -19,7 +19,7 @@ Serve static files from an R2 bucket path:
 ```json
 {
   "action": {
-    "type": "r2",
+    "type": "static",
     "path": "projects/myproject",
     "spa": false,
     "fallback": "404.html"
@@ -29,7 +29,7 @@ Serve static files from an R2 bucket path:
 
 **Fields:**
 
-- `type`: Must be `"r2"`
+- `type`: Must be `"static"`
 - `path`: Path prefix in the R2 bucket (e.g., `"projects/myproject"`)
 - `spa`: (Optional) Boolean. If `true`, all routes serve `index.html` for client-side routing. Default: `false`
 - `fallback`: (Optional) String. File to serve when requested file is not found. **Only allowed in non-SPA mode** (e.g., `"404.html"`). Cannot be used with `spa: true`. Default: none
@@ -173,7 +173,7 @@ cd services/wildcard
 # Example: R2 serving for a project
 wrangler kv:key put --binding SUBDOMAIN_CONFIG "myproject" '{
   "action": {
-    "type": "r2",
+    "type": "static",
     "path": "projects/myproject",
     "spa": true
   }
@@ -199,7 +199,7 @@ wrangler kv:key put --binding SUBDOMAIN_CONFIG "api" '{
 # Example: Static site with custom 404 page
 wrangler kv:key put --binding SUBDOMAIN_CONFIG "portfolio" '{
   "action": {
-    "type": "r2",
+    "type": "static",
     "path": "sites/portfolio",
     "fallback": "404.html"
   }
@@ -349,7 +349,7 @@ wrangler r2 object put content-bucket/sites/portfolio/styles.css --file ./dist/s
 ```sh
 wrangler kv:key put --binding SUBDOMAIN_CONFIG "portfolio" '{
   "action": {
-    "type": "r2",
+    "type": "static",
     "path": "sites/portfolio"
   }
 }'
@@ -366,7 +366,7 @@ wrangler kv:key put --binding SUBDOMAIN_CONFIG "portfolio" '{
 ```sh
 wrangler kv:key put --binding SUBDOMAIN_CONFIG "app" '{
   "action": {
-    "type": "r2",
+    "type": "static",
     "path": "apps/myapp",
     "spa": true
   }

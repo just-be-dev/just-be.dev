@@ -1,10 +1,12 @@
-import { RouteConfigCodec } from "./schemas";
-import { handleR2 } from "./handlers/r2";
-import { handleRedirect } from "./handlers/redirect";
-import { handleRewrite } from "./handlers/rewrite";
-import { isValidSubdomain } from "./utils";
+import {
+  RouteConfigCodec,
+  handleStatic,
+  handleRedirect,
+  handleRewrite,
+  isValidSubdomain,
+} from "@just-be/wildcard";
 import { z } from "zod";
-import type { Env } from "./types";
+import { createR2FileLoader, createKVRouteConfigLoader, type Env } from "./adapters";
 
 export type { Env };
 
@@ -31,7 +33,11 @@ export default {
       return Response.redirect(env.ORIGIN_URL, 302);
     }
 
-    const routeConfig = await env.ROUTING_RULES.get(subdomain);
+    // Create adapters for this request
+    const fileLoader = createR2FileLoader(env.CONTENT_BUCKET);
+    const routeConfigLoader = createKVRouteConfigLoader(env.ROUTING_RULES);
+
+    const routeConfig = await routeConfigLoader.loadRouteConfig(subdomain);
 
     if (!routeConfig) {
       return Response.redirect(env.ORIGIN_URL, 302);
@@ -51,14 +57,14 @@ export default {
 
     try {
       switch (config.type) {
-        case "r2":
-          return await handleR2(request, env, config);
+        case "static":
+          return await handleStatic(request, config, { fileLoader });
 
         case "redirect":
-          return await handleRedirect(request, env, config);
+          return await handleRedirect(request, config);
 
         case "rewrite":
-          return await handleRewrite(request, env, config);
+          return await handleRewrite(request, config);
 
         default:
           return new Response("Service configuration error", { status: 500 });

@@ -1,0 +1,53 @@
+name: Publish NPM Packages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/**"
+
+env:
+  MISE_DISABLE_TOOLS: ffmpeg
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Required for OIDC
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup mise
+        uses: jdx/mise-action@146a28175021df8ca24f8ee1828cc2a60f980bd5 # v3
+        with:
+          experimental: true
+
+      - name: Install dependencies
+        run: mise install
+
+      - name: Run tests
+        run: mise run test
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Publish @just-be/wildcard
+        id: publish-wildcard
+        continue-on-error: true
+        run: bun scripts/publish-package.ts wildcard
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish @just-be/deploy
+        id: publish-deploy
+        continue-on-error: true
+        run: bun scripts/publish-package.ts deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

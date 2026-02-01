@@ -1,5 +1,5 @@
 {
-  "name": "@just-be/wildcard",
+  "name": "@just-be/wildcard-service",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -9,6 +9,7 @@
     "tail": "wrangler tail"
   },
   "dependencies": {
+    "@just-be/wildcard": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {

@@ -1,17 +1,21 @@
-import type { Env, Handler } from "../types";
-import type { R2Config } from "../schemas";
+import type { Handler, FileLoader, FileObject } from "../types";
+import type { StaticConfig } from "../schemas";
 import { getContentType, sanitizePath } from "../utils";
 
-export const handleR2: Handler<R2Config> = async (request, env, config) => {
+export const handleStatic: Handler<StaticConfig, { fileLoader: FileLoader }> = async (
+  request,
+  config,
+  { fileLoader }
+) => {
   const url = new URL(request.url);
   const { path: basePath, spa, fallback } = config;
 
   return spa
-    ? handleSpaMode(env, basePath)
-    : handleStaticMode(env, basePath, url.pathname, fallback);
+    ? handleSpaMode(fileLoader, basePath)
+    : handleStaticMode(fileLoader, basePath, url.pathname, fallback);
 };
 
-async function handleSpaMode(env: Env, basePath: string): Promise<Response> {
+async function handleSpaMode(fileLoader: FileLoader, basePath: string): Promise<Response> {
   // Sanitize base path to prevent directory traversal
   const sanitizedBase = sanitizePath(basePath);
   if (!sanitizedBase) {
@@ -24,17 +28,17 @@ async function handleSpaMode(env: Env, basePath: string): Promise<Response> {
       ? `${sanitizedBase}index.html`
       : `${sanitizedBase}/index.html`;
 
-  const object = await env.CONTENT_BUCKET.get(key);
+  const fileObject = await fileLoader.loadFile(key);
 
-  if (!object) {
+  if (!fileObject) {
     return new Response("File not found", { status: 404 });
   }
 
-  return buildR2Response(object, key);
+  return buildFileResponse(fileObject, key);
 }
 
 async function handleStaticMode(
-  env: Env,
+  fileLoader: FileLoader,
   basePath: string,
   pathname: string,
   fallback?: string
@@ -56,10 +60,10 @@ async function handleStaticMode(
     key = key.endsWith("/") ? `${key}index.html` : `${key}/index.html`;
   }
 
-  const object = await env.CONTENT_BUCKET.get(key);
+  const fileObject = await fileLoader.loadFile(key);
 
-  if (object) {
-    return buildR2Response(object, key);
+  if (fileObject) {
+    return buildFileResponse(fileObject, key);
   }
 
   // Try fallback if configured
@@ -70,20 +74,22 @@ async function handleStaticMode(
     }
 
     const fallbackKey = `${sanitizedBase}/${sanitizedFallback}`;
-    const fallbackObject = await env.CONTENT_BUCKET.get(fallbackKey);
+    const fallbackObject = await fileLoader.loadFile(fallbackKey);
 
     if (fallbackObject) {
-      return buildR2Response(fallbackObject, fallbackKey);
+      return buildFileResponse(fallbackObject, fallbackKey);
     }
   }
 
   return new Response("File not found", { status: 404 });
 }
 
-function buildR2Response(object: R2ObjectBody, key: string): Response {
-  const headers = new Headers();
-  object.writeHttpMetadata(headers);
-  headers.set("etag", object.httpEtag);
+function buildFileResponse(fileObject: FileObject, key: string): Response {
+  const headers = new Headers(fileObject.headers);
+
+  if (fileObject.etag) {
+    headers.set("etag", fileObject.etag);
+  }
 
   if (!headers.has("Content-Type")) {
     const contentType = getContentType(key);
@@ -97,7 +103,7 @@ function buildR2Response(object: R2ObjectBody, key: string): Response {
   headers.set("X-Frame-Options", "SAMEORIGIN");
   headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
 
-  // Content Security Policy - restrictive default, can be overridden by R2 object metadata
+  // Content Security Policy - restrictive default, can be overridden by metadata
   if (!headers.has("Content-Security-Policy")) {
     headers.set(
       "Content-Security-Policy",
@@ -109,5 +115,5 @@ function buildR2Response(object: R2ObjectBody, key: string): Response {
   headers.set("Cache-Control", "public, max-age=3600");
   headers.set("Vary", "Accept-Encoding");
 
-  return new Response(object.body, { headers });
+  return new Response(fileObject.body, { headers });
 }
