@@ -1,24 +1,9 @@
 import { z } from "zod";
-
-/**
- * Validates that a URL is safe (http/https only, no private IPs)
- *
- * This is a simplified version that checks basic URL structure.
- * For full SSRF protection, use the complete isSafeURL implementation
- * from the wildcard service.
- */
-function isBasicSafeURL(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    return parsed.protocol === "http:" || parsed.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
+import { isSafeURL } from "./utils";
 
 /** Validates that a URL is safe (http/https only, no private IPs) */
 const safeUrl = () =>
-  z.string().url().refine(isBasicSafeURL, {
+  z.string().url().refine(isSafeURL, {
     message: "URL must use http/https and cannot target private/internal addresses",
   });
 

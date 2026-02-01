@@ -57,23 +57,27 @@ jobs:
           echo "# NPM Publish Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## @just-be/wildcard" >> $GITHUB_STEP_SUMMARY
-          echo "- Local version: ${{ steps.publish-wildcard.outputs.local_version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- NPM version: ${{ steps.publish-wildcard.outputs.npm_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Local version: ${{ steps.publish-wildcard.outputs.local_version || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- NPM version: ${{ steps.publish-wildcard.outputs.npm_version || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
           if [ "${{ steps.publish-wildcard.outputs.published }}" == "true" ]; then
             echo "- **Status**: ✅ Published" >> $GITHUB_STEP_SUMMARY
             echo "- [View on npm](https://www.npmjs.com/package/@just-be/wildcard/v/${{ steps.publish-wildcard.outputs.local_version }})" >> $GITHUB_STEP_SUMMARY
             echo "- [View release](https://github.com/${{ github.repository }}/releases/tag/@just-be/wildcard@${{ steps.publish-wildcard.outputs.local_version }})" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.publish-wildcard.outcome }}" == "failure" ]; then
+            echo "- **Status**: ❌ Failed" >> $GITHUB_STEP_SUMMARY
           else
             echo "- **Status**: ⏭️ Skipped (already published)" >> $GITHUB_STEP_SUMMARY
           fi
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## @just-be/deploy" >> $GITHUB_STEP_SUMMARY
-          echo "- Local version: ${{ steps.publish-deploy.outputs.local_version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- NPM version: ${{ steps.publish-deploy.outputs.npm_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Local version: ${{ steps.publish-deploy.outputs.local_version || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- NPM version: ${{ steps.publish-deploy.outputs.npm_version || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
           if [ "${{ steps.publish-deploy.outputs.published }}" == "true" ]; then
             echo "- **Status**: ✅ Published" >> $GITHUB_STEP_SUMMARY
             echo "- [View on npm](https://www.npmjs.com/package/@just-be/deploy/v/${{ steps.publish-deploy.outputs.local_version }})" >> $GITHUB_STEP_SUMMARY
             echo "- [View release](https://github.com/${{ github.repository }}/releases/tag/@just-be/deploy@${{ steps.publish-deploy.outputs.local_version }})" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.publish-deploy.outcome }}" == "failure" ]; then
+            echo "- **Status**: ❌ Failed" >> $GITHUB_STEP_SUMMARY
           else
             echo "- **Status**: ⏭️ Skipped (already published)" >> $GITHUB_STEP_SUMMARY
           fi

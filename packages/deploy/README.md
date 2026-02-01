@@ -33,6 +33,7 @@ bunx @just-be/deploy
 ```
 
 The interactive mode will ask you for:
+
 - Subdomain name
 - R2 path prefix
 - Local directory to upload
@@ -58,11 +59,13 @@ bunx @just-be/deploy --subdomain=NAME --path=PATH --dir=DIR [--spa] [--fallback=
 ### Examples
 
 **Interactive deployment:**
+
 ```bash
 bunx @just-be/deploy
 ```
 
 **Deploy a static site:**
+
 ```bash
 bunx @just-be/deploy \
   --subdomain=portfolio \
@@ -71,6 +74,7 @@ bunx @just-be/deploy \
 ```
 
 **Deploy a single-page application:**
+
 ```bash
 bunx @just-be/deploy \
   --subdomain=myapp \
@@ -80,6 +84,7 @@ bunx @just-be/deploy \
 ```
 
 **Deploy with custom 404 page:**
+
 ```bash
 bunx @just-be/deploy \
   --subdomain=docs \
@@ -90,9 +95,9 @@ bunx @just-be/deploy \
 
 ## How It Works
 
-1. **Parses arguments** using Node's `util.parseArgs` API
+1. **Parses arguments** using a custom argument parser
 2. **Prompts for missing values** if any required arguments are not provided
-3. **Validates configuration** using Zod schemas from `@just-be/wildcard-schemas`
+3. **Validates configuration** using Zod schemas from `@just-be/wildcard`
 4. **Scans** the target directory for all files
 5. **Uploads** each file to R2 at `content-bucket/{path}/{relative-path}`
 6. **Creates** a KV entry with routing configuration for the subdomain
@@ -101,6 +106,7 @@ bunx @just-be/deploy \
 ## Configuration
 
 The script expects your wildcard service to use:
+
 - **R2 Bucket**: `content-bucket`
 - **KV Binding**: `ROUTING_RULES`
 - **Wrangler Config**: `services/wildcard/wrangler.toml`
@@ -108,13 +114,14 @@ The script expects your wildcard service to use:
 ## Validation
 
 Configuration is validated using Zod schemas to ensure:
+
 - SPA mode and fallback file are not used together
 - R2 path is not empty
 - All required fields are present
 
 ## Related Packages
 
-- [`@just-be/wildcard-schemas`](../wildcard-schemas) - Shared Zod schemas for configuration validation
+- [`@just-be/wildcard`](../wildcard) - Shared Zod schemas and routing handlers for wildcard subdomain configuration
 
 ## License
 

@@ -36,7 +36,7 @@ const CliArgsSchema = z.object({
 type CliArgs = z.infer<typeof CliArgsSchema>;
 
 /**
- * Parse command-line arguments from Bun.argv
+ * Parse command-line arguments from Bun.argv using a custom parser
  */
 function parseCliArgs(): CliArgs {
   const args: Record<string, string | boolean> = {};
@@ -176,9 +176,28 @@ async function findFiles(dir: string): Promise<string[]> {
 
 /**
  * Upload a file to R2
+ * @returns true if upload succeeded, false otherwise
  */
-async function uploadToR2(localPath: string, r2Key: string): Promise<void> {
-  await $`wrangler r2 object put ${BUCKET_NAME}/${r2Key} --file ${localPath}`;
+async function uploadToR2(localPath: string, r2Key: string): Promise<boolean> {
+  try {
+    await $`wrangler r2 object put ${BUCKET_NAME}/${r2Key} --file ${localPath}`;
+    return true;
+  } catch (error) {
+    console.error(`\n❌ Failed to upload ${localPath}:`, error);
+    return false;
+  }
+}
+
+/**
+ * Validate KV access by attempting to list keys
+ */
+async function validateKVAccess(): Promise<boolean> {
+  try {
+    await $`wrangler kv key list --binding ROUTING_RULES --config ${WRANGLER_CONFIG}`.quiet();
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -236,22 +255,58 @@ async function deploy() {
     process.exit(1);
   }
 
+  // Validate KV access before starting uploads
+  console.log("🔍 Validating KV access...");
+  const hasKVAccess = await validateKVAccess();
+  if (!hasKVAccess) {
+    console.error(
+      "❌ Error: Cannot access KV namespace. Check wrangler configuration and permissions."
+    );
+    process.exit(1);
+  }
+  console.log("✅ KV access validated\n");
+
   // Upload files to R2
   let uploadCount = 0;
+  const failedUploads: string[] = [];
+
   for (const filePath of filePaths) {
     const relativePath = relative(config.dir, filePath);
     const r2Key = `${config.path}/${relativePath}`;
 
     console.log(`⬆️  ${relativePath} → ${r2Key}`);
-    await uploadToR2(filePath, r2Key);
-    uploadCount++;
+    const success = await uploadToR2(filePath, r2Key);
+
+    if (success) {
+      uploadCount++;
+    } else {
+      failedUploads.push(relativePath);
+    }
+  }
+
+  // Report upload results
+  if (failedUploads.length > 0) {
+    console.error(`\n❌ Failed to upload ${failedUploads.length} file(s):`);
+    for (const file of failedUploads) {
+      console.error(`   - ${file}`);
+    }
+    process.exit(1);
   }
 
   console.log(`\n✅ Uploaded ${uploadCount} files to R2\n`);
 
   // Create KV entry for routing
   console.log(`🔧 Creating KV routing entry for subdomain: ${config.subdomain}`);
-  await createKVEntry(config.subdomain, config);
+  try {
+    await createKVEntry(config.subdomain, config);
+  } catch (error) {
+    console.error(
+      `\n❌ Error: Failed to create KV entry. Files were uploaded but routing is not configured.`
+    );
+    console.error(`   Uploaded files location: ${config.path}`);
+    console.error(`   Error:`, error);
+    process.exit(1);
+  }
 
   console.log(`\n✅ Deployment complete!`);
   console.log(`\n🌐 Your site is available at: https://${config.subdomain}.just-be.dev`);

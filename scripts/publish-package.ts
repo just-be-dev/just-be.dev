@@ -22,8 +22,6 @@ const PackageJsonSchema = z.object({
     .optional(),
 });
 
-type PackageJson = z.infer<typeof PackageJsonSchema>;
-
 interface PublishResult {
   packageName: string;
   localVersion: string;
@@ -31,10 +29,7 @@ interface PublishResult {
   published: boolean;
 }
 
-async function publishPackage(
-  packageName: string,
-  packagePath: string
-): Promise<PublishResult> {
+async function publishPackage(packageName: string, packagePath: string): Promise<PublishResult> {
   // Read local package.json using Bun's native JSON support
   const packageJsonPath = join(packagePath, "package.json");
   const packageJsonRaw = await Bun.file(packageJsonPath).json();
@@ -82,13 +77,12 @@ async function publishPackage(
   // Publish to npm
   await $`cd ${packagePath} && bun publish --access public --tolerate-republish`;
 
-  // Create git tag
+  // Create GitHub release (this creates the tag and release atomically)
   const tag = `${packageName}@${localVersion}`;
-  await $`git tag -a ${tag} -m ${"Release " + tag}`;
-  await $`git push origin ${tag}`;
+  const releaseTitle = `${packageName} v${localVersion}`;
+  const releaseNotes = `Published to npm: https://www.npmjs.com/package/${packageName}/v/${localVersion}`;
 
-  // Create GitHub release
-  await $`gh release create ${tag} --title ${`${packageName} v${localVersion}`} --notes ${"Published to npm: https://www.npmjs.com/package/" + packageName + "/v/" + localVersion} --verify-tag`;
+  await $`gh release create ${tag} --title ${releaseTitle} --notes ${releaseNotes}`;
 
   console.log(`   ✅ Published`);
 
