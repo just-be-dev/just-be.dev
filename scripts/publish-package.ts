@@ -59,14 +59,14 @@ async function publishPackage(packageName: string, packagePath: string): Promise
     await Bun.write(
       process.env.GITHUB_OUTPUT,
       `local_version=${localVersion}\nnpm_version=${npmVersion}\n`,
-      { mode: "append" }
+      { flags: "a" }
     );
   }
 
   if (localVersion === npmVersion) {
     console.log(`   ⏭️  Skipped (already published)`);
     if (process.env.GITHUB_OUTPUT) {
-      await Bun.write(process.env.GITHUB_OUTPUT, `published=false\n`, { mode: "append" });
+      await Bun.write(process.env.GITHUB_OUTPUT, `published=false\n`, { flags: "a" });
     }
     return {
       packageName,
@@ -91,7 +91,7 @@ async function publishPackage(packageName: string, packagePath: string): Promise
   console.log(`   ✅ Published`);
 
   if (process.env.GITHUB_OUTPUT) {
-    await Bun.write(process.env.GITHUB_OUTPUT, `published=true\n`, { mode: "append" });
+    await Bun.write(process.env.GITHUB_OUTPUT, `published=true\n`, { flags: "a" });
   }
 
   return {
