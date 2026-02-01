@@ -5,3 +5,7 @@ pre-commit:
       glob: "*.{js,ts,jsx,tsx,astro,json,md,mdx,css,html}"
       run: bunx --bun prettier --write --list-different {staged_files}
       stage_fixed: true
+    oxlint:
+      glob: "*.{js,ts,jsx,tsx,astro}"
+      run: bunx oxlint --fix {staged_files}
+      stage_fixed: true

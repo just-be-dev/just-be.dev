@@ -49,6 +49,12 @@ mise run preview
 # Format code with Prettier
 mise run fmt
 
+# Lint code with oxlint
+mise run lint
+
+# Lint and auto-fix issues
+mise run lint:fix
+
 # Run tests
 mise run test
 

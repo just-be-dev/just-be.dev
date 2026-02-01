@@ -35,6 +35,12 @@ run = "astro"
 [tasks.fmt]
 run = "prettier -wl ."
 
+[tasks.lint]
+run = "oxlint"
+
+[tasks."lint:fix"]
+run = "oxlint --fix"
+
 [tasks.test]
 run = "bun test"
 

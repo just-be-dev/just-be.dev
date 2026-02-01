@@ -33,13 +33,16 @@
     "preview": "astro preview",
     "astro": "astro",
     "test": "bun test",
-    "gen-codes": "bun scripts/gen-codes.ts"
+    "gen-codes": "bun scripts/gen-codes.ts",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix"
   },
   "type": "module",
   "devDependencies": {
     "@types/bun": "^1.3.6",
     "@unocss/astro": "66.5.10",
     "@unocss/preset-icons": "66.5.10",
+    "oxlint": "^1.41.0",
     "prettier": "3.7.4",
     "prettier-plugin-astro": "0.14.1",
     "unocss": "66.5.10",
