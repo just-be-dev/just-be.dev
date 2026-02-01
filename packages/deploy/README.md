@@ -1,6 +1,6 @@
 # @just-be/deploy
 
-Deploy static files to Cloudflare R2 and configure subdomain routing in KV for wildcard subdomain services.
+Deploy static sites and setup routing for the wildcard subdomain service.
 
 ## Requirements
 
@@ -24,84 +24,181 @@ bun install -g @just-be/deploy
 
 ## Usage
 
-### Interactive Mode
+### Basic Usage
 
-Simply run without arguments to be prompted for all configuration:
+Create a `deploy.json` file in your project:
+
+```json
+{
+  "rules": [
+    {
+      "subdomain": "myapp",
+      "type": "static",
+      "path": "apps/myapp",
+      "dir": "./dist",
+      "spa": true
+    },
+    {
+      "subdomain": "old-site",
+      "type": "redirect",
+      "url": "https://new-site.com",
+      "permanent": true
+    }
+  ]
+}
+```
+
+Then run:
 
 ```bash
 bunx @just-be/deploy
 ```
 
-The interactive mode will ask you for:
-
-- Subdomain name
-- R2 path prefix
-- Local directory to upload
-- Whether to enable SPA mode
-- Whether to use a custom fallback file
-
-### Command-Line Mode
-
-Provide all arguments upfront:
+### Specify Config Path
 
 ```bash
-bunx @just-be/deploy --subdomain=NAME --path=PATH --dir=DIR [--spa] [--fallback=FILE]
+bunx @just-be/deploy path/to/config.json
 ```
 
-### Arguments
+## Rule Types
 
-- `--subdomain`: Subdomain name (e.g., "myapp" for myapp.just-be.dev)
-- `--path`: R2 path prefix where files will be stored (e.g., "apps/myapp")
-- `--dir`: Local directory to upload
-- `--spa`: (Optional) Enable SPA mode - all routes serve index.html
-- `--fallback`: (Optional) Custom fallback file for 404s (only in non-SPA mode)
+### Static Site
 
-### Examples
+Deploy static files to R2 and serve them via a subdomain.
 
-**Interactive deployment:**
-
-```bash
-bunx @just-be/deploy
+```json
+{
+  "subdomain": "myapp",
+  "type": "static",
+  "path": "apps/myapp",
+  "dir": "./dist",
+  "spa": true
+}
 ```
 
-**Deploy a static site:**
+**Options:**
 
-```bash
-bunx @just-be/deploy \
-  --subdomain=portfolio \
-  --path=sites/portfolio \
-  --dir=./dist
+- `subdomain` (required): Subdomain name (e.g., "myapp" for myapp.just-be.dev)
+- `type` (required): Must be "static"
+- `path` (required): R2 path prefix where files will be stored
+- `dir` (required): Local directory containing files to upload
+- `spa` (optional): Enable SPA mode - all routes serve index.html
+- `fallback` (optional): Custom 404 file (cannot be used with `spa`)
+
+### Redirect
+
+Configure an HTTP redirect from a subdomain to another URL.
+
+```json
+{
+  "subdomain": "old-site",
+  "type": "redirect",
+  "url": "https://new-site.com",
+  "permanent": true
+}
 ```
 
-**Deploy a single-page application:**
+**Options:**
 
-```bash
-bunx @just-be/deploy \
-  --subdomain=myapp \
-  --path=apps/myapp \
-  --dir=./build \
-  --spa
+- `subdomain` (required): Subdomain name
+- `type` (required): Must be "redirect"
+- `url` (required): Target URL (must be http/https)
+- `permanent` (optional): Use 301 (permanent) redirect instead of 302 (temporary)
+
+### Rewrite (Reverse Proxy)
+
+Proxy requests from a subdomain to another URL.
+
+```json
+{
+  "subdomain": "api",
+  "type": "rewrite",
+  "url": "https://api.example.com",
+  "allowedMethods": ["GET", "POST", "PUT", "DELETE"]
+}
 ```
 
-**Deploy with custom 404 page:**
+**Options:**
 
-```bash
-bunx @just-be/deploy \
-  --subdomain=docs \
-  --path=sites/docs \
-  --dir=./out \
-  --fallback=404.html
+- `subdomain` (required): Subdomain name
+- `type` (required): Must be "rewrite"
+- `url` (required): Target URL to proxy to (must be http/https)
+- `allowedMethods` (optional): HTTP methods allowed (default: ["GET", "HEAD", "OPTIONS"])
+
+## Examples
+
+### Multiple Static Sites
+
+```json
+{
+  "rules": [
+    {
+      "subdomain": "portfolio",
+      "type": "static",
+      "path": "sites/portfolio",
+      "dir": "./build",
+      "fallback": "404.html"
+    },
+    {
+      "subdomain": "docs",
+      "type": "static",
+      "path": "sites/docs",
+      "dir": "./out",
+      "spa": true
+    },
+    {
+      "subdomain": "blog",
+      "type": "static",
+      "path": "sites/blog",
+      "dir": "./dist"
+    }
+  ]
+}
 ```
+
+### Mixed Deployments
+
+```json
+{
+  "rules": [
+    {
+      "subdomain": "app",
+      "type": "static",
+      "path": "apps/main",
+      "dir": "./dist",
+      "spa": true
+    },
+    {
+      "subdomain": "legacy",
+      "type": "redirect",
+      "url": "https://app.just-be.dev",
+      "permanent": true
+    },
+    {
+      "subdomain": "api",
+      "type": "rewrite",
+      "url": "https://backend.example.com",
+      "allowedMethods": ["GET", "POST", "PUT", "DELETE", "PATCH"]
+    }
+  ]
+}
+```
+
+## Editor Support
+
+The package includes a JSON Schema (`deploy.schema.json`) for editor validation and autocomplete. Many editors will automatically provide validation and suggestions for `deploy.json` files.
 
 ## How It Works
 
-1. **Parses arguments** using a custom argument parser
-2. **Prompts for missing values** if any required arguments are not provided
-3. **Validates configuration** using Zod schemas from `@just-be/wildcard`
-4. **Scans** the target directory for all files
-5. **Uploads** each file to R2 at `content-bucket/{path}/{relative-path}`
-6. **Creates** a KV entry with routing configuration for the subdomain
-7. **Configures** the wildcard service to serve your site at `https://{subdomain}.just-be.dev`
+1. **Parses configuration** from `deploy.json`
+2. **Validates** all rules using Zod schemas from `@just-be/wildcard`
+3. **For static sites**:
+   - Scans the local directory for all files
+   - Uploads each file to R2 at `content-bucket/{path}/{relative-path}`
+   - Creates a KV entry with routing configuration
+4. **For redirects/rewrites**:
+   - Creates a KV entry with the routing configuration
+5. **Configures** the wildcard service to route requests for each subdomain
 
 ## Configuration
 
@@ -115,9 +212,10 @@ The script expects your wildcard service to use:
 
 Configuration is validated using Zod schemas to ensure:
 
+- Valid subdomain format (alphanumeric with hyphens, 1-63 characters)
 - SPA mode and fallback file are not used together
-- R2 path is not empty
-- All required fields are present
+- Required fields are present for each rule type
+- URLs are safe (http/https only)
 
 ## Related Packages
 

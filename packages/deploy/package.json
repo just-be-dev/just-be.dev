@@ -1,14 +1,18 @@
 {
   "name": "@just-be/deploy",
   "version": "0.2.0",
-  "description": "Deploy static files to Cloudflare R2 and configure subdomain routing",
+  "description": "Deploy static sites to Cloudflare R2 with subdomain routing",
   "type": "module",
   "bin": {
     "deploy": "index.ts"
   },
   "files": [
-    "index.ts"
+    "index.ts",
+    "schema.json"
   ],
+  "scripts": {
+    "generate-schema": "bun run scripts/generate-schema.ts"
+  },
   "keywords": [
     "cloudflare",
     "r2",
@@ -28,7 +32,8 @@
   "dependencies": {
     "@clack/prompts": "^0.11.0",
     "@just-be/wildcard": "workspace:*",
-    "wrangler": "catalog:"
+    "wrangler": "catalog:",
+    "zod": "catalog:"
   },
   "publishConfig": {
     "access": "public"

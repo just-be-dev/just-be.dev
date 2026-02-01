@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "rules": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "static"
+              },
+              "spa": {
+                "type": "boolean"
+              },
+              "fallback": {
+                "type": "string"
+              },
+              "subdomain": {
+                "type": "string"
+              },
+              "dir": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": ["type", "subdomain", "dir"],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "redirect"
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "permanent": {
+                "type": "boolean"
+              },
+              "subdomain": {
+                "type": "string"
+              }
+            },
+            "required": ["type", "url", "subdomain"],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "rewrite"
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "allowedMethods": {
+                "default": ["GET", "HEAD", "OPTIONS"],
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"]
+                }
+              },
+              "subdomain": {
+                "type": "string"
+              }
+            },
+            "required": ["type", "url", "allowedMethods", "subdomain"],
+            "additionalProperties": false
+          }
+        ]
+      }
+    }
+  },
+  "required": ["rules"],
+  "additionalProperties": false,
+  "title": "Deploy Configuration",
+  "description": "Configuration for deploying static sites and setting up routing for the wildcard subdomain service"
+}
