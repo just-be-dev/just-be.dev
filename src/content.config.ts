@@ -1,5 +1,5 @@
 import { defineCollection, z } from "astro:content";
-import { glob, file } from "astro/loaders";
+import { glob } from "astro/loaders";
 import { feedLoader } from "@ascorbic/feed-loader";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";

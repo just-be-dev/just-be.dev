@@ -369,7 +369,7 @@ function generateImportNodes(components: Set<string>): MdxjsEsm[] {
  * The main remark plugin
  */
 export function remarkMdcToMdx() {
-  return (tree: Root, file: any) => {
+  return (tree: Root, _file: any) => {
     // Track components used in the document
     const components = new Set<string>();
 

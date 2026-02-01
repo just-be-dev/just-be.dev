@@ -140,5 +140,5 @@
     "builtin": true
   },
   "globals": {},
-  "ignorePatterns": ["dist", ".astro", "node_modules", ".wrangler", ".conductor"]
+  "ignorePatterns": ["dist", ".astro", "node_modules", ".wrangler", ".conductor", "public"]
 }

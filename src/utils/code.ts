@@ -174,7 +174,7 @@ export class Code {
    * @param collection - The collection to get entries from
    * @returns Array of path objects with code/slug params and entry props
    */
-  static async getStaticPaths<T>(
+  static async getStaticPaths(
     collection: Awaited<ReturnType<typeof import("astro:content").getCollection<any>>>
   ) {
     return collection.map((entry) => {
