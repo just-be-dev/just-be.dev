@@ -1,0 +1,32 @@
+{
+  "name": "@just-be/deploy",
+  "version": "0.1.1",
+  "description": "Deploy static files to Cloudflare R2 and configure subdomain routing",
+  "type": "module",
+  "bin": "./index.ts",
+  "files": [
+    "index.ts"
+  ],
+  "keywords": [
+    "cloudflare",
+    "r2",
+    "deploy",
+    "static-site"
+  ],
+  "author": "Justin Bennett",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/justbejyk/just-be.dev.git",
+    "directory": "packages/deploy"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  },
+  "dependencies": {
+    "@just-be/wildcard": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
