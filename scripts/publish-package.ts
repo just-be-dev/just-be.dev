@@ -27,47 +27,128 @@ const PackageJsonSchema = z.object({
     .optional(),
 });
 
-interface PublishResult {
+export interface PublishResult {
   packageName: string;
   localVersion: string;
   npmVersion: string;
   published: boolean;
 }
 
-async function publishPackage(packageName: string, packagePath: string): Promise<PublishResult> {
-  // Read local package.json using Bun's native JSON support
+export interface PackageInfo {
+  name: string;
+  version: string;
+}
+
+/**
+ * Read and parse package.json
+ */
+export async function getPackageInfo(packagePath: string): Promise<PackageInfo> {
   const packageJsonPath = join(packagePath, "package.json");
   const packageJsonRaw = await Bun.file(packageJsonPath).json();
   const packageJson = PackageJsonSchema.parse(packageJsonRaw);
-  const localVersion = packageJson.version;
+  return {
+    name: packageJson.name,
+    version: packageJson.version,
+  };
+}
 
-  // Get current npm version
-  let npmVersion = "0.0.0";
+/**
+ * Get the current version of a package from npm registry
+ * Returns "0.0.0" if the package doesn't exist
+ */
+export async function getNpmVersion(packageName: string): Promise<string> {
   try {
     const result = await $`npm view ${packageName} version`.text();
-    npmVersion = result.trim();
+    return result.trim();
   } catch {
     // Package doesn't exist on npm yet
-    npmVersion = "0.0.0";
+    return "0.0.0";
   }
+}
+
+/**
+ * Determine if a package should be published based on version comparison
+ */
+export function shouldPublish(localVersion: string, npmVersion: string): boolean {
+  return localVersion !== npmVersion;
+}
+
+/**
+ * Pack a package using bun pm pack
+ */
+export async function packPackage(packagePath: string): Promise<void> {
+  await $`cd ${packagePath} && bun pm pack`;
+}
+
+/**
+ * Find the packed tarball in the package directory
+ */
+export async function findTarball(packagePath: string): Promise<string> {
+  const files = await Array.fromAsync(new Bun.Glob("*.tgz").scan({ cwd: packagePath }));
+  if (files.length === 0) {
+    throw new Error("No tarball found after packing");
+  }
+  return files[0];
+}
+
+/**
+ * Publish a tarball to npm
+ */
+export async function publishToNpm(packagePath: string, tarball: string): Promise<void> {
+  await $`cd ${packagePath} && npm publish ${tarball} --access public`;
+}
+
+/**
+ * Create a GitHub release for the published package
+ */
+export async function createGitHubRelease(packageName: string, version: string): Promise<void> {
+  const tag = `${packageName}@${version}`;
+  const releaseTitle = `${packageName} v${version}`;
+  const releaseNotes = `Published to npm: https://www.npmjs.com/package/${packageName}/v/${version}`;
+
+  await $`gh release create ${tag} --title ${releaseTitle} --notes ${releaseNotes}`;
+}
+
+/**
+ * Write outputs to GitHub Actions
+ */
+export async function writeGitHubOutputs(outputs: Record<string, string | boolean>): Promise<void> {
+  if (!process.env.GITHUB_OUTPUT) {
+    return;
+  }
+
+  const lines = Object.entries(outputs)
+    .map(([key, value]) => `${key}=${value}`)
+    .join("\n");
+
+  await appendFile(process.env.GITHUB_OUTPUT, `${lines}\n`);
+}
+
+/**
+ * Main publish function that orchestrates the entire publishing process
+ */
+export async function publishPackage(
+  packageName: string,
+  packagePath: string
+): Promise<PublishResult> {
+  // Get package version info
+  const packageInfo = await getPackageInfo(packagePath);
+  const localVersion = packageInfo.version;
+  const npmVersion = await getNpmVersion(packageName);
 
   console.log(`\n${packageName}`);
   console.log(`   Local version: ${localVersion}`);
   console.log(`   NPM version:   ${npmVersion}`);
 
-  // Set GitHub output
-  if (process.env.GITHUB_OUTPUT) {
-    await appendFile(
-      process.env.GITHUB_OUTPUT,
-      `local_version=${localVersion}\nnpm_version=${npmVersion}\n`
-    );
-  }
+  await writeGitHubOutputs({
+    local_version: localVersion,
+    npm_version: npmVersion,
+  });
 
-  if (localVersion === npmVersion) {
+  // Check if publishing is needed
+  if (!shouldPublish(localVersion, npmVersion)) {
     console.log(`   Skipped (already published)`);
-    if (process.env.GITHUB_OUTPUT) {
-      await appendFile(process.env.GITHUB_OUTPUT, `published=false\n`);
-    }
+    await writeGitHubOutputs({ published: false });
     return {
       packageName,
       localVersion,
@@ -78,32 +159,20 @@ async function publishPackage(packageName: string, packagePath: string): Promise
 
   console.log(`   Publishing...`);
 
-  // Package with bun, then publish with npm to get provenance support
-  // npm's --provenance flag enables OIDC-based attestations
-  await $`cd ${packagePath} && bun pm pack`;
+  // Pack the package
+  await packPackage(packagePath);
 
-  // Find the packed tarball (bun pm pack creates a .tgz file)
-  const files = await Array.fromAsync(new Bun.Glob("*.tgz").scan({ cwd: packagePath }));
-  if (files.length === 0) {
-    throw new Error("No tarball found after packing");
-  }
-  const tarball = files[0];
+  // Find the tarball
+  const tarball = await findTarball(packagePath);
 
-  // Publish using npm with provenance
-  await $`cd ${packagePath} && bunx npm publish ${tarball} --provenance --access public`;
+  // Publish to npm
+  await publishToNpm(packagePath, tarball);
 
-  // Create GitHub release (this creates the tag and release atomically)
-  const tag = `${packageName}@${localVersion}`;
-  const releaseTitle = `${packageName} v${localVersion}`;
-  const releaseNotes = `Published to npm: https://www.npmjs.com/package/${packageName}/v/${localVersion}`;
-
-  await $`gh release create ${tag} --title ${releaseTitle} --notes ${releaseNotes}`;
+  // Create GitHub release
+  await createGitHubRelease(packageName, localVersion);
 
   console.log(`   Published`);
-
-  if (process.env.GITHUB_OUTPUT) {
-    await appendFile(process.env.GITHUB_OUTPUT, `published=true\n`);
-  }
+  await writeGitHubOutputs({ published: true });
 
   return {
     packageName,
@@ -113,23 +182,26 @@ async function publishPackage(packageName: string, packagePath: string): Promise
   };
 }
 
-// Parse arguments
-const [name] = process.argv.slice(2);
+// Only run the script if executed directly (not when imported)
+if (import.meta.main) {
+  // Parse arguments
+  const [name] = process.argv.slice(2);
 
-if (!name) {
-  console.error("Usage: bun scripts/publish-package.ts <package-name>");
-  console.error("Example: bun scripts/publish-package.ts wildcard");
-  process.exit(1);
-}
+  if (!name) {
+    console.error("Usage: bun scripts/publish-package.ts <package-name>");
+    console.error("Example: bun scripts/publish-package.ts wildcard");
+    process.exit(1);
+  }
 
-// Construct full package name and path
-const packageName = `@just-be/${name}`;
-const packagePath = `packages/${name}`;
+  // Construct full package name and path
+  const packageName = `@just-be/${name}`;
+  const packagePath = `packages/${name}`;
 
-// Run the script
-try {
-  await publishPackage(packageName, packagePath);
-} catch (error) {
-  console.error(`\nError publishing ${packageName}:`, error);
-  process.exit(1);
+  // Run the script
+  try {
+    await publishPackage(packageName, packagePath);
+  } catch (error) {
+    console.error(`\nError publishing ${packageName}:`, error);
+    process.exit(1);
+  }
 }
