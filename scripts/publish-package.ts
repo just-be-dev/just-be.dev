@@ -4,8 +4,12 @@
  * Publish a package to npm if the version has changed
  *
  * Usage:
- *   bun scripts/publish-package.ts <package-name> <package-path>
- *   bun scripts/publish-package.ts @just-be/wildcard packages/wildcard
+ *   bun scripts/publish-package.ts <package-name>
+ *   bun scripts/publish-package.ts wildcard
+ *
+ * The script automatically:
+ * - Adds @just-be/ scope to the package name
+ * - Looks for the package in packages/<package-name>
  */
 
 import { $ } from "bun";
@@ -99,13 +103,17 @@ async function publishPackage(packageName: string, packagePath: string): Promise
 }
 
 // Parse arguments
-const [packageName, packagePath] = process.argv.slice(2);
+const [name] = process.argv.slice(2);
 
-if (!packageName || !packagePath) {
-  console.error("Usage: bun scripts/publish-package.ts <package-name> <package-path>");
-  console.error("Example: bun scripts/publish-package.ts @just-be/wildcard packages/wildcard");
+if (!name) {
+  console.error("Usage: bun scripts/publish-package.ts <package-name>");
+  console.error("Example: bun scripts/publish-package.ts wildcard");
   process.exit(1);
 }
+
+// Construct full package name and path
+const packageName = `@just-be/${name}`;
+const packagePath = `packages/${name}`;
 
 // Run the script
 try {

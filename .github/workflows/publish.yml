@@ -41,14 +41,14 @@ jobs:
       - name: Publish @just-be/wildcard
         id: publish-wildcard
         continue-on-error: true
-        run: bun scripts/publish-package.ts @just-be/wildcard packages/wildcard
+        run: bun scripts/publish-package.ts wildcard
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish @just-be/deploy
         id: publish-deploy
         continue-on-error: true
-        run: bun scripts/publish-package.ts @just-be/deploy packages/deploy
+        run: bun scripts/publish-package.ts deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
