@@ -6,6 +6,7 @@ compatibility_flags = ["nodejs_compat"]
 # Wildcard subdomain routes
 [[routes]]
 pattern = "*.just-be.dev/*"
+zone_name = "just-be.dev"
 
 [observability]
 enabled = true
