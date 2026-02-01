@@ -40,6 +40,32 @@ export interface PackageInfo {
 }
 
 /**
+ * Main entry point for the publish script
+ */
+export async function main(): Promise<void> {
+  // Parse arguments
+  const [name] = process.argv.slice(2);
+
+  if (!name) {
+    console.error("Usage: bun scripts/publish-package.ts <package-name>");
+    console.error("Example: bun scripts/publish-package.ts wildcard");
+    process.exit(1);
+  }
+
+  // Construct full package name and path
+  const packageName = `@just-be/${name}`;
+  const packagePath = `packages/${name}`;
+
+  // Run the publish process
+  try {
+    await publishPackage(packageName, packagePath);
+  } catch (error) {
+    console.error(`\nError publishing ${packageName}:`, error);
+    process.exit(1);
+  }
+}
+
+/**
  * Read and parse package.json
  */
 export async function getPackageInfo(packagePath: string): Promise<PackageInfo> {
@@ -184,24 +210,5 @@ export async function publishPackage(
 
 // Only run the script if executed directly (not when imported)
 if (import.meta.main) {
-  // Parse arguments
-  const [name] = process.argv.slice(2);
-
-  if (!name) {
-    console.error("Usage: bun scripts/publish-package.ts <package-name>");
-    console.error("Example: bun scripts/publish-package.ts wildcard");
-    process.exit(1);
-  }
-
-  // Construct full package name and path
-  const packageName = `@just-be/${name}`;
-  const packagePath = `packages/${name}`;
-
-  // Run the script
-  try {
-    await publishPackage(packageName, packagePath);
-  } catch (error) {
-    console.error(`\nError publishing ${packageName}:`, error);
-    process.exit(1);
-  }
+  await main();
 }
