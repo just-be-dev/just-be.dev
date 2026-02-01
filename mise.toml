@@ -4,6 +4,7 @@ lefthook = "2.0.15"
 python = "3.14.2"
 ffmpeg = "latest"
 uv = "latest"
+node = "24.13.0"
 
 [settings]
 experimental = true

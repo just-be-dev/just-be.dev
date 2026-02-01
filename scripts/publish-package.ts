@@ -39,11 +39,7 @@ export interface PackageInfo {
   version: string;
 }
 
-/**
- * Main entry point for the publish script
- */
 export async function main(): Promise<void> {
-  // Parse arguments
   const [name] = process.argv.slice(2);
 
   if (!name) {

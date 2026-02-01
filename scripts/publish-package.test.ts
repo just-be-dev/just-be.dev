@@ -1,13 +1,7 @@
 import { describe, expect, test, beforeEach, afterEach } from "bun:test";
 import { rm, mkdir } from "node:fs/promises";
 import { join } from "node:path";
-import {
-  getPackageInfo,
-  shouldPublish,
-  packPackage,
-  findTarball,
-  type PackageInfo,
-} from "./publish-package";
+import { getPackageInfo, shouldPublish, packPackage, findTarball } from "./publish-package";
 
 const TEST_DIR = join(import.meta.dir, "../.test-artifacts/publish-package");
 
