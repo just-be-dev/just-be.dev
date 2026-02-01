@@ -25,7 +25,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/justbejyk/just-be.dev.git",
+    "url": "git+https://github.com/just-be-dev/just-be.dev.git",
     "directory": "packages/wildcard"
   },
   "peerDependencies": {

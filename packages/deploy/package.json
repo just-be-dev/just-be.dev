@@ -3,7 +3,9 @@
   "version": "0.2.0",
   "description": "Deploy static files to Cloudflare R2 and configure subdomain routing",
   "type": "module",
-  "bin": "./index.ts",
+  "bin": {
+    "deploy": "index.ts"
+  },
   "files": [
     "index.ts"
   ],
@@ -17,7 +19,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/justbejyk/just-be.dev.git",
+    "url": "git+https://github.com/just-be-dev/just-be.dev.git",
     "directory": "packages/deploy"
   },
   "engines": {
