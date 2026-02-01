@@ -1,10 +1,10 @@
-import type { Env, Handler } from "../types";
+import type { Handler } from "../types";
 import type { RewriteConfig } from "../schemas";
 import { filterSafeHeaders } from "../utils";
 
 const FETCH_TIMEOUT_MS = 5_000;
 
-export const handleRewrite: Handler<RewriteConfig> = async (request, env, config) => {
+export const handleRewrite: Handler<RewriteConfig> = async (request, config) => {
   const originalUrl = new URL(request.url);
   const { url: targetUrl, allowedMethods } = config;
 
