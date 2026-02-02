@@ -5,15 +5,24 @@ Deploy static sites and setup routing for the wildcard subdomain service.
 ## Requirements
 
 - [Bun](https://bun.sh/) runtime
-- [Wrangler](https://developers.cloudflare.com/workers/wrangler/) CLI configured with Cloudflare credentials
 - A Cloudflare Workers wildcard subdomain service with R2 and KV configured
+
+## Authentication
+
+The script will automatically run `wrangler login` if you're not authenticated with Cloudflare. This will open a browser window for OAuth authentication.
+
+Alternatively, you can set the `CLOUDFLARE_API_TOKEN` environment variable:
+
+```bash
+export CLOUDFLARE_API_TOKEN="your-api-token"
+```
 
 ## Configuration
 
 The deploy script requires access to:
 
-- **KV namespace** for routing rules (default: `6118ae3b937c4883b3c582dfef8a0c05`)
-- **R2 bucket** for static file storage (default: `content-bucket`)
+- **KV namespace** for routing rules
+- **R2 bucket** for static file storage
 
 ### Environment Variables
 
