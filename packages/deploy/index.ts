@@ -62,10 +62,24 @@ const DEBUG = process.env.DEBUG === "1" || process.env.DEBUG === "true";
 
 /**
  * Run wrangler command using bunx to ensure it resolves from package dependencies
+ * Splits command into array so each part is passed as a separate argument
  */
-function wrangler(command: TemplateStringsArray, ...values: unknown[]) {
-  const cmd = String.raw(command, ...values);
-  return $`bunx wrangler ${cmd}`;
+function wrangler(strings: TemplateStringsArray, ...values: unknown[]) {
+  // Build an array by interleaving string parts and values
+  const parts = [];
+  for (let i = 0; i < strings.length; i++) {
+    // Split string part on whitespace and add non-empty parts
+    const words = strings[i].trim().split(/\s+/).filter(Boolean);
+    parts.push(...words);
+
+    // Add the value as a separate argument
+    if (i < values.length) {
+      parts.push(String(values[i]));
+    }
+  }
+
+  // Bun's shell will treat array elements as separate arguments
+  return $`bunx wrangler ${parts}`;
 }
 
 /**
