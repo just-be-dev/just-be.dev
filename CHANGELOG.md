@@ -2,13 +2,19 @@
 
 ## 2026-02-02
 
-### @just-be/deploy - v0.5.0
+### @just-be/deploy
 
+- Bump @packages/deploy to 0.6.0 ([#198](https://github.com/just-be-dev/just-be.dev/pull/198))
+- Add DEBUG environment variable for deploy script ([#196](https://github.com/just-be-dev/just-be.dev/pull/196))
 - Improve deploy script authentication with automatic wrangler login ([#194](https://github.com/just-be-dev/just-be.dev/pull/194))
 - Fix lint issues and formatting ([#193](https://github.com/just-be-dev/just-be.dev/pull/193))
 - Add version command to deploy CLI ([#192](https://github.com/just-be-dev/just-be.dev/pull/192))
 - Make deploy script work without wrangler.toml ([#191](https://github.com/just-be-dev/just-be.dev/pull/191))
 - Remove path config from static handler, derive from subdomain ([#190](https://github.com/just-be-dev/just-be.dev/pull/190))
+
+### Main Site
+
+- Add changelog system with automatic GitHub Actions ([#195](https://github.com/just-be-dev/just-be.dev/pull/195))
 
 ## 2026-02-01
 
