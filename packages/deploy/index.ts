@@ -61,10 +61,14 @@ const KV_NAMESPACE_ID = process.env.KV_NAMESPACE_ID || "6118ae3b937c4883b3c582df
 const DEBUG = process.env.DEBUG === "1" || process.env.DEBUG === "true";
 
 /**
- * Run wrangler command using bunx to ensure it resolves from package dependencies
- * Properly tokenizes commands by whitespace while preserving concatenated values
+ * Tokenize a template literal into shell arguments
+ * Splits on whitespace while preserving concatenated values
+ *
+ * @example
+ * tokenizeCommand`r2 object put ${"bucket"}/${"key"} --file ${"path"}`
+ * // Returns: ["r2", "object", "put", "bucket/key", "--file", "path"]
  */
-function wrangler(strings: TemplateStringsArray, ...values: unknown[]) {
+export function tokenizeCommand(strings: TemplateStringsArray, ...values: unknown[]): string[] {
   const tokens: string[] = [];
   let currentToken = "";
 
@@ -96,7 +100,15 @@ function wrangler(strings: TemplateStringsArray, ...values: unknown[]) {
     tokens.push(currentToken);
   }
 
-  // Bun's shell will treat array elements as separate arguments
+  return tokens;
+}
+
+/**
+ * Run wrangler command using bunx to ensure it resolves from package dependencies
+ * Properly tokenizes commands by whitespace while preserving concatenated values
+ */
+function wrangler(strings: TemplateStringsArray, ...values: unknown[]) {
+  const tokens = tokenizeCommand(strings, ...values);
   return $`bunx wrangler ${tokens}`;
 }
 
