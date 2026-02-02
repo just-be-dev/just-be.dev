@@ -1,5 +1,6 @@
 {
   "lockfileVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "astro-site",
@@ -33,7 +34,7 @@
     },
     "packages/deploy": {
       "name": "@just-be/deploy",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "bin": {
         "deploy": "index.ts",
       },
@@ -43,13 +44,10 @@
         "wrangler": "catalog:",
         "zod": "catalog:",
       },
-      "devDependencies": {
-        "zod-to-json-schema": "^3.24.1",
-      },
     },
     "packages/wildcard": {
       "name": "@just-be/wildcard",
-      "version": "0.1.1",
+      "version": "0.2.0",
       "peerDependencies": {
         "zod": "^4.0.0",
       },
