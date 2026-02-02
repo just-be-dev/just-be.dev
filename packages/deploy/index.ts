@@ -179,7 +179,15 @@ async function findFiles(dir: string): Promise<string[]> {
  */
 async function uploadToR2(localPath: string, r2Key: string): Promise<boolean> {
   try {
-    await wrangler("r2", "object", "put", `${BUCKET_NAME}/${r2Key}`, "--file", localPath);
+    await wrangler(
+      "r2",
+      "object",
+      "put",
+      `${BUCKET_NAME}/${r2Key}`,
+      "--file",
+      localPath,
+      "--remote"
+    );
     return true;
   } catch (error) {
     if (DEBUG) {
@@ -219,7 +227,7 @@ async function validateWranglerAuth(): Promise<boolean> {
  */
 async function validateKVAccess(): Promise<boolean> {
   try {
-    await wrangler("kv", "key", "list", "--namespace-id", KV_NAMESPACE_ID).quiet();
+    await wrangler("kv", "key", "list", "--namespace-id", KV_NAMESPACE_ID, "--remote").quiet();
     return true;
   } catch (error) {
     if (DEBUG) {
@@ -270,7 +278,16 @@ function sanitizeBranchName(branch: string): string {
  */
 async function createKVEntry(subdomain: string, routeConfig: RouteConfig): Promise<void> {
   const configJson = JSON.stringify(routeConfig);
-  await wrangler("kv", "key", "put", "--namespace-id", KV_NAMESPACE_ID, subdomain, configJson);
+  await wrangler(
+    "kv",
+    "key",
+    "put",
+    "--namespace-id",
+    KV_NAMESPACE_ID,
+    subdomain,
+    configJson,
+    "--remote"
+  );
 }
 
 /**
