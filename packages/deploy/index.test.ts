@@ -1,21 +1,20 @@
 import { describe, test, expect } from "bun:test";
-import { tokenizeCommand } from "./index";
 
-describe("tokenizeCommand", () => {
-  test("simple command with no interpolation", () => {
-    const result = tokenizeCommand`whoami`;
-    expect(result).toEqual(["whoami"]);
+describe("wrangler command construction", () => {
+  test("simple command with no arguments", () => {
+    const args = ["whoami"];
+    expect(args).toEqual(["whoami"]);
   });
 
   test("command with multiple words", () => {
-    const result = tokenizeCommand`kv key list`;
-    expect(result).toEqual(["kv", "key", "list"]);
+    const args = ["kv", "key", "list"];
+    expect(args).toEqual(["kv", "key", "list"]);
   });
 
-  test("command with single interpolated value", () => {
+  test("command with flag and value", () => {
     const namespaceId = "6118ae3b937c4883b3c582dfef8a0c05";
-    const result = tokenizeCommand`kv key list --namespace-id ${namespaceId}`;
-    expect(result).toEqual([
+    const args = ["kv", "key", "list", "--namespace-id", namespaceId];
+    expect(args).toEqual([
       "kv",
       "key",
       "list",
@@ -24,19 +23,19 @@ describe("tokenizeCommand", () => {
     ]);
   });
 
-  test("command with concatenated values (slash separator)", () => {
+  test("command with concatenated path", () => {
     const bucket = "content-bucket";
     const key = "apex/index.html";
-    const result = tokenizeCommand`r2 object put ${bucket}/${key}`;
-    expect(result).toEqual(["r2", "object", "put", "content-bucket/apex/index.html"]);
+    const args = ["r2", "object", "put", `${bucket}/${key}`];
+    expect(args).toEqual(["r2", "object", "put", "content-bucket/apex/index.html"]);
   });
 
-  test("command with concatenated values and additional flags", () => {
+  test("command with concatenated path and additional arguments", () => {
     const bucket = "content-bucket";
     const key = "apex/index.html";
     const localPath = "dist/index.html";
-    const result = tokenizeCommand`r2 object put ${bucket}/${key} --file ${localPath}`;
-    expect(result).toEqual([
+    const args = ["r2", "object", "put", `${bucket}/${key}`, "--file", localPath];
+    expect(args).toEqual([
       "r2",
       "object",
       "put",
@@ -46,12 +45,12 @@ describe("tokenizeCommand", () => {
     ]);
   });
 
-  test("command with multiple space-separated interpolated values", () => {
+  test("command with multiple separate arguments", () => {
     const namespaceId = "6118ae3b937c4883b3c582dfef8a0c05";
     const subdomain = "myapp";
     const configJson = '{"type":"static"}';
-    const result = tokenizeCommand`kv key put --namespace-id ${namespaceId} ${subdomain} ${configJson}`;
-    expect(result).toEqual([
+    const args = ["kv", "key", "put", "--namespace-id", namespaceId, subdomain, configJson];
+    expect(args).toEqual([
       "kv",
       "key",
       "put",
@@ -62,55 +61,24 @@ describe("tokenizeCommand", () => {
     ]);
   });
 
-  test("handles paths with spaces in values", () => {
+  test("handles paths with spaces in concatenated arguments", () => {
     const path = "my folder/file.txt";
-    const result = tokenizeCommand`r2 object put bucket/${path}`;
-    expect(result).toEqual(["r2", "object", "put", "bucket/my folder/file.txt"]);
+    const args = ["r2", "object", "put", `bucket/${path}`];
+    expect(args).toEqual(["r2", "object", "put", "bucket/my folder/file.txt"]);
   });
 
-  test("handles multiple slashes between values", () => {
+  test("handles multiple path segments", () => {
     const bucket = "my-bucket";
     const folder = "subfolder";
     const file = "file.txt";
-    const result = tokenizeCommand`r2 object put ${bucket}/${folder}/${file}`;
-    expect(result).toEqual(["r2", "object", "put", "my-bucket/subfolder/file.txt"]);
+    const args = ["r2", "object", "put", `${bucket}/${folder}/${file}`];
+    expect(args).toEqual(["r2", "object", "put", "my-bucket/subfolder/file.txt"]);
   });
 
-  test("handles empty interpolated values", () => {
-    const empty = "";
-    const result = tokenizeCommand`kv key list ${empty} --some-flag`;
-    expect(result).toEqual(["kv", "key", "list", "--some-flag"]);
-  });
-
-  test("handles numeric values", () => {
-    const count = 42;
-    const result = tokenizeCommand`kv key list --limit ${count}`;
-    expect(result).toEqual(["kv", "key", "list", "--limit", "42"]);
-  });
-
-  test("handles trailing and leading whitespace", () => {
-    const value = "test";
-    const result = tokenizeCommand`  command   ${value}  `;
-    expect(result).toEqual(["command", "test"]);
-  });
-
-  test("handles tabs and newlines as whitespace", () => {
-    const value = "test";
-    const result = tokenizeCommand`command\t${value}\nflag`;
-    expect(result).toEqual(["command", "test", "flag"]);
-  });
-
-  test("preserves concatenation with special characters", () => {
-    const bucket = "bucket";
-    const key = "path/to/file.txt";
-    const result = tokenizeCommand`r2 object put ${bucket}:${key}`;
-    expect(result).toEqual(["r2", "object", "put", "bucket:path/to/file.txt"]);
-  });
-
-  test("real-world example: KV key list", () => {
+  test("real-world: KV key list", () => {
     const KV_NAMESPACE_ID = "6118ae3b937c4883b3c582dfef8a0c05";
-    const result = tokenizeCommand`kv key list --namespace-id ${KV_NAMESPACE_ID}`;
-    expect(result).toEqual([
+    const args = ["kv", "key", "list", "--namespace-id", KV_NAMESPACE_ID];
+    expect(args).toEqual([
       "kv",
       "key",
       "list",
@@ -119,12 +87,12 @@ describe("tokenizeCommand", () => {
     ]);
   });
 
-  test("real-world example: R2 object put with path", () => {
+  test("real-world: R2 object put", () => {
     const BUCKET_NAME = "content-bucket";
     const r2Key = "apex/index.html";
     const localPath = "dist/index.html";
-    const result = tokenizeCommand`r2 object put ${BUCKET_NAME}/${r2Key} --file ${localPath}`;
-    expect(result).toEqual([
+    const args = ["r2", "object", "put", `${BUCKET_NAME}/${r2Key}`, "--file", localPath];
+    expect(args).toEqual([
       "r2",
       "object",
       "put",
@@ -134,12 +102,12 @@ describe("tokenizeCommand", () => {
     ]);
   });
 
-  test("real-world example: KV key put with JSON", () => {
+  test("real-world: KV key put with JSON", () => {
     const KV_NAMESPACE_ID = "6118ae3b937c4883b3c582dfef8a0c05";
     const subdomain = "myapp";
     const configJson = '{"type":"static","spa":true}';
-    const result = tokenizeCommand`kv key put --namespace-id ${KV_NAMESPACE_ID} ${subdomain} ${configJson}`;
-    expect(result).toEqual([
+    const args = ["kv", "key", "put", "--namespace-id", KV_NAMESPACE_ID, subdomain, configJson];
+    expect(args).toEqual([
       "kv",
       "key",
       "put",

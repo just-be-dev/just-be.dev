@@ -61,55 +61,14 @@ const KV_NAMESPACE_ID = process.env.KV_NAMESPACE_ID || "6118ae3b937c4883b3c582df
 const DEBUG = process.env.DEBUG === "1" || process.env.DEBUG === "true";
 
 /**
- * Tokenize a template literal into shell arguments
- * Splits on whitespace while preserving concatenated values
+ * Run wrangler command using bunx to ensure it resolves from package dependencies
+ * Takes variable arguments and passes them as separate shell arguments
  *
  * @example
- * tokenizeCommand`r2 object put ${"bucket"}/${"key"} --file ${"path"}`
- * // Returns: ["r2", "object", "put", "bucket/key", "--file", "path"]
+ * wrangler('r2', 'object', 'put', 'bucket/key', '--file', 'path')
  */
-export function tokenizeCommand(strings: TemplateStringsArray, ...values: unknown[]): string[] {
-  const tokens: string[] = [];
-  let currentToken = "";
-
-  for (let i = 0; i < strings.length; i++) {
-    const str = strings[i];
-
-    // Process each character in the string part
-    for (const char of str) {
-      if (/\s/.test(char)) {
-        // Whitespace: flush current token if any
-        if (currentToken) {
-          tokens.push(currentToken);
-          currentToken = "";
-        }
-      } else {
-        // Non-whitespace: add to current token
-        currentToken += char;
-      }
-    }
-
-    // Add the interpolated value to current token (no whitespace boundary)
-    if (i < values.length) {
-      currentToken += String(values[i]);
-    }
-  }
-
-  // Flush final token if any
-  if (currentToken) {
-    tokens.push(currentToken);
-  }
-
-  return tokens;
-}
-
-/**
- * Run wrangler command using bunx to ensure it resolves from package dependencies
- * Properly tokenizes commands by whitespace while preserving concatenated values
- */
-function wrangler(strings: TemplateStringsArray, ...values: unknown[]) {
-  const tokens = tokenizeCommand(strings, ...values);
-  return $`bunx wrangler ${tokens}`;
+function wrangler(...args: string[]) {
+  return $`bunx wrangler ${args}`;
 }
 
 /**
@@ -220,7 +179,7 @@ async function findFiles(dir: string): Promise<string[]> {
  */
 async function uploadToR2(localPath: string, r2Key: string): Promise<boolean> {
   try {
-    await wrangler`r2 object put ${BUCKET_NAME}/${r2Key} --file ${localPath}`;
+    await wrangler("r2", "object", "put", `${BUCKET_NAME}/${r2Key}`, "--file", localPath);
     return true;
   } catch (error) {
     if (DEBUG) {
@@ -241,7 +200,7 @@ async function uploadToR2(localPath: string, r2Key: string): Promise<boolean> {
  */
 async function validateWranglerAuth(): Promise<boolean> {
   try {
-    await wrangler`whoami`.quiet();
+    await wrangler("whoami").quiet();
     return true;
   } catch (error) {
     if (DEBUG) {
@@ -260,7 +219,7 @@ async function validateWranglerAuth(): Promise<boolean> {
  */
 async function validateKVAccess(): Promise<boolean> {
   try {
-    await wrangler`kv key list --namespace-id ${KV_NAMESPACE_ID}`.quiet();
+    await wrangler("kv", "key", "list", "--namespace-id", KV_NAMESPACE_ID).quiet();
     return true;
   } catch (error) {
     if (DEBUG) {
@@ -311,7 +270,7 @@ function sanitizeBranchName(branch: string): string {
  */
 async function createKVEntry(subdomain: string, routeConfig: RouteConfig): Promise<void> {
   const configJson = JSON.stringify(routeConfig);
-  await wrangler`kv key put --namespace-id ${KV_NAMESPACE_ID} ${subdomain} ${configJson}`;
+  await wrangler("kv", "key", "put", "--namespace-id", KV_NAMESPACE_ID, subdomain, configJson);
 }
 
 /**
@@ -502,7 +461,7 @@ async function deploy() {
     console.log("This will open a browser window for you to authorize access.\n");
 
     try {
-      await wrangler`login`;
+      await wrangler("login");
       console.log("\n✓ Successfully authenticated!");
 
       // Verify authentication worked
