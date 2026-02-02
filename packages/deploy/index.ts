@@ -7,6 +7,7 @@
  *   bunx @just-be/deploy                        # Looks for deploy.json in current directory
  *   bunx @just-be/deploy path/to/config.json    # Deploy with specific config file
  *   bunx @just-be/deploy preview <subdomain>    # Preview deploy with branch name suffix
+ *   bunx @just-be/deploy --version              # Show version
  *
  * Example deploy.json:
  *   {
@@ -37,6 +38,7 @@ import { readdir, stat, access } from "fs/promises";
 import { join, relative, resolve } from "path";
 import { intro, outro, spinner } from "@clack/prompts";
 import { z } from "zod";
+import packageJson from "./package.json" with { type: "json" };
 import {
   StaticConfigSchema,
   RedirectConfigSchema,
@@ -432,8 +434,16 @@ async function deploy() {
   outro("\n✅ Deployment complete!\n\nDeployed sites:\n" + deployedSubdomains.join("\n"));
 }
 
-// Only run deploy() when this file is executed directly, not when imported
+// Only run when this file is executed directly, not when imported
 if (import.meta.main) {
+  const args = Bun.argv.slice(2);
+
+  // Handle version command
+  if (args[0] === "--version" || args[0] === "-v") {
+    console.log(packageJson.version);
+    process.exit(0);
+  }
+
   deploy().catch((error) => {
     console.error("\n❌ Fatal error:", error);
     process.exit(1);
