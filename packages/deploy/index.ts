@@ -9,6 +9,14 @@
  *   bunx @just-be/deploy preview <subdomain>    # Preview deploy with branch name suffix
  *   bunx @just-be/deploy --version              # Show version
  *
+ * Authentication:
+ *   The script will automatically run 'wrangler login' if you're not authenticated.
+ *   Alternatively, set CLOUDFLARE_API_TOKEN environment variable.
+ *
+ * Environment Variables:
+ *   R2_BUCKET_NAME   # R2 bucket name
+ *   KV_NAMESPACE_ID  # KV namespace ID
+ *
  * Example deploy.json:
  *   {
  *     "rules": [
@@ -170,6 +178,18 @@ async function uploadToR2(localPath: string, r2Key: string): Promise<boolean> {
     return true;
   } catch (error) {
     console.error(`\nFailed to upload ${localPath}:`, error);
+    return false;
+  }
+}
+
+/**
+ * Check if user is authenticated with wrangler
+ */
+async function validateWranglerAuth(): Promise<boolean> {
+  try {
+    await wrangler`whoami`.quiet();
+    return true;
+  } catch {
     return false;
   }
 }
@@ -396,13 +416,50 @@ async function deploy() {
     console.log(`\nFound ${config.rules.length} rule(s) to deploy`);
   }
 
-  // Validate KV access before starting
+  // Check wrangler authentication first
   const s = spinner();
+  s.start("Checking wrangler authentication");
+  const isAuthenticated = await validateWranglerAuth();
+  if (!isAuthenticated) {
+    s.stop("Not authenticated with wrangler");
+    console.log("\nAuthenticating with Cloudflare...");
+    console.log("This will open a browser window for you to authorize access.\n");
+
+    try {
+      await wrangler`login`;
+      console.log("\n✓ Successfully authenticated!");
+
+      // Verify authentication worked
+      s.start("Verifying authentication");
+      const isNowAuthenticated = await validateWranglerAuth();
+      if (!isNowAuthenticated) {
+        s.stop("Error: Authentication verification failed");
+        console.error("\nIf you prefer to use an API token instead:");
+        console.error("  export CLOUDFLARE_API_TOKEN=your-token");
+        process.exit(1);
+      }
+      s.stop("✓ Authentication verified");
+    } catch (error) {
+      console.error("\n❌ Authentication failed");
+      console.error("\nAlternatively, you can set up an API token:");
+      console.error("  export CLOUDFLARE_API_TOKEN=your-token");
+      process.exit(1);
+    }
+  } else {
+    s.stop("✓ Wrangler authenticated");
+  }
+
+  // Validate KV access
   s.start("Validating KV access");
   const hasKVAccess = await validateKVAccess();
   if (!hasKVAccess) {
     s.stop("Error: Cannot access KV namespace");
-    console.error("Check wrangler configuration and permissions.");
+    console.error("\nCheck that you have permission to access the KV namespace.");
+    console.error(`KV Namespace ID: ${KV_NAMESPACE_ID}`);
+    console.error("\nYou may need to:");
+    console.error("  1. Verify the namespace ID is correct");
+    console.error("  2. Ensure your account has access to this KV namespace");
+    console.error("  3. Check wrangler.toml configuration if using one");
     process.exit(1);
   }
   s.stop("✓ KV access validated");
