@@ -13,7 +13,10 @@ const { cite, attribution, class: className } = Astro.props;
   {
     attribution && cite && (
       <footer class="blockquote-footer">
-        — <cite><a href={cite}>{attribution}</a></cite>
+        —{" "}
+        <cite>
+          <a href={cite}>{attribution}</a>
+        </cite>
       </footer>
     )
   }

@@ -193,7 +193,7 @@ async function getCurrentBranch(): Promise<string> {
   try {
     const result = await $`git rev-parse --abbrev-ref HEAD`.text();
     return result.trim();
-  } catch (error) {
+  } catch {
     throw new Error("Failed to get current git branch. Are you in a git repository?");
   }
 }
