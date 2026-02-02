@@ -238,6 +238,8 @@ describe("changelog", () => {
   });
 
   describe("generateMarkdown", () => {
+    const testRepo = "test-org/test-repo";
+
     test("should generate markdown with versions", () => {
       const grouped = new Map<string, GroupedEntry[]>();
       grouped.set("2026-02-01", [
@@ -256,13 +258,13 @@ describe("changelog", () => {
         },
       ]);
 
-      const markdown = generateMarkdown(grouped);
+      const markdown = generateMarkdown(grouped, testRepo);
 
       expect(markdown).toContain("# Changelog");
       expect(markdown).toContain("## 2026-02-01");
       expect(markdown).toContain("### @just-be/deploy - v1.0.0");
       expect(markdown).toContain(
-        "- Fix deploy bug ([#1](https://github.com/just-be-dev/just-be.dev/pull/1))"
+        "- Fix deploy bug ([#1](https://github.com/test-org/test-repo/pull/1))"
       );
     });
 
@@ -283,7 +285,7 @@ describe("changelog", () => {
         },
       ]);
 
-      const markdown = generateMarkdown(grouped);
+      const markdown = generateMarkdown(grouped, testRepo);
 
       expect(markdown).toContain("### Main Site");
       expect(markdown).not.toContain(" - v");
@@ -320,7 +322,7 @@ describe("changelog", () => {
         },
       ]);
 
-      const markdown = generateMarkdown(grouped);
+      const markdown = generateMarkdown(grouped, testRepo);
       const firstDateIndex = markdown.indexOf("## 2026-02-03");
       const secondDateIndex = markdown.indexOf("## 2026-02-01");
 
@@ -351,7 +353,7 @@ describe("changelog", () => {
         },
       ]);
 
-      const markdown = generateMarkdown(grouped);
+      const markdown = generateMarkdown(grouped, testRepo);
 
       expect(markdown).toContain("- First PR");
       expect(markdown).toContain("- Second PR");

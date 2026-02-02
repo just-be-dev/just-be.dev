@@ -7,6 +7,11 @@ on:
 env:
   MISE_DISABLE_TOOLS: ffmpeg
 
+# Prevent concurrent runs to avoid race conditions
+concurrency:
+  group: changelog-update
+  cancel-in-progress: false
+
 jobs:
   update-changelog:
     runs-on: ubuntu-latest
@@ -60,7 +65,8 @@ jobs:
           echo "The following entries will be added to the changelog:" >> /tmp/pr_body.md
           echo "" >> /tmp/pr_body.md
           echo '```markdown' >> /tmp/pr_body.md
-          git diff CHANGELOG.md | grep '^+' | grep -v '^+++' | grep -v '^+# Changelog' | sed 's/^+//' >> /tmp/pr_body.md
+          # Use unified diff format and skip the first 4 lines (diff header)
+          git diff --unified=0 CHANGELOG.md | tail -n +5 | grep '^+' | sed 's/^+//' >> /tmp/pr_body.md
           echo '```' >> /tmp/pr_body.md
           echo "" >> /tmp/pr_body.md
           echo "---" >> /tmp/pr_body.md

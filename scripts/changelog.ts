@@ -144,8 +144,10 @@ export async function fetchPRs(since: string = "30 days ago"): Promise<PRData[]>
     }
     const searchDate = sinceDate.toISOString().split("T")[0];
 
+    // Use --limit 1000 to handle repos with high PR volume
+    // The date search constraint is the primary filter
     const result =
-      await $`gh pr list --state merged --limit 200 --search "merged:>=${searchDate}" --json number,title,mergedAt,files`.text();
+      await $`gh pr list --state merged --limit 1000 --search "merged:>=${searchDate}" --json number,title,mergedAt,files`.text();
     const prs = JSON.parse(result);
 
     return prs.map((pr: any) => ({
@@ -189,19 +191,22 @@ export async function fetchGitTags(): Promise<GitTag[]> {
 /**
  * Map PR numbers to their commit SHAs
  */
-export async function mapPRsToCommits(_prs: PRData[]): Promise<Map<number, string>> {
+export async function mapPRsToCommits(): Promise<Map<number, string>> {
   const prToCommit = new Map<number, string>();
 
   try {
-    // Get git log with commit hashes and messages
-    const result = await $`git log --format='%H|%s' --all`.text();
-    const lines = result.trim().split("\n");
+    // Get git log with commit hashes and messages (using null byte separator)
+    // Target origin/main instead of --all for better performance
+    const result = await $`git log --format='%H%x00%s%x00' origin/main`.text();
+    const entries = result.trim().split("\x00\x00").filter(Boolean);
 
-    for (const line of lines) {
-      const [commit, message] = line.split("|");
-      const prNumber = extractPRNumber(message);
-      if (prNumber && !prToCommit.has(prNumber)) {
-        prToCommit.set(prNumber, commit);
+    for (const entry of entries) {
+      const [commit, message] = entry.split("\x00");
+      if (commit && message) {
+        const prNumber = extractPRNumber(message);
+        if (prNumber && !prToCommit.has(prNumber)) {
+          prToCommit.set(prNumber, commit);
+        }
       }
     }
   } catch (error) {
@@ -216,7 +221,7 @@ export async function mapPRsToCommits(_prs: PRData[]): Promise<Map<number, strin
  */
 export async function associateVersions(prs: PRData[], tags: GitTag[]): Promise<PRData[]> {
   // Map PR numbers to their commit SHAs
-  const prToCommit = await mapPRsToCommits(prs);
+  const prToCommit = await mapPRsToCommits();
 
   // Map commits to tags
   const commitToTag = new Map<string, GitTag>();
@@ -298,9 +303,38 @@ export function groupByDate(prs: PRData[]): Map<string, GroupedEntry[]> {
 }
 
 /**
+ * Get GitHub repository from git remote or environment variable
+ */
+export async function getGitHubRepo(): Promise<string> {
+  // Try environment variable first
+  if (process.env.GITHUB_REPOSITORY) {
+    return process.env.GITHUB_REPOSITORY;
+  }
+
+  try {
+    // Parse from git remote URL
+    const result = await $`git remote get-url origin`.text();
+    const url = result.trim();
+
+    // Handle both HTTPS and SSH formats
+    // HTTPS: https://github.com/owner/repo.git
+    // SSH: git@github.com:owner/repo.git
+    const match = url.match(/github\.com[:/](.+?)(?:\.git)?$/);
+    if (match) {
+      return match[1];
+    }
+  } catch (error) {
+    console.error("⚠️  Warning: Failed to get GitHub repo from git remote:", error);
+  }
+
+  // Fallback to hard-coded value
+  return "just-be-dev/just-be.dev";
+}
+
+/**
  * Generate markdown from grouped PRs
  */
-export function generateMarkdown(grouped: Map<string, GroupedEntry[]>): string {
+export function generateMarkdown(grouped: Map<string, GroupedEntry[]>, githubRepo: string): string {
   const lines: string[] = [];
 
   lines.push("# Changelog");
@@ -326,7 +360,7 @@ export function generateMarkdown(grouped: Map<string, GroupedEntry[]>): string {
       // Add PRs
       for (const pr of entry.prs) {
         lines.push(
-          `- ${pr.title} ([#${pr.number}](https://github.com/just-be-dev/just-be.dev/pull/${pr.number}))`
+          `- ${pr.title} ([#${pr.number}](https://github.com/${githubRepo}/pull/${pr.number}))`
         );
       }
 
@@ -394,12 +428,17 @@ export async function main(): Promise<void> {
   const grouped = groupByDate(categorized);
   console.log(`   Grouped into ${grouped.size} dates\n`);
 
-  // 5. Generate markdown
+  // 5. Get GitHub repository info
+  console.log("🔍 Getting GitHub repository...");
+  const githubRepo = await getGitHubRepo();
+  console.log(`   Using repository: ${githubRepo}\n`);
+
+  // 6. Generate markdown
   console.log("📝 Generating markdown...");
-  const markdown = generateMarkdown(grouped);
+  const markdown = generateMarkdown(grouped, githubRepo);
   console.log("");
 
-  // 6. Update or preview
+  // 7. Update or preview
   if (dryRun) {
     console.log("=".repeat(50));
     console.log("DRY RUN - Preview:");
