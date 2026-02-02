@@ -30,7 +30,7 @@ async function handleSpaMode(
   const sanitizedBase = sanitizePath(basePath);
   const sanitizedPathname = sanitizePath(pathname);
 
-  if (!sanitizedBase || !sanitizedPathname) {
+  if (!sanitizedBase) {
     return new Response("Invalid path", { status: 400 });
   }
 
