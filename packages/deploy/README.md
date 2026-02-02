@@ -8,6 +8,30 @@ Deploy static sites and setup routing for the wildcard subdomain service.
 - [Wrangler](https://developers.cloudflare.com/workers/wrangler/) CLI configured with Cloudflare credentials
 - A Cloudflare Workers wildcard subdomain service with R2 and KV configured
 
+## Configuration
+
+The deploy script requires access to:
+
+- **KV namespace** for routing rules (default: `6118ae3b937c4883b3c582dfef8a0c05`)
+- **R2 bucket** for static file storage (default: `content-bucket`)
+
+### Environment Variables
+
+To use different resources, set these environment variables:
+
+```bash
+export KV_NAMESPACE_ID="your-kv-namespace-id"
+export R2_BUCKET_NAME="your-bucket-name"
+bunx @just-be/deploy
+```
+
+You can find your KV namespace ID and R2 buckets by running:
+
+```bash
+wrangler kv namespace list
+wrangler r2 bucket list
+```
+
 ## Installation
 
 No installation needed! Run directly with `bunx`:
@@ -200,13 +224,14 @@ The package includes a JSON Schema (`deploy.schema.json`) for editor validation 
    - Creates a KV entry with the routing configuration
 5. **Configures** the wildcard service to route requests for each subdomain
 
-## Configuration
+## Wildcard Service Requirements
 
-The script expects your wildcard service to use:
+The script works with any wildcard service that has:
 
-- **R2 Bucket**: `content-bucket`
-- **KV Binding**: `ROUTING_RULES`
-- **Wrangler Config**: `services/wildcard/wrangler.toml`
+- **R2 Bucket**: For storing static files (default: `content-bucket`)
+- **KV Namespace**: For routing rules (default: `6118ae3b937c4883b3c582dfef8a0c05`)
+
+No local `wrangler.toml` file is required - the script accesses Cloudflare resources directly via the Wrangler CLI.
 
 ## Validation
 
