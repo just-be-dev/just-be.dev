@@ -4,6 +4,9 @@
 
 ### @just-be/deploy
 
+- Add --remote flag to kv and r2 wrangler commands ([#203](https://github.com/just-be-dev/just-be.dev/pull/203))
+- Fix wrangler shell command helper ([#202](https://github.com/just-be-dev/just-be.dev/pull/202))
+- Fix wrangler command tokenization in deploy script ([#201](https://github.com/just-be-dev/just-be.dev/pull/201))
 - Bump @packages/deploy to 0.6.0 ([#198](https://github.com/just-be-dev/just-be.dev/pull/198))
 - Add DEBUG environment variable for deploy script ([#196](https://github.com/just-be-dev/just-be.dev/pull/196))
 - Improve deploy script authentication with automatic wrangler login ([#194](https://github.com/just-be-dev/just-be.dev/pull/194))
@@ -12,8 +15,13 @@
 - Make deploy script work without wrangler.toml ([#191](https://github.com/just-be-dev/just-be.dev/pull/191))
 - Remove path config from static handler, derive from subdomain ([#190](https://github.com/just-be-dev/just-be.dev/pull/190))
 
+### @just-be/wildcard
+
+- Fix SPA mode to serve existing files before falling back ([#204](https://github.com/just-be-dev/just-be.dev/pull/204))
+
 ### Main Site
 
+- Update changelog ([#197](https://github.com/just-be-dev/just-be.dev/pull/197))
 - Add changelog system with automatic GitHub Actions ([#195](https://github.com/just-be-dev/just-be.dev/pull/195))
 
 ## 2026-02-01
