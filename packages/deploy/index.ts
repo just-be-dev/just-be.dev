@@ -4,8 +4,9 @@
  * Deploy static sites and setup routing for the wildcard subdomain service
  *
  * Usage:
- *   bunx @just-be/deploy                    # Looks for deploy.json in current directory
- *   bunx @just-be/deploy path/to/config.json
+ *   bunx @just-be/deploy                        # Looks for deploy.json in current directory
+ *   bunx @just-be/deploy path/to/config.json    # Deploy with specific config file
+ *   bunx @just-be/deploy preview <subdomain>    # Preview deploy with branch name suffix
  *
  * Example deploy.json:
  *   {
@@ -27,6 +28,8 @@
  *
  * Note: The subdomain is automatically used as the R2 path prefix.
  * For example, subdomain "myapp" will store files under "myapp/" in R2.
+ *
+ * Preview deploys append the branch name to the subdomain (e.g., "myapp-feature-branch").
  */
 
 import { $ } from "bun";
@@ -182,6 +185,30 @@ async function validateKVAccess(): Promise<boolean> {
 }
 
 /**
+ * Get the current git branch name
+ */
+async function getCurrentBranch(): Promise<string> {
+  try {
+    const result = await $`git rev-parse --abbrev-ref HEAD`.text();
+    return result.trim();
+  } catch (error) {
+    throw new Error("Failed to get current git branch. Are you in a git repository?");
+  }
+}
+
+/**
+ * Sanitize branch name for use in subdomain
+ * Replaces invalid characters with hyphens and converts to lowercase
+ */
+function sanitizeBranchName(branch: string): string {
+  return branch
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+/**
  * Create KV entry for subdomain routing
  */
 async function createKVEntry(subdomain: string, routeConfig: RouteConfig): Promise<void> {
@@ -306,11 +333,66 @@ async function deployRewriteRule(rule: RewriteRule, s: ReturnType<typeof spinner
 async function deploy() {
   intro("🚀 Just-Be Deploy");
 
-  // Get config file path from first argument if provided
-  const configPath = Bun.argv[2];
-  const config = await findAndParseConfig(configPath);
+  // Parse CLI arguments
+  const args = Bun.argv.slice(2);
+  const isPreview = args[0] === "preview";
 
-  console.log(`\nFound ${config.rules.length} rule(s) to deploy`);
+  let config: DeployConfig;
+  let rulesToDeploy: (StaticRule | RedirectRule | RewriteRule)[];
+
+  if (isPreview) {
+    // Preview mode: deploy preview <subdomain> [config-path]
+    const targetSubdomain = args[1];
+    const configPath = args[2];
+
+    if (!targetSubdomain) {
+      console.error("Error: Subdomain is required for preview deploy");
+      console.error("Usage: bunx @just-be/deploy preview <subdomain> [config-path]");
+      process.exit(1);
+    }
+
+    // Get current branch
+    const branch = await getCurrentBranch();
+    const sanitizedBranch = sanitizeBranchName(branch);
+
+    console.log(`\n📋 Preview Deploy Mode`);
+    console.log(`   Branch: ${branch}`);
+    console.log(`   Sanitized: ${sanitizedBranch}`);
+
+    // Load config
+    config = await findAndParseConfig(configPath);
+
+    // Find the matching rule
+    const matchingRule = config.rules.find((rule) => rule.subdomain === targetSubdomain);
+
+    if (!matchingRule) {
+      console.error(`\nError: No rule found with subdomain "${targetSubdomain}"`);
+      console.error(`\nAvailable subdomains: ${config.rules.map((r) => r.subdomain).join(", ")}`);
+      process.exit(1);
+    }
+
+    if (matchingRule.type !== "static") {
+      console.error(`\nError: Preview deploys only support static rules`);
+      console.error(`The rule "${targetSubdomain}" is of type "${matchingRule.type}"`);
+      process.exit(1);
+    }
+
+    // Clone rule and modify subdomain
+    const previewSubdomain = `${targetSubdomain}-${sanitizedBranch}`;
+    const previewRule: StaticRule = {
+      ...matchingRule,
+      subdomain: previewSubdomain,
+    };
+
+    rulesToDeploy = [previewRule];
+    console.log(`   Preview subdomain: ${previewSubdomain}.just-be.dev\n`);
+  } else {
+    // Normal mode: deploy all rules
+    const configPath = args[0];
+    config = await findAndParseConfig(configPath);
+    rulesToDeploy = config.rules;
+    console.log(`\nFound ${config.rules.length} rule(s) to deploy`);
+  }
 
   // Validate KV access before starting
   const s = spinner();
@@ -325,7 +407,7 @@ async function deploy() {
 
   // Deploy each rule
   const deployedSubdomains: string[] = [];
-  for (const rule of config.rules) {
+  for (const rule of rulesToDeploy) {
     try {
       switch (rule.type) {
         case "static":
