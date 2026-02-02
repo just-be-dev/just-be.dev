@@ -62,24 +62,42 @@ const DEBUG = process.env.DEBUG === "1" || process.env.DEBUG === "true";
 
 /**
  * Run wrangler command using bunx to ensure it resolves from package dependencies
- * Splits command into array so each part is passed as a separate argument
+ * Properly tokenizes commands by whitespace while preserving concatenated values
  */
 function wrangler(strings: TemplateStringsArray, ...values: unknown[]) {
-  // Build an array by interleaving string parts and values
-  const parts = [];
-  for (let i = 0; i < strings.length; i++) {
-    // Split string part on whitespace and add non-empty parts
-    const words = strings[i].trim().split(/\s+/).filter(Boolean);
-    parts.push(...words);
+  const tokens: string[] = [];
+  let currentToken = "";
 
-    // Add the value as a separate argument
+  for (let i = 0; i < strings.length; i++) {
+    const str = strings[i];
+
+    // Process each character in the string part
+    for (const char of str) {
+      if (/\s/.test(char)) {
+        // Whitespace: flush current token if any
+        if (currentToken) {
+          tokens.push(currentToken);
+          currentToken = "";
+        }
+      } else {
+        // Non-whitespace: add to current token
+        currentToken += char;
+      }
+    }
+
+    // Add the interpolated value to current token (no whitespace boundary)
     if (i < values.length) {
-      parts.push(String(values[i]));
+      currentToken += String(values[i]);
     }
   }
 
+  // Flush final token if any
+  if (currentToken) {
+    tokens.push(currentToken);
+  }
+
   // Bun's shell will treat array elements as separate arguments
-  return $`bunx wrangler ${parts}`;
+  return $`bunx wrangler ${tokens}`;
 }
 
 /**
