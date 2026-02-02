@@ -8,7 +8,13 @@ export const handleStatic: Handler<StaticConfig, { fileLoader: FileLoader }> = a
   { fileLoader }
 ) => {
   const url = new URL(request.url);
-  const { path: basePath, spa, fallback } = config;
+  const { spa, fallback } = config;
+
+  // Extract subdomain from hostname to use as base path
+  // e.g., "foo.just-be.dev" -> "foo"
+  const hostname = url.hostname;
+  const subdomain = hostname.split(".")[0];
+  const basePath = subdomain;
 
   return spa
     ? handleSpaMode(fileLoader, basePath)

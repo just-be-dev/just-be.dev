@@ -157,7 +157,6 @@ See the `services/wildcard` directory for a complete Cloudflare Workers implemen
 - `RedirectConfigSchema` - Validates redirect config
 - `RewriteConfigSchema` - Validates rewrite config
 - `RouteConfigSchema` - Discriminated union of all configs
-- `R2ConfigSchema` - (Deprecated) Alias for StaticConfigSchema
 
 ### Utilities
 

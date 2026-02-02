@@ -1,17 +1,22 @@
 import { z } from "zod";
-import { isSafeURL } from "./utils";
+import { isSafeURL, isValidSubdomain } from "./utils";
 
 /** Validates that a URL is safe (http/https only, no private IPs) */
 const safeUrl = () =>
-  z.string().url().refine(isSafeURL, {
+  z.url().refine(isSafeURL, {
     message: "URL must use http/https and cannot target private/internal addresses",
+  });
+
+/** Validates subdomain format (alphanumeric with hyphens, 1-63 characters) */
+export const subdomain = () =>
+  z.string().refine(isValidSubdomain, {
+    message: "Invalid subdomain format. Must be alphanumeric with hyphens, 1-63 characters.",
   });
 
 // Zod schemas for validation
 export const StaticConfigSchema = z
   .object({
     type: z.literal("static"),
-    path: z.string().min(1),
     spa: z.boolean().optional(),
     fallback: z.string().optional(), // Fallback file path for non-SPA mode (e.g., "404.html")
   })
@@ -38,9 +43,6 @@ export const RouteConfigSchema = z.discriminatedUnion("type", [
   RedirectConfigSchema,
   RewriteConfigSchema,
 ]);
-
-/** @deprecated Use StaticConfigSchema instead */
-export const R2ConfigSchema = StaticConfigSchema;
 
 /**
  * JSON codec for parsing and validating JSON strings
@@ -71,4 +73,4 @@ export const RouteConfigCodec = json(RouteConfigSchema);
 export type StaticConfig = z.infer<typeof StaticConfigSchema>;
 export type RedirectConfig = z.infer<typeof RedirectConfigSchema>;
 export type RewriteConfig = z.infer<typeof RewriteConfigSchema>;
-export type SubdomainConfig = z.infer<typeof RouteConfigSchema>;
+export type RouteConfig = z.infer<typeof RouteConfigSchema>;

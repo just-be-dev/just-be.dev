@@ -1,23 +1,49 @@
 #!/usr/bin/env bun
 
 /**
- * Deploy static files to Cloudflare R2 and configure subdomain routing in KV
+ * Deploy static sites and setup routing for the wildcard subdomain service
  *
  * Usage:
- *   bunx @just-be/deploy --subdomain=myapp --path=apps/myapp --dir=./dist
- *   bunx @just-be/deploy --subdomain=portfolio --path=sites/portfolio --dir=./build --fallback=404.html
- *   bunx @just-be/deploy --subdomain=spa --path=apps/spa --dir=./dist --spa
+ *   bunx @just-be/deploy                        # Looks for deploy.json in current directory
+ *   bunx @just-be/deploy path/to/config.json    # Deploy with specific config file
+ *   bunx @just-be/deploy preview <subdomain>    # Preview deploy with branch name suffix
  *
- * Or run interactively without arguments:
- *   bunx @just-be/deploy
+ * Example deploy.json:
+ *   {
+ *     "rules": [
+ *       {
+ *         "subdomain": "myapp",
+ *         "type": "static",
+ *         "dir": "./dist",
+ *         "spa": true
+ *       },
+ *       {
+ *         "subdomain": "old-site",
+ *         "type": "redirect",
+ *         "url": "https://new-site.com",
+ *         "permanent": true
+ *       }
+ *     ]
+ *   }
+ *
+ * Note: The subdomain is automatically used as the R2 path prefix.
+ * For example, subdomain "myapp" will store files under "myapp/" in R2.
+ *
+ * Preview deploys append the branch name to the subdomain (e.g., "myapp-feature-branch").
  */
 
 import { $ } from "bun";
-import { readdir, stat } from "fs/promises";
-import { join, relative } from "path";
-import { confirm, intro, outro, spinner, text } from "@clack/prompts";
+import { readdir, stat, access } from "fs/promises";
+import { join, relative, resolve } from "path";
+import { intro, outro, spinner } from "@clack/prompts";
 import { z } from "zod";
-import { StaticConfigSchema, type StaticConfig, isValidSubdomain } from "@just-be/wildcard";
+import {
+  StaticConfigSchema,
+  RedirectConfigSchema,
+  RewriteConfigSchema,
+  type RouteConfig,
+  subdomain,
+} from "@just-be/wildcard";
 
 const BUCKET_NAME = "content-bucket";
 const WRANGLER_CONFIG = "services/wildcard/wrangler.toml";
@@ -31,138 +57,84 @@ function wrangler(command: TemplateStringsArray, ...values: unknown[]) {
 }
 
 /**
- * Schema for CLI arguments
+ * Route rules extend RouteConfig with subdomain
+ * Static rules also need a `dir` field for the local directory to upload
+ * The subdomain is automatically used as the R2 path prefix
+ * Using safeExtend because base schemas contain refinements
  */
-const CliArgsSchema = z.object({
-  subdomain: z.string().optional(),
-  path: z.string().optional(),
-  dir: z.string().optional(),
-  spa: z.boolean().optional(),
-  fallback: z.string().optional(),
+const StaticRuleSchema = StaticConfigSchema.safeExtend({
+  subdomain: subdomain(),
+  dir: z.string().min(1),
 });
 
-type CliArgs = z.infer<typeof CliArgsSchema>;
+const RedirectRuleSchema = RedirectConfigSchema.safeExtend({
+  subdomain: subdomain(),
+});
+
+const RewriteRuleSchema = RewriteConfigSchema.safeExtend({
+  subdomain: subdomain(),
+});
+
+const RouteRuleSchema = z.discriminatedUnion("type", [
+  StaticRuleSchema,
+  RedirectRuleSchema,
+  RewriteRuleSchema,
+]);
+
+export const DeployConfigSchema = z.object({
+  rules: z.array(RouteRuleSchema).min(1, "At least one rule is required"),
+});
+
+type StaticRule = z.infer<typeof StaticRuleSchema>;
+type RedirectRule = z.infer<typeof RedirectRuleSchema>;
+type RewriteRule = z.infer<typeof RewriteRuleSchema>;
+type DeployConfig = z.infer<typeof DeployConfigSchema>;
 
 /**
- * Parse command-line arguments from Bun.argv using a custom parser
+ * Find and parse deploy configuration file
  */
-function parseCliArgs(): CliArgs {
-  const args: Record<string, string | boolean> = {};
+async function findAndParseConfig(providedPath?: string): Promise<DeployConfig> {
+  let configPath: string;
 
-  for (const arg of Bun.argv.slice(2)) {
-    if (arg.startsWith("--")) {
-      const [key, value] = arg.slice(2).split("=");
-      if (value === undefined) {
-        // Flag without value (e.g., --spa)
-        args[key] = true;
-      } else {
-        args[key] = value;
-      }
+  if (providedPath) {
+    // Use provided path
+    configPath = resolve(providedPath);
+  } else {
+    // Look for deploy.json in current directory
+    configPath = join(process.cwd(), "deploy.json");
+
+    const hasJson = await access(configPath)
+      .then(() => true)
+      .catch(() => false);
+
+    if (!hasJson) {
+      console.error("Error: No deploy.json found in current directory");
+      console.error("Run 'bunx @just-be/deploy path/to/config.json' to specify a config file");
+      process.exit(1);
     }
   }
 
-  return CliArgsSchema.parse(args);
-}
+  // Parse JSON file
+  const content = await Bun.file(configPath).text();
+  let parsed: unknown;
 
-interface DeployConfig extends Omit<StaticConfig, "type"> {
-  subdomain: string;
-  dir: string;
-}
-
-/**
- * Parse command-line arguments
- */
-async function getConfig(): Promise<DeployConfig> {
-  const values = parseCliArgs();
-
-  // Interactive mode if any required argument is missing
-  const needsInteractive = !values.subdomain || !values.path || !values.dir;
-
-  if (needsInteractive) {
-    intro("Interactive deployment setup");
-  }
-
-  let subdomain =
-    values.subdomain ||
-    ((await text({
-      message: "Subdomain name (e.g., 'myapp' for myapp.just-be.dev)",
-      validate: (value) => {
-        if (!value) return "Subdomain is required";
-        if (!isValidSubdomain(value as string)) {
-          return "Invalid subdomain format. Must be alphanumeric with hyphens, 1-63 characters.";
-        }
-      },
-    })) as string);
-
-  // Validate subdomain format (in case it came from CLI args)
-  if (!isValidSubdomain(subdomain)) {
-    console.error(
-      "\nInvalid subdomain format. Must be alphanumeric with hyphens, 1-63 characters."
-    );
+  try {
+    parsed = JSON.parse(content);
+  } catch (error) {
+    console.error("Error: Failed to parse JSON config file");
+    console.error(error);
     process.exit(1);
   }
 
-  const path =
-    values.path ||
-    ((await text({
-      message: "R2 path prefix (e.g., 'apps/myapp')",
-      validate: (value) => {
-        if (!value) return "Path is required";
-      },
-    })) as string);
-
-  const dir =
-    values.dir ||
-    ((await text({
-      message: "Local directory to upload",
-      placeholder: "./dist",
-      defaultValue: "./dist",
-    })) as string);
-
-  let spa = values.spa;
-  let fallback = values.fallback;
-
-  // Only prompt for spa/fallback if not provided
-  if (needsInteractive && spa === undefined && fallback === undefined) {
-    spa = (await confirm({
-      message: "Enable SPA mode? (all routes serve index.html)",
-    })) as boolean;
-    if (!spa) {
-      const useFallback = (await confirm({
-        message: "Use a custom fallback file for 404s?",
-      })) as boolean;
-      if (useFallback) {
-        fallback = (await text({
-          message: "Fallback file name",
-          placeholder: "404.html",
-          defaultValue: "404.html",
-        })) as string;
-      }
-    }
-  }
-
-  // Validate with Zod schema
-  const staticConfig: StaticConfig = {
-    type: "static",
-    path,
-    ...(spa && { spa }),
-    ...(fallback && { fallback }),
-  };
-
-  const result = StaticConfigSchema.safeParse(staticConfig);
+  // Validate with schema
+  const result = DeployConfigSchema.safeParse(parsed);
   if (!result.success) {
     console.error("\nInvalid configuration:");
-    console.error(result.error.format());
+    console.error(z.prettifyError(result.error));
     process.exit(1);
   }
 
-  return {
-    subdomain,
-    path,
-    dir,
-    spa,
-    fallback,
-  };
+  return result.data;
 }
 
 /**
@@ -189,7 +161,6 @@ async function findFiles(dir: string): Promise<string[]> {
 
 /**
  * Upload a file to R2
- * @returns true if upload succeeded, false otherwise
  */
 async function uploadToR2(localPath: string, r2Key: string): Promise<boolean> {
   try {
@@ -214,78 +185,76 @@ async function validateKVAccess(): Promise<boolean> {
 }
 
 /**
+ * Get the current git branch name
+ */
+async function getCurrentBranch(): Promise<string> {
+  try {
+    const result = await $`git rev-parse --abbrev-ref HEAD`.text();
+    return result.trim();
+  } catch (error) {
+    throw new Error("Failed to get current git branch. Are you in a git repository?");
+  }
+}
+
+/**
+ * Sanitize branch name for use in subdomain
+ * Replaces invalid characters with hyphens and converts to lowercase
+ */
+function sanitizeBranchName(branch: string): string {
+  return branch
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+/**
  * Create KV entry for subdomain routing
  */
-async function createKVEntry(subdomain: string, config: DeployConfig): Promise<void> {
-  const routingConfig: StaticConfig = {
-    type: "static",
-    path: config.path,
-    ...(config.spa && { spa: config.spa }),
-    ...(config.fallback && { fallback: config.fallback }),
-  };
-
-  const configJson = JSON.stringify(routingConfig);
-
+async function createKVEntry(subdomain: string, routeConfig: RouteConfig): Promise<void> {
+  const configJson = JSON.stringify(routeConfig);
   await wrangler`kv key put --binding ROUTING_RULES ${subdomain} ${configJson} --config ${WRANGLER_CONFIG}`;
 }
 
 /**
- * Main deployment function
+ * Deploy a static site rule
  */
-async function deploy() {
-  const config = await getConfig();
-
-  console.log("\nDeploy Configuration:");
-  console.log(`  Subdomain: ${config.subdomain}.just-be.dev`);
-  console.log(`  R2 Path: ${config.path}`);
-  console.log(`  Local Directory: ${config.dir}`);
-  if (config.spa) {
-    console.log(`  Mode: SPA (all routes serve index.html)`);
-  } else if (config.fallback) {
-    console.log(`  Fallback: ${config.fallback}`);
+async function deployStaticRule(rule: StaticRule, s: ReturnType<typeof spinner>): Promise<void> {
+  console.log(`\n📦 Deploying static site: ${rule.subdomain}.just-be.dev`);
+  console.log(`   Local Directory: ${rule.dir}`);
+  if (rule.spa) {
+    console.log(`   Mode: SPA`);
+  } else if (rule.fallback) {
+    console.log(`   Fallback: ${rule.fallback}`);
   }
-  console.log();
 
   // Verify directory exists
   try {
-    const dirStat = await stat(config.dir);
+    const dirStat = await stat(rule.dir);
     if (!dirStat.isDirectory()) {
-      console.error(`Error: ${config.dir} is not a directory`);
-      process.exit(1);
+      throw new Error(`${rule.dir} is not a directory`);
     }
-  } catch {
-    console.error(`Error: Directory ${config.dir} does not exist`);
-    process.exit(1);
+  } catch (error) {
+    console.error(`Error: Directory ${rule.dir} does not exist or is not accessible`);
+    throw error;
   }
 
   // Find all files to upload
-  const s = spinner();
-  s.start(`Scanning files in: ${config.dir}`);
-  const filePaths = await findFiles(config.dir);
+  s.start(`Scanning files in: ${rule.dir}`);
+  const filePaths = await findFiles(rule.dir);
   s.stop(`Found ${filePaths.length} files to upload`);
 
   if (filePaths.length === 0) {
-    console.error("No files found to upload");
-    process.exit(1);
+    throw new Error("No files found to upload");
   }
-
-  // Validate KV access before starting uploads
-  s.start("Validating KV access");
-  const hasKVAccess = await validateKVAccess();
-  if (!hasKVAccess) {
-    s.stop("Error: Cannot access KV namespace");
-    console.error("Check wrangler configuration and permissions.");
-    process.exit(1);
-  }
-  s.stop("KV access validated");
 
   // Upload files to R2
   let uploadCount = 0;
   const failedUploads: string[] = [];
 
   for (const filePath of filePaths) {
-    const relativePath = relative(config.dir, filePath);
-    const r2Key = `${config.path}/${relativePath}`;
+    const relativePath = relative(rule.dir, filePath);
+    const r2Key = `${rule.subdomain}/${relativePath}`;
 
     s.start(`Uploading ${relativePath}`);
     const success = await uploadToR2(filePath, r2Key);
@@ -299,34 +268,174 @@ async function deploy() {
     }
   }
 
-  // Report upload results
   if (failedUploads.length > 0) {
-    console.error(`\nFailed to upload ${failedUploads.length} file(s):`);
-    for (const file of failedUploads) {
-      console.error(`   - ${file}`);
-    }
-    process.exit(1);
+    throw new Error(`Failed to upload ${failedUploads.length} file(s)`);
   }
 
-  console.log(`\nUploaded ${uploadCount} files to R2\n`);
+  console.log(`✓ Uploaded ${uploadCount} files to R2`);
 
-  // Create KV entry for routing
-  s.start(`Creating KV routing entry for subdomain: ${config.subdomain}`);
-  try {
-    await createKVEntry(config.subdomain, config);
-    s.stop("KV routing entry created");
-  } catch (error) {
-    s.stop("Error: Failed to create KV entry");
-    console.error("Files were uploaded but routing is not configured.");
-    console.error(`Uploaded files location: ${config.path}`);
-    console.error(`Error:`, error);
-    process.exit(1);
-  }
+  // Create KV entry (path is derived from subdomain at runtime)
+  const routeConfig: RouteConfig = {
+    type: "static",
+    ...(rule.spa && { spa: rule.spa }),
+    ...(rule.fallback && { fallback: rule.fallback }),
+  };
 
-  outro(`Your site is available at: https://${config.subdomain}.just-be.dev`);
+  s.start(`Creating KV routing entry`);
+  await createKVEntry(rule.subdomain, routeConfig);
+  s.stop(`✓ KV routing entry created`);
 }
 
-deploy().catch((error) => {
-  console.error("\nFatal error:", error);
-  process.exit(1);
-});
+/**
+ * Deploy a redirect rule
+ */
+async function deployRedirectRule(
+  rule: RedirectRule,
+  s: ReturnType<typeof spinner>
+): Promise<void> {
+  console.log(`\n🔀 Configuring redirect: ${rule.subdomain}.just-be.dev`);
+  console.log(`   Target URL: ${rule.url}`);
+  console.log(`   Permanent: ${rule.permanent ?? false}`);
+
+  const routeConfig: RouteConfig = {
+    type: "redirect",
+    url: rule.url,
+    ...(rule.permanent !== undefined && { permanent: rule.permanent }),
+  };
+
+  s.start(`Creating KV routing entry`);
+  await createKVEntry(rule.subdomain, routeConfig);
+  s.stop(`✓ KV routing entry created`);
+}
+
+/**
+ * Deploy a rewrite rule
+ */
+async function deployRewriteRule(rule: RewriteRule, s: ReturnType<typeof spinner>): Promise<void> {
+  console.log(`\n🔄 Configuring rewrite: ${rule.subdomain}.just-be.dev`);
+  console.log(`   Target URL: ${rule.url}`);
+  console.log(`   Allowed Methods: ${rule.allowedMethods?.join(", ") || "GET, HEAD, OPTIONS"}`);
+
+  const routeConfig: RouteConfig = {
+    type: "rewrite",
+    url: rule.url,
+    ...(rule.allowedMethods && { allowedMethods: rule.allowedMethods }),
+  };
+
+  s.start(`Creating KV routing entry`);
+  await createKVEntry(rule.subdomain, routeConfig);
+  s.stop(`✓ KV routing entry created`);
+}
+
+/**
+ * Main deployment function
+ */
+async function deploy() {
+  intro("🚀 Just-Be Deploy");
+
+  // Parse CLI arguments
+  const args = Bun.argv.slice(2);
+  const isPreview = args[0] === "preview";
+
+  let config: DeployConfig;
+  let rulesToDeploy: (StaticRule | RedirectRule | RewriteRule)[];
+
+  if (isPreview) {
+    // Preview mode: deploy preview <subdomain> [config-path]
+    const targetSubdomain = args[1];
+    const configPath = args[2];
+
+    if (!targetSubdomain) {
+      console.error("Error: Subdomain is required for preview deploy");
+      console.error("Usage: bunx @just-be/deploy preview <subdomain> [config-path]");
+      process.exit(1);
+    }
+
+    // Get current branch
+    const branch = await getCurrentBranch();
+    const sanitizedBranch = sanitizeBranchName(branch);
+
+    console.log(`\n📋 Preview Deploy Mode`);
+    console.log(`   Branch: ${branch}`);
+    console.log(`   Sanitized: ${sanitizedBranch}`);
+
+    // Load config
+    config = await findAndParseConfig(configPath);
+
+    // Find the matching rule
+    const matchingRule = config.rules.find((rule) => rule.subdomain === targetSubdomain);
+
+    if (!matchingRule) {
+      console.error(`\nError: No rule found with subdomain "${targetSubdomain}"`);
+      console.error(`\nAvailable subdomains: ${config.rules.map((r) => r.subdomain).join(", ")}`);
+      process.exit(1);
+    }
+
+    if (matchingRule.type !== "static") {
+      console.error(`\nError: Preview deploys only support static rules`);
+      console.error(`The rule "${targetSubdomain}" is of type "${matchingRule.type}"`);
+      process.exit(1);
+    }
+
+    // Clone rule and modify subdomain
+    const previewSubdomain = `${targetSubdomain}-${sanitizedBranch}`;
+    const previewRule: StaticRule = {
+      ...matchingRule,
+      subdomain: previewSubdomain,
+    };
+
+    rulesToDeploy = [previewRule];
+    console.log(`   Preview subdomain: ${previewSubdomain}.just-be.dev\n`);
+  } else {
+    // Normal mode: deploy all rules
+    const configPath = args[0];
+    config = await findAndParseConfig(configPath);
+    rulesToDeploy = config.rules;
+    console.log(`\nFound ${config.rules.length} rule(s) to deploy`);
+  }
+
+  // Validate KV access before starting
+  const s = spinner();
+  s.start("Validating KV access");
+  const hasKVAccess = await validateKVAccess();
+  if (!hasKVAccess) {
+    s.stop("Error: Cannot access KV namespace");
+    console.error("Check wrangler configuration and permissions.");
+    process.exit(1);
+  }
+  s.stop("✓ KV access validated");
+
+  // Deploy each rule
+  const deployedSubdomains: string[] = [];
+  for (const rule of rulesToDeploy) {
+    try {
+      switch (rule.type) {
+        case "static":
+          await deployStaticRule(rule, s);
+          deployedSubdomains.push(`https://${rule.subdomain}.just-be.dev`);
+          break;
+        case "redirect":
+          await deployRedirectRule(rule, s);
+          deployedSubdomains.push(`https://${rule.subdomain}.just-be.dev → ${rule.url}`);
+          break;
+        case "rewrite":
+          await deployRewriteRule(rule, s);
+          deployedSubdomains.push(`https://${rule.subdomain}.just-be.dev ⟲ ${rule.url}`);
+          break;
+      }
+    } catch (error) {
+      console.error(`\n❌ Failed to deploy ${rule.subdomain}:`, error);
+      process.exit(1);
+    }
+  }
+
+  outro("\n✅ Deployment complete!\n\nDeployed sites:\n" + deployedSubdomains.join("\n"));
+}
+
+// Only run deploy() when this file is executed directly, not when imported
+if (import.meta.main) {
+  deploy().catch((error) => {
+    console.error("\n❌ Fatal error:", error);
+    process.exit(1);
+  });
+}
