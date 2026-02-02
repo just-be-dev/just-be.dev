@@ -63,3 +63,11 @@ description = "Deploy wildcard subdomain service"
 [tasks.transcribe]
 run = "uv run --with openai-whisper python scripts/transcribe.py"
 description = "Generate word-level transcript from audio/video"
+
+[tasks.changelog]
+run = "bun scripts/changelog.ts"
+description = "Generate/update changelog from recent PRs"
+
+[tasks."changelog:dry-run"]
+run = "bun scripts/changelog.ts --dry-run"
+description = "Preview changelog changes without writing"
