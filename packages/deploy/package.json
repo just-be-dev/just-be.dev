@@ -1,6 +1,6 @@
 {
   "name": "@just-be/deploy",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Deploy static sites to Cloudflare R2 with subdomain routing",
   "type": "module",
   "bin": {
