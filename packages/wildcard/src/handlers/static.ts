@@ -17,30 +17,55 @@ export const handleStatic: Handler<StaticConfig, { fileLoader: FileLoader }> = a
   const basePath = subdomain;
 
   return spa
-    ? handleSpaMode(fileLoader, basePath)
+    ? handleSpaMode(fileLoader, basePath, url.pathname)
     : handleStaticMode(fileLoader, basePath, url.pathname, fallback);
 };
 
-async function handleSpaMode(fileLoader: FileLoader, basePath: string): Promise<Response> {
-  // Sanitize base path to prevent directory traversal
+async function handleSpaMode(
+  fileLoader: FileLoader,
+  basePath: string,
+  pathname: string
+): Promise<Response> {
+  // Sanitize paths to prevent directory traversal
   const sanitizedBase = sanitizePath(basePath);
+  const sanitizedPathname = sanitizePath(pathname);
+
   if (!sanitizedBase) {
     return new Response("Invalid path", { status: 400 });
   }
 
-  const key = sanitizedBase.endsWith("index.html")
+  // First, try to serve the requested file if it exists
+  // Only check files that likely exist (have extensions or end with /)
+  if (pathname !== "/" && (pathname.includes(".") || pathname.endsWith("/"))) {
+    const fullPath = `${sanitizedBase}/${sanitizedPathname}`;
+    let key = fullPath.replace(/\/+/g, "/"); // Normalize double slashes
+
+    // Append index.html for directories
+    if (key.endsWith("/")) {
+      key = `${key}index.html`;
+    }
+
+    const fileObject = await fileLoader.loadFile(key);
+
+    if (fileObject) {
+      return buildFileResponse(fileObject, key);
+    }
+  }
+
+  // Fall back to index.html for SPA routing
+  const indexKey = sanitizedBase.endsWith("index.html")
     ? sanitizedBase
     : sanitizedBase.endsWith("/")
       ? `${sanitizedBase}index.html`
       : `${sanitizedBase}/index.html`;
 
-  const fileObject = await fileLoader.loadFile(key);
+  const indexFile = await fileLoader.loadFile(indexKey);
 
-  if (!fileObject) {
+  if (!indexFile) {
     return new Response("File not found", { status: 404 });
   }
 
-  return buildFileResponse(fileObject, key);
+  return buildFileResponse(indexFile, indexKey);
 }
 
 async function handleStaticMode(
