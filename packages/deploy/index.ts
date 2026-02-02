@@ -16,6 +16,7 @@
  * Environment Variables:
  *   R2_BUCKET_NAME   # R2 bucket name
  *   KV_NAMESPACE_ID  # KV namespace ID
+ *   DEBUG            # Set to "1" or "true" to enable verbose error output
  *
  * Example deploy.json:
  *   {
@@ -57,6 +58,7 @@ import {
 
 const BUCKET_NAME = process.env.R2_BUCKET_NAME || "content-bucket";
 const KV_NAMESPACE_ID = process.env.KV_NAMESPACE_ID || "6118ae3b937c4883b3c582dfef8a0c05";
+const DEBUG = process.env.DEBUG === "1" || process.env.DEBUG === "true";
 
 /**
  * Run wrangler command using bunx to ensure it resolves from package dependencies
@@ -177,7 +179,15 @@ async function uploadToR2(localPath: string, r2Key: string): Promise<boolean> {
     await wrangler`r2 object put ${BUCKET_NAME}/${r2Key} --file ${localPath}`;
     return true;
   } catch (error) {
-    console.error(`\nFailed to upload ${localPath}:`, error);
+    if (DEBUG) {
+      console.error(`\nFailed to upload ${localPath}:`);
+      console.error("Error details:", error);
+      if (error instanceof Error) {
+        console.error("Stack trace:", error.stack);
+      }
+    } else {
+      console.error(`\nFailed to upload ${localPath}:`, error);
+    }
     return false;
   }
 }
@@ -189,7 +199,14 @@ async function validateWranglerAuth(): Promise<boolean> {
   try {
     await wrangler`whoami`.quiet();
     return true;
-  } catch {
+  } catch (error) {
+    if (DEBUG) {
+      console.error("\nWrangler auth validation failed:");
+      console.error("Error details:", error);
+      if (error instanceof Error) {
+        console.error("Stack trace:", error.stack);
+      }
+    }
     return false;
   }
 }
@@ -201,7 +218,15 @@ async function validateKVAccess(): Promise<boolean> {
   try {
     await wrangler`kv key list --namespace-id ${KV_NAMESPACE_ID}`.quiet();
     return true;
-  } catch {
+  } catch (error) {
+    if (DEBUG) {
+      console.error("\nKV access validation failed:");
+      console.error("Error details:", error);
+      if (error instanceof Error) {
+        console.error("Stack trace:", error.stack);
+      }
+      console.error(`Namespace ID: ${KV_NAMESPACE_ID}`);
+    }
     return false;
   }
 }
@@ -213,7 +238,14 @@ async function getCurrentBranch(): Promise<string> {
   try {
     const result = await $`git rev-parse --abbrev-ref HEAD`.text();
     return result.trim();
-  } catch {
+  } catch (error) {
+    if (DEBUG) {
+      console.error("\nFailed to get current git branch:");
+      console.error("Error details:", error);
+      if (error instanceof Error) {
+        console.error("Stack trace:", error.stack);
+      }
+    }
     throw new Error("Failed to get current git branch. Are you in a git repository?");
   }
 }
@@ -439,7 +471,7 @@ async function deploy() {
         process.exit(1);
       }
       s.stop("✓ Authentication verified");
-    } catch (error) {
+    } catch {
       console.error("\n❌ Authentication failed");
       console.error("\nAlternatively, you can set up an API token:");
       console.error("  export CLOUDFLARE_API_TOKEN=your-token");
