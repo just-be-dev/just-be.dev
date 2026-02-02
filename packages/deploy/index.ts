@@ -45,8 +45,8 @@ import {
   subdomain,
 } from "@just-be/wildcard";
 
-const BUCKET_NAME = "content-bucket";
-const WRANGLER_CONFIG = "services/wildcard/wrangler.toml";
+const BUCKET_NAME = process.env.R2_BUCKET_NAME || "content-bucket";
+const KV_NAMESPACE_ID = process.env.KV_NAMESPACE_ID || "6118ae3b937c4883b3c582dfef8a0c05";
 
 /**
  * Run wrangler command using bunx to ensure it resolves from package dependencies
@@ -177,7 +177,7 @@ async function uploadToR2(localPath: string, r2Key: string): Promise<boolean> {
  */
 async function validateKVAccess(): Promise<boolean> {
   try {
-    await wrangler`kv key list --binding ROUTING_RULES --config ${WRANGLER_CONFIG}`.quiet();
+    await wrangler`kv key list --namespace-id ${KV_NAMESPACE_ID}`.quiet();
     return true;
   } catch {
     return false;
@@ -213,7 +213,7 @@ function sanitizeBranchName(branch: string): string {
  */
 async function createKVEntry(subdomain: string, routeConfig: RouteConfig): Promise<void> {
   const configJson = JSON.stringify(routeConfig);
-  await wrangler`kv key put --binding ROUTING_RULES ${subdomain} ${configJson} --config ${WRANGLER_CONFIG}`;
+  await wrangler`kv key put --namespace-id ${KV_NAMESPACE_ID} ${subdomain} ${configJson}`;
 }
 
 /**
