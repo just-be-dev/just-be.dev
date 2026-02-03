@@ -4,14 +4,14 @@ Portable wildcard subdomain routing library with pluggable storage backends. Rou
 
 ## Features
 
-- 🔌 **Pluggable storage backends** - Use any file storage (R2, S3, filesystem, etc.)
-- 🔒 **Security built-in** - SSRF protection, path traversal prevention, safe header filtering
-- 📦 **Three routing modes**:
+- **Pluggable storage backends** - Use any file storage (R2, S3, filesystem, etc.)
+- **Security built-in** - SSRF protection, path traversal prevention, safe header filtering
+- **Three routing modes**:
   - **Static** - Serve files from any storage backend with SPA mode and custom 404s
   - **Redirect** - 301/302 redirects to external URLs
   - **Rewrite** - Proxy requests to external services
-- 🏗️ **Framework-agnostic** - Works with Cloudflare Workers, Node.js, Deno, Bun, etc.
-- ✅ **Type-safe** - Full TypeScript support with Zod validation
+- **Framework-agnostic** - Works with Cloudflare Workers, Node.js, Deno, Bun, etc.
+- **Type-safe** - Full TypeScript support with Zod validation
 
 ## Installation
 
