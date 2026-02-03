@@ -179,3 +179,17 @@ Sentry is integrated for error tracking. Configuration requires:
 - `PUBLIC_SENTRY_DSN` (public DSN)
 - `SENTRY_PROJECT` (project name)
 - `SENTRY_AUTH_TOKEN` (for source map uploads)
+
+## Writing Style
+
+### No Emojis
+
+Do not use emojis in README files, documentation, code comments, or any other project files. Keep all written content professional and text-based. This applies to:
+
+- README.md and other documentation files
+- Code comments
+- Commit messages
+- Configuration files
+- Content files (blog posts, pages, etc.)
+
+Use clear, descriptive text instead of emojis to convey meaning.
