@@ -5,6 +5,7 @@ import {
   sanitizePath,
   filterSafeHeaders,
   isValidSubdomain,
+  matchPath,
   SAFE_REQUEST_HEADERS,
 } from "./utils";
 
@@ -338,6 +339,85 @@ describe("isValidSubdomain", () => {
       expect(isValidSubdomain("_")).toBe(false);
       expect(isValidSubdomain(".")).toBe(false);
       expect(isValidSubdomain("@")).toBe(false);
+    });
+  });
+});
+
+describe("matchPath", () => {
+  describe("exact match patterns", () => {
+    it("should match exact paths", () => {
+      expect(matchPath("/github", "/github")).toEqual({ matched: true });
+      expect(matchPath("/about", "/about")).toEqual({ matched: true });
+      expect(matchPath("/foo/bar", "/foo/bar")).toEqual({ matched: true });
+    });
+
+    it("should not match different paths", () => {
+      expect(matchPath("/github", "/gitlab")).toEqual({ matched: false });
+      expect(matchPath("/about", "/about/team")).toEqual({ matched: false });
+      expect(matchPath("/foo", "/foo/bar")).toEqual({ matched: false });
+    });
+
+    it("should handle trailing slash normalization", () => {
+      expect(matchPath("/github", "/github/")).toEqual({ matched: true });
+      expect(matchPath("/github/", "/github")).toEqual({ matched: true });
+      expect(matchPath("/foo/bar/", "/foo/bar")).toEqual({ matched: true });
+    });
+
+    it("should handle root path", () => {
+      expect(matchPath("/", "/")).toEqual({ matched: true });
+    });
+  });
+
+  describe("wildcard patterns", () => {
+    it("should match prefix with wildcard", () => {
+      expect(matchPath("/api/*", "/api/users")).toEqual({ matched: true, suffix: "/users" });
+      expect(matchPath("/api/*", "/api/users/123")).toEqual({
+        matched: true,
+        suffix: "/users/123",
+      });
+      expect(matchPath("/v1/api/*", "/v1/api/test")).toEqual({ matched: true, suffix: "/test" });
+    });
+
+    it("should match just the prefix without trailing content", () => {
+      expect(matchPath("/api/*", "/api")).toEqual({ matched: true, suffix: "/" });
+      expect(matchPath("/api/*", "/api/")).toEqual({ matched: true, suffix: "/" });
+    });
+
+    it("should not match paths that do not start with prefix", () => {
+      expect(matchPath("/api/*", "/apiv2/users")).toEqual({ matched: false });
+      expect(matchPath("/api/*", "/other/api/users")).toEqual({ matched: false });
+      expect(matchPath("/foo/*", "/foobar")).toEqual({ matched: false });
+    });
+
+    it("should return correct suffix for nested paths", () => {
+      expect(matchPath("/old/*", "/old/page")).toEqual({ matched: true, suffix: "/page" });
+      expect(matchPath("/old/*", "/old/deep/nested/path")).toEqual({
+        matched: true,
+        suffix: "/deep/nested/path",
+      });
+    });
+
+    it("should handle wildcard at root", () => {
+      expect(matchPath("/*", "/anything")).toEqual({ matched: true, suffix: "/anything" });
+      expect(matchPath("/*", "/")).toEqual({ matched: true, suffix: "/" });
+    });
+  });
+
+  describe("edge cases", () => {
+    it("should handle paths with query strings (pathname only)", () => {
+      // matchPath only receives pathname, not query strings
+      expect(matchPath("/api/*", "/api/users")).toEqual({ matched: true, suffix: "/users" });
+    });
+
+    it("should handle patterns with multiple segments", () => {
+      expect(matchPath("/a/b/c/*", "/a/b/c/d")).toEqual({ matched: true, suffix: "/d" });
+      expect(matchPath("/a/b/c/*", "/a/b/c")).toEqual({ matched: true, suffix: "/" });
+    });
+
+    it("should distinguish between similar paths", () => {
+      expect(matchPath("/api", "/api")).toEqual({ matched: true });
+      expect(matchPath("/api", "/api/")).toEqual({ matched: true });
+      expect(matchPath("/api", "/api/users")).toEqual({ matched: false });
     });
   });
 });

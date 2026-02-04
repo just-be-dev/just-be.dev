@@ -164,6 +164,45 @@ export function filterSafeHeaders(headers: Headers): Headers {
 }
 
 /**
+ * Match result from matchPath function
+ */
+export interface PathMatchResult {
+  matched: boolean;
+  suffix?: string;
+}
+
+/**
+ * Matches a path pattern against a pathname
+ * Supports exact matches and wildcard suffix patterns (e.g., /api/*)
+ *
+ * @param pattern - The pattern to match (e.g., "/github" or "/api/*")
+ * @param pathname - The actual pathname to match against
+ * @returns Object with matched boolean and optional suffix for wildcard matches
+ */
+export function matchPath(pattern: string, pathname: string): PathMatchResult {
+  // Normalize paths by removing trailing slashes (except for root "/")
+  const normPattern =
+    pattern === "/" ? "/" : pattern.endsWith("/") ? pattern.slice(0, -1) : pattern;
+  const normPathname =
+    pathname === "/" ? "/" : pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+
+  // Handle wildcard patterns: /api/*
+  if (normPattern.endsWith("/*")) {
+    const prefix = normPattern.slice(0, -2);
+
+    // Match prefix exactly or prefix + "/"
+    if (normPathname === prefix || normPathname.startsWith(prefix + "/")) {
+      const suffix = normPathname.slice(prefix.length) || "/";
+      return { matched: true, suffix };
+    }
+    return { matched: false };
+  }
+
+  // Exact match
+  return { matched: normPathname === normPattern };
+}
+
+/**
  * Validates subdomain name format and length
  * @param subdomain - The subdomain to validate
  * @returns true if subdomain is valid
@@ -195,4 +234,61 @@ export function isValidSubdomain(subdomain: string): boolean {
   }
 
   return true;
+}
+
+/**
+ * Timeout for proxy requests in milliseconds
+ */
+const FETCH_TIMEOUT_MS = 5_000;
+
+/**
+ * Proxies a request to a target URL with timeout and safe header filtering
+ *
+ * @param request - The original request
+ * @param targetUrl - The target URL to proxy to
+ * @returns Response from the proxied request
+ */
+export async function proxyRequest(
+  request: Request,
+  targetUrl: URL
+): Promise<Response> {
+  // Filter headers to only include safe ones (prevents header injection)
+  const safeHeaders = filterSafeHeaders(request.headers);
+
+  // Create a new request with the target URL and filtered headers
+  const modifiedRequest = new Request(targetUrl.toString(), {
+    method: request.method,
+    headers: safeHeaders,
+    body: request.method !== "GET" && request.method !== "HEAD" ? request.body : undefined,
+  });
+
+  // Create abort controller for timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(modifiedRequest, {
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    // Create a new response with the same body but potentially modified headers
+    const newResponse = new Response(response.body, response);
+
+    // Remove content-encoding header because the response body is already decoded
+    // by the fetch API, and if we forward this header, the browser will try to
+    // decode it again, causing corruption
+    newResponse.headers.delete("content-encoding");
+
+    return newResponse;
+  } catch (error) {
+    clearTimeout(timeoutId);
+
+    if (error instanceof Error && error.name === "AbortError") {
+      return new Response("Request timeout", { status: 504 });
+    }
+
+    return new Response("Bad gateway", { status: 502 });
+  }
 }

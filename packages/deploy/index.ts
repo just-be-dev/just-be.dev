@@ -301,6 +301,12 @@ async function deployStaticRule(rule: StaticRule, s: ReturnType<typeof spinner>)
   } else if (rule.fallback) {
     console.log(`   Fallback: ${rule.fallback}`);
   }
+  if (rule.redirects?.length) {
+    console.log(`   Redirects: ${rule.redirects.length} path rule(s)`);
+  }
+  if (rule.rewrites?.length) {
+    console.log(`   Rewrites: ${rule.rewrites.length} path rule(s)`);
+  }
 
   // Verify directory exists
   try {
@@ -353,6 +359,8 @@ async function deployStaticRule(rule: StaticRule, s: ReturnType<typeof spinner>)
     type: "static",
     ...(rule.spa && { spa: rule.spa }),
     ...(rule.fallback && { fallback: rule.fallback }),
+    ...(rule.redirects?.length && { redirects: rule.redirects }),
+    ...(rule.rewrites?.length && { rewrites: rule.rewrites }),
   };
 
   s.start(`Creating KV routing entry`);

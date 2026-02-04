@@ -13,12 +13,30 @@ export const subdomain = () =>
     message: "Invalid subdomain format. Must be alphanumeric with hyphens, 1-63 characters.",
   });
 
+const HttpMethod = z.enum(["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"]);
+
+/** Path-level redirect schema */
+export const PathRedirectSchema = z.object({
+  path: z.string().min(1).startsWith("/"),
+  url: safeUrl(),
+  permanent: z.boolean().optional(),
+});
+
+/** Path-level rewrite schema */
+export const PathRewriteSchema = z.object({
+  path: z.string().min(1).startsWith("/"),
+  url: safeUrl(),
+  allowedMethods: z.array(HttpMethod).optional().default(["GET", "HEAD", "OPTIONS"]),
+});
+
 // Zod schemas for validation
 export const StaticConfigSchema = z
   .object({
     type: z.literal("static"),
     spa: z.boolean().optional(),
     fallback: z.string().optional(), // Fallback file path for non-SPA mode (e.g., "404.html")
+    redirects: z.array(PathRedirectSchema).optional(),
+    rewrites: z.array(PathRewriteSchema).optional(),
   })
   .refine((data) => (data.spa && data.fallback ? false : true), {
     message: "fallback cannot be used with spa mode (spa: true)",
@@ -29,8 +47,6 @@ export const RedirectConfigSchema = z.object({
   url: safeUrl(),
   permanent: z.boolean().optional(),
 });
-
-const HttpMethod = z.enum(["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"]);
 
 export const RewriteConfigSchema = z.object({
   type: z.literal("rewrite"),
@@ -70,6 +86,8 @@ const json = <T extends z.ZodType>(schema: T) =>
  */
 export const RouteConfigCodec = json(RouteConfigSchema);
 
+export type PathRedirect = z.infer<typeof PathRedirectSchema>;
+export type PathRewrite = z.infer<typeof PathRewriteSchema>;
 export type StaticConfig = z.infer<typeof StaticConfigSchema>;
 export type RedirectConfig = z.infer<typeof RedirectConfigSchema>;
 export type RewriteConfig = z.infer<typeof RewriteConfigSchema>;
