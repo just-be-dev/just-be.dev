@@ -1,12 +1,17 @@
 import type { Handler, FileLoader, FileObject } from "../types";
 import type { StaticConfig } from "../schemas";
 import { getContentType, sanitizePath } from "../utils";
+import { handlePathRules } from "./path-rules";
 
 export const handleStatic: Handler<StaticConfig, { fileLoader: FileLoader }> = async (
   request,
   config,
   { fileLoader }
 ) => {
+  // Check path-level redirects and rewrites first
+  const pathResponse = await handlePathRules(request, config);
+  if (pathResponse) return pathResponse;
+
   const url = new URL(request.url);
   const { spa, fallback } = config;
 

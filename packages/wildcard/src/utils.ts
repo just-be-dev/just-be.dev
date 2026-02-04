@@ -164,6 +164,45 @@ export function filterSafeHeaders(headers: Headers): Headers {
 }
 
 /**
+ * Match result from matchPath function
+ */
+export interface PathMatchResult {
+  matched: boolean;
+  suffix?: string;
+}
+
+/**
+ * Matches a path pattern against a pathname
+ * Supports exact matches and wildcard suffix patterns (e.g., /api/*)
+ *
+ * @param pattern - The pattern to match (e.g., "/github" or "/api/*")
+ * @param pathname - The actual pathname to match against
+ * @returns Object with matched boolean and optional suffix for wildcard matches
+ */
+export function matchPath(pattern: string, pathname: string): PathMatchResult {
+  // Normalize paths by removing trailing slashes (except for root "/")
+  const normPattern =
+    pattern === "/" ? "/" : pattern.endsWith("/") ? pattern.slice(0, -1) : pattern;
+  const normPathname =
+    pathname === "/" ? "/" : pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+
+  // Handle wildcard patterns: /api/*
+  if (normPattern.endsWith("/*")) {
+    const prefix = normPattern.slice(0, -2);
+
+    // Match prefix exactly or prefix + "/"
+    if (normPathname === prefix || normPathname.startsWith(prefix + "/")) {
+      const suffix = normPathname.slice(prefix.length) || "/";
+      return { matched: true, suffix };
+    }
+    return { matched: false };
+  }
+
+  // Exact match
+  return { matched: normPathname === normPattern };
+}
+
+/**
  * Validates subdomain name format and length
  * @param subdomain - The subdomain to validate
  * @returns true if subdomain is valid
