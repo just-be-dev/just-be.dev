@@ -46,6 +46,7 @@ export const RedirectConfigSchema = z.object({
   type: z.literal("redirect"),
   url: safeUrl(),
   permanent: z.boolean().optional(),
+  preservePath: z.boolean().optional(),
 });
 
 export const RewriteConfigSchema = z.object({

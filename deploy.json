@@ -1,0 +1,11 @@
+{
+  "rules": [
+    {
+      "subdomain": "git",
+      "type": "redirect",
+      "url": "https://github.com/just-be-dev",
+      "permanent": true,
+      "preservePath": true
+    }
+  ]
+}

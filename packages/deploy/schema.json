@@ -20,6 +20,55 @@
               "fallback": {
                 "type": "string"
               },
+              "redirects": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "minLength": 1,
+                      "pattern": "^\\/.*"
+                    },
+                    "url": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "permanent": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["path", "url"],
+                  "additionalProperties": false
+                }
+              },
+              "rewrites": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "minLength": 1,
+                      "pattern": "^\\/.*"
+                    },
+                    "url": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "allowedMethods": {
+                      "default": ["GET", "HEAD", "OPTIONS"],
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"]
+                      }
+                    }
+                  },
+                  "required": ["path", "url", "allowedMethods"],
+                  "additionalProperties": false
+                }
+              },
               "subdomain": {
                 "type": "string"
               },
@@ -43,6 +92,9 @@
                 "format": "uri"
               },
               "permanent": {
+                "type": "boolean"
+              },
+              "preservePath": {
                 "type": "boolean"
               },
               "subdomain": {
