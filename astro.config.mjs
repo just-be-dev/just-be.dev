@@ -7,6 +7,7 @@ import { defineConfig } from "astro/config";
 import UnoCSS from "@unocss/astro";
 import remarkMdc from "remark-mdc";
 import { remarkMdcToMdx } from "./src/plugins/remark-mdc-to-mdx.ts";
+import { remarkMermaidAscii } from "./src/plugins/remark-mermaid-ascii.ts";
 import cloudflare from "@astrojs/cloudflare";
 import sentry from "@sentry/astro";
 
@@ -32,7 +33,7 @@ export default defineConfig({
         theme: "github-light",
       },
       gfm: true,
-      remarkPlugins: [remarkMdc, remarkMdcToMdx],
+      remarkPlugins: [remarkMdc, remarkMermaidAscii, remarkMdcToMdx],
     }),
     sitemap(),
     UnoCSS(),

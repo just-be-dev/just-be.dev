@@ -94,6 +94,19 @@ The site uses MDC (Markdown Components) syntax from Nuxt Content, converted to M
 
 The plugin automatically imports components from `src/components/` based on usage.
 
+### Mermaid Diagrams
+
+The site supports beautiful ASCII art rendering of Mermaid diagrams using the beautiful-mermaid library. Write mermaid diagrams using standard code fences:
+
+```mermaid
+graph TD
+    A --> B
+```
+
+At build time, the `remark-mermaid-ascii` plugin automatically converts Mermaid code blocks into ASCII art using Unicode box-drawing characters. This happens during the MDX processing pipeline before the content is rendered.
+
+See `docs/mermaid.md` for full documentation including Zed editor syntax highlighting configuration.
+
 ### File Naming Convention
 
 Content files use simple slug-based filenames: `{slug}.mdx`
