@@ -5,6 +5,14 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const url = new URL(context.request.url);
   const pathSegments = url.pathname.split("/").filter(Boolean);
 
+  // Handle redirects from redirects collection
+  const redirects = await getCollection("redirects");
+  const redirect = redirects.find((r) => r.id === url.pathname);
+  if (redirect) {
+    const status = redirect.data.permanent ? 301 : 302;
+    return context.redirect(redirect.data.to, status);
+  }
+
   // Check if first or second path segment is a code (format: [brpt][0-9a-f]{4})
   const codePattern = /^[brpt][0-9a-f]{4}$/i;
   const firstSegmentIsCode = pathSegments[0] && codePattern.test(pathSegments[0]);

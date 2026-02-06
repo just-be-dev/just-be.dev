@@ -1,83 +1,44 @@
-import { defineCollection, z } from "astro:content";
+import { defineCollection } from "astro:content";
 import { glob } from "astro/loaders";
 import { feedLoader } from "@ascorbic/feed-loader";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { load as loadYAML } from "js-yaml";
+import {
+  blogSchema,
+  projectsSchema,
+  researchSchema,
+  talksSchema,
+  pagesSchema,
+  assetsSchema,
+  urlsSchema,
+  redirectsSchema,
+  redirectsFileSchema,
+} from "./content/schemas";
 
 const blog = defineCollection({
   loader: glob({ base: "./src/content/blog", pattern: "**/*.{md,mdx}" }),
-  schema: z.object({
-    title: z.string(),
-    description: z.string().optional(),
-    date: z.coerce.date(),
-    tags: z.array(z.string()).default([]),
-    draft: z.boolean().default(false),
-    code: z.string().optional(),
-    slugs: z.array(z.string()).optional(),
-  }),
+  schema: blogSchema,
 });
 
 const projects = defineCollection({
   loader: glob({ base: "./src/content/projects", pattern: "**/*.{md,mdx}" }),
-  schema: z.object({
-    title: z.string(),
-    description: z.string().optional(),
-    url: z.string().url().optional(),
-    repository: z.string().url().optional(),
-    status: z.enum(["active", "completed", "archived", "maintenance"]).default("active"),
-    date: z.coerce.date(),
-    code: z.string().optional(),
-    slugs: z.array(z.string()).optional(),
-  }),
+  schema: projectsSchema,
 });
 
 const research = defineCollection({
   loader: glob({ base: "./src/content/research", pattern: "**/*.{md,mdx}" }),
-  schema: z.object({
-    title: z.string(),
-    description: z.string().optional(),
-    date: z.coerce.date().optional(),
-    lastUpdated: z.coerce.date().optional(),
-    status: z.enum(["draft", "working", "final", "archived"]).default("draft"),
-    tags: z.array(z.string()).default([]),
-    code: z.string().optional(),
-    slugs: z.array(z.string()).optional(),
-  }),
+  schema: researchSchema,
 });
 
 const talks = defineCollection({
   loader: glob({ base: "./src/content/talks", pattern: "**/*.{md,mdx}" }),
-  schema: z.object({
-    title: z.string(),
-    description: z.string().optional(),
-    date: z.coerce.date(),
-    event: z.string(),
-    location: z.string().optional(),
-    slides: z
-      .union([
-        z.number(),
-        z.array(
-          z.object({
-            image: z.string(),
-            timestamp: z.union([z.number(), z.string()]).optional(),
-          })
-        ),
-      ])
-      .optional(),
-    audioPath: z.string().optional(),
-    transcriptPath: z.string().optional(),
-    code: z.string().optional(),
-    slugs: z.array(z.string()).optional(),
-  }),
+  schema: talksSchema,
 });
 
 const pages = defineCollection({
   loader: glob({ base: "./src/content/pages", pattern: "**/*.{md,mdx}" }),
-  schema: z.object({
-    title: z.string().optional(),
-    description: z.string().optional(),
-  }),
+  schema: pagesSchema,
 });
 
 const devtools = defineCollection({
@@ -107,11 +68,7 @@ const assets = defineCollection({
       logger.info(`Loaded ${Object.keys(manifest.assets).length} assets`);
     },
   },
-  schema: z.object({
-    hash: z.string(),
-    size: z.number(),
-    ext: z.string(),
-  }),
+  schema: assetsSchema,
 });
 
 const urls = defineCollection({
@@ -139,9 +96,45 @@ const urls = defineCollection({
       logger.info(`Loaded ${urlCount} URLs from ${Object.keys(manifest.codes).length} codes`);
     },
   },
-  schema: z.object({
-    code: z.string(),
-  }),
+  schema: urlsSchema,
 });
 
-export const collections = { blog, projects, research, pages, devtools, talks, assets, urls };
+const redirects = defineCollection({
+  loader: {
+    name: "redirects-loader",
+    load: ({ store, logger }) => {
+      logger.info("Loading redirects");
+
+      const redirectsPath = join(process.cwd(), "src/content/redirects.yaml");
+      const redirectsContent = readFileSync(redirectsPath, "utf-8");
+      const rawData = loadYAML(redirectsContent);
+      const data = redirectsFileSchema.parse(rawData);
+
+      // Store each redirect with its "from" path as the ID
+      for (const redirect of data.redirects) {
+        store.set({
+          id: redirect.from,
+          data: {
+            to: redirect.to,
+            permanent: redirect.permanent ?? false,
+          },
+        });
+      }
+
+      logger.info(`Loaded ${data.redirects.length} redirects`);
+    },
+  },
+  schema: redirectsSchema,
+});
+
+export const collections = {
+  blog,
+  projects,
+  research,
+  pages,
+  devtools,
+  talks,
+  assets,
+  urls,
+  redirects,
+};
