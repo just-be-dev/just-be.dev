@@ -11,6 +11,7 @@
 
 - Add redirects collection and refactor schemas ([#209](https://github.com/just-be-dev/just-be.dev/pull/209))
 - Update dependency lefthook to v2.0.16 ([#208](https://github.com/just-be-dev/just-be.dev/pull/208))
+- Update changelog ([#205](https://github.com/just-be-dev/just-be.dev/pull/205))
 
 ## 2026-02-04
 
