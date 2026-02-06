@@ -1,0 +1,4 @@
+redirects:
+  - from: /chat
+    to: https://savvycal.com/just-be/chat
+    permanent: true
