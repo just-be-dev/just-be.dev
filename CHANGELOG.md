@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-02-06
+
+### @just-be/wildcard
+
+- Add preservePath option to redirect handler ([#211](https://github.com/just-be-dev/just-be.dev/pull/211))
+- docs: add no-emoji policy and remove existing emojis ([#210](https://github.com/just-be-dev/just-be.dev/pull/210))
+
+### Main Site
+
+- Add redirects collection and refactor schemas ([#209](https://github.com/just-be-dev/just-be.dev/pull/209))
+- Update dependency lefthook to v2.0.16 ([#208](https://github.com/just-be-dev/just-be.dev/pull/208))
+
+## 2026-02-04
+
+### @just-be/wildcard
+
+- Add path-level redirects and rewrites for static handlers ([#207](https://github.com/just-be-dev/just-be.dev/pull/207))
+
 ## 2026-02-02
 
 ### @just-be/deploy
@@ -21,6 +39,7 @@
 
 ### Main Site
 
+- Update changelog ([#199](https://github.com/just-be-dev/just-be.dev/pull/199))
 - Update changelog ([#197](https://github.com/just-be-dev/just-be.dev/pull/197))
 - Add changelog system with automatic GitHub Actions ([#195](https://github.com/just-be-dev/just-be.dev/pull/195))
 
