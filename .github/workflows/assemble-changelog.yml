@@ -1,0 +1,55 @@
+name: Assemble Changelog
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".changelog/**"
+
+env:
+  MISE_DISABLE_TOOLS: ffmpeg
+
+# Prevent concurrent runs to avoid race conditions
+concurrency:
+  group: changelog-assembly
+  cancel-in-progress: false
+
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup mise
+        uses: jdx/mise-action@146a28175021df8ca24f8ee1828cc2a60f980bd5 # v3
+        with:
+          experimental: true
+
+      - name: Install dependencies
+        run: mise install
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Assemble changelog
+        run: bun scripts/assemble-changelog.ts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit updated changelog
+        run: |
+          if git diff --quiet CHANGELOG.md .changelog/; then
+            echo "No changes to commit"
+          else
+            git add CHANGELOG.md .changelog/
+            git commit -m "Update CHANGELOG.md from fragments"
+            git push
+          fi

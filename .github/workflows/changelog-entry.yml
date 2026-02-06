@@ -1,0 +1,63 @@
+name: Changelog Entry
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+env:
+  MISE_DISABLE_TOOLS: ffmpeg
+
+jobs:
+  create-fragment:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Setup mise
+        uses: jdx/mise-action@146a28175021df8ca24f8ee1828cc2a60f980bd5 # v3
+        with:
+          experimental: true
+
+      - name: Install dependencies
+        run: mise install
+
+      - name: Check if last commit is from bot
+        id: check_bot
+        run: |
+          LAST_COMMIT_AUTHOR=$(git log -1 --pretty=format:'%an')
+          if [ "$LAST_COMMIT_AUTHOR" = "github-actions[bot]" ]; then
+            echo "Last commit is from bot, skipping"
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate changelog fragment
+        if: steps.check_bot.outputs.skip == 'false'
+        run: bun scripts/changelog-entry.ts ${{ github.event.pull_request.number }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        if: steps.check_bot.outputs.skip == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit fragment
+        if: steps.check_bot.outputs.skip == 'false'
+        run: |
+          if git diff --quiet .changelog/; then
+            echo "No changes to commit"
+          else
+            git add .changelog/
+            git commit -m "Add changelog fragment for PR #${{ github.event.pull_request.number }}"
+            git push
+          fi

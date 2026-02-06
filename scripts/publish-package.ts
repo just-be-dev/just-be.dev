@@ -14,8 +14,10 @@
 
 import { $ } from "bun";
 import { appendFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { z } from "zod";
+import { generateReleaseNotes, getGitHubRepo } from "./release-notes";
 
 const PackageJsonSchema = z.object({
   name: z.string(),
@@ -126,9 +128,22 @@ export async function publishToNpm(packagePath: string, tarball: string): Promis
 export async function createGitHubRelease(packageName: string, version: string): Promise<void> {
   const tag = `${packageName}@${version}`;
   const releaseTitle = `${packageName} v${version}`;
-  const releaseNotes = `Published to npm: https://www.npmjs.com/package/${packageName}/v/${version}`;
+  const githubRepo = await getGitHubRepo();
 
-  await $`gh release create ${tag} --title ${releaseTitle} --notes ${releaseNotes}`;
+  // Extract package name without scope (e.g., "@just-be/deploy" -> "deploy")
+  const packageNameWithoutScope = packageName.replace("@just-be/", "");
+
+  // Generate release notes
+  const releaseNotes = await generateReleaseNotes(packageNameWithoutScope, version, githubRepo);
+
+  // Use --notes-file to avoid shell escaping issues with long notes
+  const notesPath = join(tmpdir(), `release-notes-${Date.now()}.md`);
+  await Bun.write(notesPath, releaseNotes);
+
+  await $`gh release create ${tag} --title ${releaseTitle} --notes-file ${notesPath}`;
+
+  // Clean up temp file
+  await Bun.file(notesPath).writer().end();
 }
 
 /**
