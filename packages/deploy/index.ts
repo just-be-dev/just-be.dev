@@ -383,6 +383,7 @@ async function deployRedirectRule(
     type: "redirect",
     url: rule.url,
     ...(rule.permanent !== undefined && { permanent: rule.permanent }),
+    ...(rule.preservePath !== undefined && { preservePath: rule.preservePath }),
   };
 
   s.start(`Creating KV routing entry`);
