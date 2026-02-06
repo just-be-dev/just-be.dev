@@ -64,10 +64,14 @@ description = "Deploy wildcard subdomain service"
 run = "uv run --with openai-whisper python scripts/transcribe.py"
 description = "Generate word-level transcript from audio/video"
 
-[tasks.changelog]
-run = "bun scripts/changelog.ts"
-description = "Generate/update changelog from recent PRs"
+[tasks."changelog:entry"]
+run = "bun scripts/changelog-entry.ts"
+description = "Generate changelog entry for a PR"
 
-[tasks."changelog:dry-run"]
-run = "bun scripts/changelog.ts --dry-run"
-description = "Preview changelog changes without writing"
+[tasks."changelog:assemble"]
+run = "bun scripts/assemble-changelog.ts"
+description = "Assemble changelog fragments into CHANGELOG.md"
+
+[tasks."release-notes"]
+run = "bun scripts/release-notes.ts"
+description = "Preview release notes for a package version"
