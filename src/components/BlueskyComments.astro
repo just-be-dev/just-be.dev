@@ -62,6 +62,40 @@ const componentId = `bsky-comments-${post}`;
     return parts;
   }
 
+  function renderRichText(record) {
+    const text = record?.text || "";
+    const facets = record?.facets;
+    if (!facets || facets.length === 0) return esc(text);
+
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    const bytes = encoder.encode(text);
+    const sorted = [...facets].sort((a, b) => a.index.byteStart - b.index.byteStart);
+
+    let html = "";
+    let lastByte = 0;
+
+    for (const facet of sorted) {
+      const { byteStart, byteEnd } = facet.index;
+      if (byteStart > lastByte) {
+        html += esc(decoder.decode(bytes.slice(lastByte, byteStart)));
+      }
+      const facetText = decoder.decode(bytes.slice(byteStart, byteEnd));
+      const link = facet.features?.find((f) => f.$type === "app.bsky.richtext.facet#link");
+      if (link) {
+        html += `<a href="${esc(link.uri)}" target="_blank" rel="noopener noreferrer" class="bsky-text-link">${esc(facetText)}</a>`;
+      } else {
+        html += esc(facetText);
+      }
+      lastByte = byteEnd;
+    }
+
+    if (lastByte < bytes.length) {
+      html += esc(decoder.decode(bytes.slice(lastByte)));
+    }
+    return html;
+  }
+
   function validReplies(replies) {
     return (replies || []).filter((r) => r?.$type === "app.bsky.feed.defs#threadViewPost");
   }
@@ -71,7 +105,7 @@ const componentId = `bsky-comments-${post}`;
     if (!post) return "";
 
     const { author = {}, indexedAt = "", replyCount = 0, repostCount = 0, likeCount = 0 } = post;
-    const text = post.record?.text || "";
+    const richText = renderRichText(post.record);
     const rkey = (post.uri || "").split("/").pop();
     const bskyUrl = `https://bsky.app/profile/${esc(author.did)}/post/${esc(rkey)}`;
     const profileUrl = `https://bsky.app/profile/${esc(author.did)}`;
@@ -84,13 +118,13 @@ const componentId = `bsky-comments-${post}`;
 
     return `
       <div class="bsky-comment ${isTopLevel ? "mb-1" : ""}">
-        <div class="flex items-baseline gap-1 text-sm">
+        <div class="flex items-center gap-1 text-sm">
           ${author.avatar ? `<img src="${esc(author.avatar)}" alt="" class="bsky-avatar" loading="lazy">` : ""}
           <a href="${profileUrl}" target="_blank" rel="noopener noreferrer" class="font-bold text-fg-0 no-underline">${esc(author.displayName || author.handle || "Unknown")}</a>
           <span class="text-fg-2">@${esc(author.handle || "")}</span>
           <span class="text-fg-2">${formatRelativeTime(indexedAt)}</span>
         </div>
-        ${text ? `<p class="my-0 whitespace-pre-wrap">${esc(text)}</p>` : ""}
+        ${richText ? `<p class="my-0 whitespace-pre-wrap">${richText}</p>` : ""}
         <div class="flex gap-2 text-fg-2 text-sm">
           ${stats}
           <a href="${bskyUrl}" target="_blank" rel="noopener noreferrer" class="bsky-reply-link text-fg-2">reply</a>
@@ -141,16 +175,29 @@ const componentId = `bsky-comments-${post}`;
   .bsky-comments h2 {
     margin-top: 0;
   }
+</style>
 
+<style is:global>
   .bsky-avatar {
-    width: 1.5em;
-    height: 1.5em;
+    display: inline-block;
+    width: 1lh;
+    height: 1lh;
     border-radius: 50%;
     vertical-align: middle;
     flex-shrink: 0;
+    object-fit: cover;
   }
 
   .bsky-reply-link:hover {
+    filter: invert(1);
+  }
+
+  .bsky-text-link {
+    text-decoration: underline;
+    color: var(--foreground0);
+  }
+
+  .bsky-text-link:hover {
     filter: invert(1);
   }
 
