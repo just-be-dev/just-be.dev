@@ -1,0 +1,208 @@
+---
+interface Props {
+  post: string;
+}
+
+const { post } = Astro.props;
+const postUrl = `https://bsky.app/profile/just-be.dev/post/${post}`;
+const componentId = `bsky-comments-${post}`;
+---
+
+<section
+  id={componentId}
+  class="bsky-comments border-2 border-fg-2 px-2 py-1 mt-2lh"
+  aria-label="Comments"
+>
+  <h2 class="font-bold mb-0">Comments</h2>
+  <p class="bsky-loading text-fg-2">Loading comments...</p>
+  <div class="bsky-error hidden text-fg-2">
+    <p>Could not load comments.</p>
+  </div>
+  <div class="bsky-content hidden"></div>
+</section>
+
+<script define:vars={{ post, postUrl, componentId }}>
+  const AT_URI = `at://just-be.dev/app.bsky.feed.post/${post}`;
+
+  const container = document.getElementById(componentId);
+  if (!container) throw new Error(`BlueskyComments: #${componentId} not found`);
+
+  const loadingEl = container.querySelector(".bsky-loading");
+  const errorEl = container.querySelector(".bsky-error");
+  const contentEl = container.querySelector(".bsky-content");
+
+  const TIME_UNITS = [
+    [60, "s"],
+    [60, "m"],
+    [24, "h"],
+    [30, "d"],
+    [12, "mo"],
+    [Infinity, "y"],
+  ];
+
+  function esc(str) {
+    const el = document.createElement("span");
+    el.textContent = str;
+    return el.innerHTML;
+  }
+
+  function formatRelativeTime(isoDate) {
+    let diff = Math.floor((Date.now() - new Date(isoDate).getTime()) / 1000);
+    for (const [threshold, suffix] of TIME_UNITS) {
+      if (diff < threshold) return `${Math.floor(diff)}${suffix}`;
+      diff /= threshold;
+    }
+  }
+
+  function formatStats(replyCount, repostCount, likeCount) {
+    const parts = [];
+    if (replyCount > 0) parts.push(`${replyCount} ${replyCount === 1 ? "reply" : "replies"}`);
+    if (repostCount > 0) parts.push(`${repostCount} ${repostCount === 1 ? "repost" : "reposts"}`);
+    if (likeCount > 0) parts.push(`${likeCount} ${likeCount === 1 ? "like" : "likes"}`);
+    return parts;
+  }
+
+  function renderRichText(record) {
+    const text = record?.text || "";
+    const facets = record?.facets;
+    if (!facets || facets.length === 0) return esc(text);
+
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    const bytes = encoder.encode(text);
+    const sorted = [...facets].sort((a, b) => a.index.byteStart - b.index.byteStart);
+
+    let html = "";
+    let lastByte = 0;
+
+    for (const facet of sorted) {
+      const { byteStart, byteEnd } = facet.index;
+      if (byteStart > lastByte) {
+        html += esc(decoder.decode(bytes.slice(lastByte, byteStart)));
+      }
+      const facetText = decoder.decode(bytes.slice(byteStart, byteEnd));
+      const link = facet.features?.find((f) => f.$type === "app.bsky.richtext.facet#link");
+      if (link) {
+        html += `<a href="${esc(link.uri)}" target="_blank" rel="noopener noreferrer" class="bsky-text-link">${esc(facetText)}</a>`;
+      } else {
+        html += esc(facetText);
+      }
+      lastByte = byteEnd;
+    }
+
+    if (lastByte < bytes.length) {
+      html += esc(decoder.decode(bytes.slice(lastByte)));
+    }
+    return html;
+  }
+
+  function validReplies(replies) {
+    return (replies || []).filter((r) => r?.$type === "app.bsky.feed.defs#threadViewPost");
+  }
+
+  function renderComment(reply, isTopLevel) {
+    const { post } = reply;
+    if (!post) return "";
+
+    const { author = {}, indexedAt = "", replyCount = 0, repostCount = 0, likeCount = 0 } = post;
+    const richText = renderRichText(post.record);
+    const rkey = (post.uri || "").split("/").pop();
+    const bskyUrl = `https://bsky.app/profile/${esc(author.did)}/post/${esc(rkey)}`;
+    const profileUrl = `https://bsky.app/profile/${esc(author.did)}`;
+    const stats = formatStats(replyCount, repostCount, likeCount)
+      .map((s) => `<span>${s}</span>`)
+      .join("");
+    const nested = validReplies(reply.replies)
+      .map((r) => renderComment(r, false))
+      .join("");
+
+    return `
+      <div class="bsky-comment ${isTopLevel ? "mb-1" : ""}">
+        <div class="flex items-center gap-1 text-sm">
+          ${author.avatar ? `<img src="${esc(author.avatar)}" alt="" class="bsky-avatar" loading="lazy">` : ""}
+          <a href="${profileUrl}" target="_blank" rel="noopener noreferrer" class="font-bold text-fg-0 no-underline">${esc(author.displayName || author.handle || "Unknown")}</a>
+          <span class="text-fg-2">@${esc(author.handle || "")}</span>
+          <span class="text-fg-2">${formatRelativeTime(indexedAt)}</span>
+        </div>
+        ${richText ? `<p class="my-0 whitespace-pre-wrap">${richText}</p>` : ""}
+        <div class="flex gap-2 text-fg-2 text-sm">
+          ${stats}
+          <a href="${bskyUrl}" target="_blank" rel="noopener noreferrer" class="bsky-reply-link text-fg-2">reply</a>
+        </div>
+        ${nested ? `<div class="bsky-nested border-l-2 border-fg-2 pl-2 mt-0.5">${nested}</div>` : ""}
+      </div>`;
+  }
+
+  async function loadComments() {
+    try {
+      const res = await fetch(
+        `https://public.api.bsky.app/xrpc/app.bsky.feed.getPostThread?uri=${encodeURIComponent(AT_URI)}&depth=6`
+      );
+      if (!res.ok) throw new Error(`API returned ${res.status}`);
+
+      const { thread } = await res.json();
+      if (!thread || thread.$type !== "app.bsky.feed.defs#threadViewPost") {
+        throw new Error("Invalid thread response");
+      }
+
+      const { replyCount = 0, repostCount = 0, likeCount = 0 } = thread.post;
+      const replies = validReplies(thread.replies);
+      const statsHtml = formatStats(replyCount, repostCount, likeCount).join(" / ");
+      const ctaText =
+        replies.length === 0 ? "Be the first to reply on Bluesky" : "Reply on Bluesky";
+      const commentsHtml = replies
+        .sort((a, b) => (b?.post?.likeCount ?? 0) - (a?.post?.likeCount ?? 0))
+        .map((r) => renderComment(r, true))
+        .join("");
+
+      loadingEl.classList.add("hidden");
+      contentEl.classList.remove("hidden");
+      contentEl.innerHTML = `
+        ${statsHtml ? `<p class="text-fg-2 my-0">${statsHtml}</p>` : ""}
+        <p><a href="${postUrl}" target="_blank" rel="noopener noreferrer" class="bsky-reply-link text-fg-0 font-bold underline">${ctaText}</a></p>
+        ${commentsHtml ? `<div class="bsky-thread">${commentsHtml}</div>` : ""}`;
+    } catch (err) {
+      console.error("BlueskyComments:", err);
+      loadingEl.classList.add("hidden");
+      errorEl.classList.remove("hidden");
+    }
+  }
+
+  loadComments();
+</script>
+
+<style>
+  .bsky-comments h2 {
+    margin-top: 0;
+  }
+</style>
+
+<style is:global>
+  .bsky-avatar {
+    display: inline-block;
+    width: 1lh;
+    height: 1lh;
+    border-radius: 50%;
+    vertical-align: middle;
+    flex-shrink: 0;
+    object-fit: cover;
+  }
+
+  .bsky-reply-link:hover {
+    filter: invert(1);
+  }
+
+  .bsky-text-link {
+    text-decoration: underline;
+    color: var(--foreground0);
+  }
+
+  .bsky-text-link:hover {
+    filter: invert(1);
+  }
+
+  .bsky-comment p {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+</style>
