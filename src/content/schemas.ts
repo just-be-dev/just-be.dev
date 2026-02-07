@@ -6,6 +6,7 @@ export const blogSchema = z.object({
   date: z.coerce.date(),
   tags: z.array(z.string()).default([]),
   draft: z.boolean().default(false),
+  comment_id: z.string().optional(),
   code: z.string().optional(),
   slugs: z.array(z.string()).optional(),
 });

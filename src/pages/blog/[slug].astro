@@ -4,6 +4,7 @@ import FormattedDate from "@/components/FormattedDate.astro";
 import Tag from "@/components/Tag.astro";
 import Link from "@/components/Link.astro";
 import BackLink from "@/components/BackLink.astro";
+import BlueskyComments from "@/components/BlueskyComments.astro";
 import MDContent from "@/components/MDContent.astro";
 import Layout from "@/layouts/Layout.astro";
 import { Code } from "@/utils/code";
@@ -64,6 +65,8 @@ const code = post.data.code ? post.data.code.toUpperCase() : Code.fromId(post.id
     <div class="max-w-none">
       <MDContent Content={Content} components={{ a: Link }} />
     </div>
+
+    {post.data.comment_id && <BlueskyComments post={post.data.comment_id} />}
 
     <BackLink href="/blog" label="Back to blog" />
   </article>

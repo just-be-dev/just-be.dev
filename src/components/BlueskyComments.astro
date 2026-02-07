@@ -22,9 +22,7 @@ const componentId = `bsky-comments-${post}`;
 </section>
 
 <script define:vars={{ post, postUrl, componentId }}>
-  const HANDLE = "just-be.dev";
-  const AT_URI = `at://${HANDLE}/app.bsky.feed.post/${post}`;
-  const API_BASE = "https://public.api.bsky.app/xrpc";
+  const AT_URI = `at://just-be.dev/app.bsky.feed.post/${post}`;
 
   const container = document.getElementById(componentId);
   if (!container) throw new Error(`BlueskyComments: #${componentId} not found`);
@@ -42,6 +40,12 @@ const componentId = `bsky-comments-${post}`;
     [Infinity, "y"],
   ];
 
+  function esc(str) {
+    const el = document.createElement("span");
+    el.textContent = str;
+    return el.innerHTML;
+  }
+
   function formatRelativeTime(isoDate) {
     let diff = Math.floor((Date.now() - new Date(isoDate).getTime()) / 1000);
     for (const [threshold, suffix] of TIME_UNITS) {
@@ -50,234 +54,79 @@ const componentId = `bsky-comments-${post}`;
     }
   }
 
-  function sortByLikes(a, b) {
-    const aLikes = a?.post?.likeCount ?? 0;
-    const bLikes = b?.post?.likeCount ?? 0;
-    return bLikes - aLikes;
+  function formatStats(replyCount, repostCount, likeCount) {
+    const parts = [];
+    if (replyCount > 0) parts.push(`${replyCount} ${replyCount === 1 ? "reply" : "replies"}`);
+    if (repostCount > 0) parts.push(`${repostCount} ${repostCount === 1 ? "repost" : "reposts"}`);
+    if (likeCount > 0) parts.push(`${likeCount} ${likeCount === 1 ? "like" : "likes"}`);
+    return parts;
   }
 
-  function getPostText(record) {
-    if (record && typeof record === "object" && "text" in record) {
-      return record.text || "";
-    }
-    return "";
-  }
-
-  function createEl(tag, attrs, children) {
-    const el = document.createElement(tag);
-    if (attrs) {
-      for (const [key, val] of Object.entries(attrs)) {
-        if (key === "className") {
-          el.className = val;
-        } else {
-          el.setAttribute(key, val);
-        }
-      }
-    }
-    if (children !== undefined) {
-      if (typeof children === "string") {
-        el.textContent = children;
-      } else if (Array.isArray(children)) {
-        for (const child of children) {
-          if (child) el.appendChild(child);
-        }
-      } else if (children instanceof Node) {
-        el.appendChild(children);
-      }
-    }
-    return el;
+  function validReplies(replies) {
+    return (replies || []).filter((r) => r?.$type === "app.bsky.feed.defs#threadViewPost");
   }
 
   function renderComment(reply, isTopLevel) {
-    const post = reply.post;
-    if (!post) return null;
+    const { post } = reply;
+    if (!post) return "";
 
-    const author = post.author || {};
-    const avatar = author.avatar;
-    const displayName = author.displayName || author.handle || "Unknown";
-    const handle = author.handle || "";
-    const text = getPostText(post.record);
-    const indexedAt = post.indexedAt || "";
-    const replyCount = post.replyCount ?? 0;
-    const repostCount = post.repostCount ?? 0;
-    const likeCount = post.likeCount ?? 0;
+    const { author = {}, indexedAt = "", replyCount = 0, repostCount = 0, likeCount = 0 } = post;
+    const text = post.record?.text || "";
+    const rkey = (post.uri || "").split("/").pop();
+    const bskyUrl = `https://bsky.app/profile/${esc(author.did)}/post/${esc(rkey)}`;
+    const profileUrl = `https://bsky.app/profile/${esc(author.did)}`;
+    const stats = formatStats(replyCount, repostCount, likeCount)
+      .map((s) => `<span>${s}</span>`)
+      .join("");
+    const nested = validReplies(reply.replies)
+      .map((r) => renderComment(r, false))
+      .join("");
 
-    // Build the post URI for linking to Bluesky
-    const postUri = post.uri || "";
-    const rkey = postUri.split("/").pop();
-    const did = author.did || "";
-    const bskyUrl = `https://bsky.app/profile/${did}/post/${rkey}`;
-    const profileUrl = `https://bsky.app/profile/${did}`;
-
-    // Comment wrapper
-    const commentEl = createEl("div", {
-      className: `bsky-comment ${isTopLevel ? "mb-1" : ""}`,
-    });
-
-    // Header: avatar + name + handle + time
-    const header = createEl("div", {
-      className: "flex items-baseline gap-1 text-sm",
-    });
-
-    if (avatar) {
-      const avatarImg = createEl("img", {
-        src: avatar,
-        alt: "",
-        className: "bsky-avatar",
-        loading: "lazy",
-      });
-      header.appendChild(avatarImg);
-    }
-
-    const nameLink = createEl(
-      "a",
-      {
-        href: profileUrl,
-        target: "_blank",
-        rel: "noopener noreferrer",
-        className: "font-bold text-fg-0 no-underline",
-      },
-      displayName
-    );
-    header.appendChild(nameLink);
-
-    header.appendChild(createEl("span", { className: "text-fg-2" }, `@${handle}`));
-    header.appendChild(createEl("span", { className: "text-fg-2" }, formatRelativeTime(indexedAt)));
-
-    commentEl.appendChild(header);
-
-    // Body
-    if (text) {
-      const body = createEl("p", { className: "my-0 whitespace-pre-wrap" }, text);
-      commentEl.appendChild(body);
-    }
-
-    // Stats line
-    const stats = createEl("div", {
-      className: "flex gap-2 text-fg-2 text-sm",
-    });
-
-    if (replyCount > 0)
-      stats.appendChild(
-        createEl("span", {}, `${replyCount} ${replyCount === 1 ? "reply" : "replies"}`)
-      );
-    if (repostCount > 0)
-      stats.appendChild(
-        createEl("span", {}, `${repostCount} ${repostCount === 1 ? "repost" : "reposts"}`)
-      );
-    if (likeCount > 0)
-      stats.appendChild(createEl("span", {}, `${likeCount} ${likeCount === 1 ? "like" : "likes"}`));
-
-    const replyLink = createEl(
-      "a",
-      {
-        href: bskyUrl,
-        target: "_blank",
-        rel: "noopener noreferrer",
-        className: "bsky-reply-link text-fg-2",
-      },
-      "reply"
-    );
-    stats.appendChild(replyLink);
-    commentEl.appendChild(stats);
-
-    // Nested replies
-    const replies = reply.replies;
-    if (replies && replies.length > 0) {
-      const nested = createEl("div", {
-        className: "bsky-nested border-l-2 border-fg-2 pl-2 mt-0.5",
-      });
-      // Nested replies sorted chronologically
-      const validReplies = replies.filter(
-        (r) => r && r.$type === "app.bsky.feed.defs#threadViewPost"
-      );
-      for (const child of validReplies) {
-        const childEl = renderComment(child, false);
-        if (childEl) nested.appendChild(childEl);
-      }
-      commentEl.appendChild(nested);
-    }
-
-    return commentEl;
+    return `
+      <div class="bsky-comment ${isTopLevel ? "mb-1" : ""}">
+        <div class="flex items-baseline gap-1 text-sm">
+          ${author.avatar ? `<img src="${esc(author.avatar)}" alt="" class="bsky-avatar" loading="lazy">` : ""}
+          <a href="${profileUrl}" target="_blank" rel="noopener noreferrer" class="font-bold text-fg-0 no-underline">${esc(author.displayName || author.handle || "Unknown")}</a>
+          <span class="text-fg-2">@${esc(author.handle || "")}</span>
+          <span class="text-fg-2">${formatRelativeTime(indexedAt)}</span>
+        </div>
+        ${text ? `<p class="my-0 whitespace-pre-wrap">${esc(text)}</p>` : ""}
+        <div class="flex gap-2 text-fg-2 text-sm">
+          ${stats}
+          <a href="${bskyUrl}" target="_blank" rel="noopener noreferrer" class="bsky-reply-link text-fg-2">reply</a>
+        </div>
+        ${nested ? `<div class="bsky-nested border-l-2 border-fg-2 pl-2 mt-0.5">${nested}</div>` : ""}
+      </div>`;
   }
 
   async function loadComments() {
     try {
-      const url = `${API_BASE}/app.bsky.feed.getPostThread?uri=${encodeURIComponent(AT_URI)}&depth=6`;
-      const res = await fetch(url);
+      const res = await fetch(
+        `https://public.api.bsky.app/xrpc/app.bsky.feed.getPostThread?uri=${encodeURIComponent(AT_URI)}&depth=6`
+      );
       if (!res.ok) throw new Error(`API returned ${res.status}`);
 
-      const data = await res.json();
-      const thread = data.thread;
-
+      const { thread } = await res.json();
       if (!thread || thread.$type !== "app.bsky.feed.defs#threadViewPost") {
         throw new Error("Invalid thread response");
       }
 
+      const { replyCount = 0, repostCount = 0, likeCount = 0 } = thread.post;
+      const replies = validReplies(thread.replies);
+      const statsHtml = formatStats(replyCount, repostCount, likeCount).join(" / ");
+      const ctaText =
+        replies.length === 0 ? "Be the first to reply on Bluesky" : "Reply on Bluesky";
+      const commentsHtml = replies
+        .sort((a, b) => (b?.post?.likeCount ?? 0) - (a?.post?.likeCount ?? 0))
+        .map((r) => renderComment(r, true))
+        .join("");
+
       loadingEl.classList.add("hidden");
       contentEl.classList.remove("hidden");
-
-      const rootPost = thread.post;
-      const replyCount = rootPost?.replyCount ?? 0;
-      const repostCount = rootPost?.repostCount ?? 0;
-      const likeCount = rootPost?.likeCount ?? 0;
-
-      // Post stats summary
-      const statsLine = createEl("p", { className: "text-fg-2 my-0" });
-      const parts = [];
-      if (replyCount > 0) parts.push(`${replyCount} ${replyCount === 1 ? "reply" : "replies"}`);
-      if (repostCount > 0) parts.push(`${repostCount} ${repostCount === 1 ? "repost" : "reposts"}`);
-      if (likeCount > 0) parts.push(`${likeCount} ${likeCount === 1 ? "like" : "likes"}`);
-      if (parts.length > 0) {
-        statsLine.textContent = parts.join(" / ");
-        contentEl.appendChild(statsLine);
-      }
-
-      const replies = (thread.replies || []).filter(
-        (r) => r && r.$type === "app.bsky.feed.defs#threadViewPost"
-      );
-
-      if (replies.length === 0) {
-        // No replies CTA
-        const cta = createEl("p", {});
-        const ctaLink = createEl(
-          "a",
-          {
-            href: postUrl,
-            target: "_blank",
-            rel: "noopener noreferrer",
-            className: "bsky-reply-link text-fg-0 font-bold underline",
-          },
-          "Be the first to reply on Bluesky"
-        );
-        cta.appendChild(ctaLink);
-        contentEl.appendChild(cta);
-        return;
-      }
-
-      // Reply CTA
-      const cta = createEl("p", {});
-      const ctaLink = createEl(
-        "a",
-        {
-          href: postUrl,
-          target: "_blank",
-          rel: "noopener noreferrer",
-          className: "bsky-reply-link text-fg-0 font-bold underline",
-        },
-        "Reply on Bluesky"
-      );
-      cta.appendChild(ctaLink);
-      contentEl.appendChild(cta);
-
-      // Render top-level replies sorted by likes
-      replies.sort(sortByLikes);
-      const commentsContainer = createEl("div", { className: "bsky-thread" });
-      for (const reply of replies) {
-        const el = renderComment(reply, true);
-        if (el) commentsContainer.appendChild(el);
-      }
-      contentEl.appendChild(commentsContainer);
+      contentEl.innerHTML = `
+        ${statsHtml ? `<p class="text-fg-2 my-0">${statsHtml}</p>` : ""}
+        <p><a href="${postUrl}" target="_blank" rel="noopener noreferrer" class="bsky-reply-link text-fg-0 font-bold underline">${ctaText}</a></p>
+        ${commentsHtml ? `<div class="bsky-thread">${commentsHtml}</div>` : ""}`;
     } catch (err) {
       console.error("BlueskyComments:", err);
       loadingEl.classList.add("hidden");
