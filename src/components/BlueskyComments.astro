@@ -1,0 +1,312 @@
+---
+interface Props {
+  post: string;
+}
+
+const { post } = Astro.props;
+const postUrl = `https://bsky.app/profile/just-be.dev/post/${post}`;
+const componentId = `bsky-comments-${post}`;
+---
+
+<section
+  id={componentId}
+  class="bsky-comments border-2 border-fg-2 px-2 py-1 mt-2lh"
+  aria-label="Comments"
+>
+  <h2 class="font-bold mb-0">Comments</h2>
+  <p class="bsky-loading text-fg-2">Loading comments...</p>
+  <div class="bsky-error hidden text-fg-2">
+    <p>Could not load comments.</p>
+  </div>
+  <div class="bsky-content hidden"></div>
+</section>
+
+<script define:vars={{ post, postUrl, componentId }}>
+  const HANDLE = "just-be.dev";
+  const AT_URI = `at://${HANDLE}/app.bsky.feed.post/${post}`;
+  const API_BASE = "https://public.api.bsky.app/xrpc";
+
+  const container = document.getElementById(componentId);
+  if (!container) throw new Error(`BlueskyComments: #${componentId} not found`);
+
+  const loadingEl = container.querySelector(".bsky-loading");
+  const errorEl = container.querySelector(".bsky-error");
+  const contentEl = container.querySelector(".bsky-content");
+
+  const TIME_UNITS = [
+    [60, "s"],
+    [60, "m"],
+    [24, "h"],
+    [30, "d"],
+    [12, "mo"],
+    [Infinity, "y"],
+  ];
+
+  function formatRelativeTime(isoDate) {
+    let diff = Math.floor((Date.now() - new Date(isoDate).getTime()) / 1000);
+    for (const [threshold, suffix] of TIME_UNITS) {
+      if (diff < threshold) return `${Math.floor(diff)}${suffix}`;
+      diff /= threshold;
+    }
+  }
+
+  function sortByLikes(a, b) {
+    const aLikes = a?.post?.likeCount ?? 0;
+    const bLikes = b?.post?.likeCount ?? 0;
+    return bLikes - aLikes;
+  }
+
+  function getPostText(record) {
+    if (record && typeof record === "object" && "text" in record) {
+      return record.text || "";
+    }
+    return "";
+  }
+
+  function createEl(tag, attrs, children) {
+    const el = document.createElement(tag);
+    if (attrs) {
+      for (const [key, val] of Object.entries(attrs)) {
+        if (key === "className") {
+          el.className = val;
+        } else {
+          el.setAttribute(key, val);
+        }
+      }
+    }
+    if (children !== undefined) {
+      if (typeof children === "string") {
+        el.textContent = children;
+      } else if (Array.isArray(children)) {
+        for (const child of children) {
+          if (child) el.appendChild(child);
+        }
+      } else if (children instanceof Node) {
+        el.appendChild(children);
+      }
+    }
+    return el;
+  }
+
+  function renderComment(reply, isTopLevel) {
+    const post = reply.post;
+    if (!post) return null;
+
+    const author = post.author || {};
+    const avatar = author.avatar;
+    const displayName = author.displayName || author.handle || "Unknown";
+    const handle = author.handle || "";
+    const text = getPostText(post.record);
+    const indexedAt = post.indexedAt || "";
+    const replyCount = post.replyCount ?? 0;
+    const repostCount = post.repostCount ?? 0;
+    const likeCount = post.likeCount ?? 0;
+
+    // Build the post URI for linking to Bluesky
+    const postUri = post.uri || "";
+    const rkey = postUri.split("/").pop();
+    const did = author.did || "";
+    const bskyUrl = `https://bsky.app/profile/${did}/post/${rkey}`;
+    const profileUrl = `https://bsky.app/profile/${did}`;
+
+    // Comment wrapper
+    const commentEl = createEl("div", {
+      className: `bsky-comment ${isTopLevel ? "mb-1" : ""}`,
+    });
+
+    // Header: avatar + name + handle + time
+    const header = createEl("div", {
+      className: "flex items-baseline gap-1 text-sm",
+    });
+
+    if (avatar) {
+      const avatarImg = createEl("img", {
+        src: avatar,
+        alt: "",
+        className: "bsky-avatar",
+        loading: "lazy",
+      });
+      header.appendChild(avatarImg);
+    }
+
+    const nameLink = createEl(
+      "a",
+      {
+        href: profileUrl,
+        target: "_blank",
+        rel: "noopener noreferrer",
+        className: "font-bold text-fg-0 no-underline",
+      },
+      displayName
+    );
+    header.appendChild(nameLink);
+
+    header.appendChild(createEl("span", { className: "text-fg-2" }, `@${handle}`));
+    header.appendChild(createEl("span", { className: "text-fg-2" }, formatRelativeTime(indexedAt)));
+
+    commentEl.appendChild(header);
+
+    // Body
+    if (text) {
+      const body = createEl("p", { className: "my-0 whitespace-pre-wrap" }, text);
+      commentEl.appendChild(body);
+    }
+
+    // Stats line
+    const stats = createEl("div", {
+      className: "flex gap-2 text-fg-2 text-sm",
+    });
+
+    if (replyCount > 0)
+      stats.appendChild(
+        createEl("span", {}, `${replyCount} ${replyCount === 1 ? "reply" : "replies"}`)
+      );
+    if (repostCount > 0)
+      stats.appendChild(
+        createEl("span", {}, `${repostCount} ${repostCount === 1 ? "repost" : "reposts"}`)
+      );
+    if (likeCount > 0)
+      stats.appendChild(createEl("span", {}, `${likeCount} ${likeCount === 1 ? "like" : "likes"}`));
+
+    const replyLink = createEl(
+      "a",
+      {
+        href: bskyUrl,
+        target: "_blank",
+        rel: "noopener noreferrer",
+        className: "bsky-reply-link text-fg-2",
+      },
+      "reply"
+    );
+    stats.appendChild(replyLink);
+    commentEl.appendChild(stats);
+
+    // Nested replies
+    const replies = reply.replies;
+    if (replies && replies.length > 0) {
+      const nested = createEl("div", {
+        className: "bsky-nested border-l-2 border-fg-2 pl-2 mt-0.5",
+      });
+      // Nested replies sorted chronologically
+      const validReplies = replies.filter(
+        (r) => r && r.$type === "app.bsky.feed.defs#threadViewPost"
+      );
+      for (const child of validReplies) {
+        const childEl = renderComment(child, false);
+        if (childEl) nested.appendChild(childEl);
+      }
+      commentEl.appendChild(nested);
+    }
+
+    return commentEl;
+  }
+
+  async function loadComments() {
+    try {
+      const url = `${API_BASE}/app.bsky.feed.getPostThread?uri=${encodeURIComponent(AT_URI)}&depth=6`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`API returned ${res.status}`);
+
+      const data = await res.json();
+      const thread = data.thread;
+
+      if (!thread || thread.$type !== "app.bsky.feed.defs#threadViewPost") {
+        throw new Error("Invalid thread response");
+      }
+
+      loadingEl.classList.add("hidden");
+      contentEl.classList.remove("hidden");
+
+      const rootPost = thread.post;
+      const replyCount = rootPost?.replyCount ?? 0;
+      const repostCount = rootPost?.repostCount ?? 0;
+      const likeCount = rootPost?.likeCount ?? 0;
+
+      // Post stats summary
+      const statsLine = createEl("p", { className: "text-fg-2 my-0" });
+      const parts = [];
+      if (replyCount > 0) parts.push(`${replyCount} ${replyCount === 1 ? "reply" : "replies"}`);
+      if (repostCount > 0) parts.push(`${repostCount} ${repostCount === 1 ? "repost" : "reposts"}`);
+      if (likeCount > 0) parts.push(`${likeCount} ${likeCount === 1 ? "like" : "likes"}`);
+      if (parts.length > 0) {
+        statsLine.textContent = parts.join(" / ");
+        contentEl.appendChild(statsLine);
+      }
+
+      const replies = (thread.replies || []).filter(
+        (r) => r && r.$type === "app.bsky.feed.defs#threadViewPost"
+      );
+
+      if (replies.length === 0) {
+        // No replies CTA
+        const cta = createEl("p", {});
+        const ctaLink = createEl(
+          "a",
+          {
+            href: postUrl,
+            target: "_blank",
+            rel: "noopener noreferrer",
+            className: "bsky-reply-link text-fg-0 font-bold underline",
+          },
+          "Be the first to reply on Bluesky"
+        );
+        cta.appendChild(ctaLink);
+        contentEl.appendChild(cta);
+        return;
+      }
+
+      // Reply CTA
+      const cta = createEl("p", {});
+      const ctaLink = createEl(
+        "a",
+        {
+          href: postUrl,
+          target: "_blank",
+          rel: "noopener noreferrer",
+          className: "bsky-reply-link text-fg-0 font-bold underline",
+        },
+        "Reply on Bluesky"
+      );
+      cta.appendChild(ctaLink);
+      contentEl.appendChild(cta);
+
+      // Render top-level replies sorted by likes
+      replies.sort(sortByLikes);
+      const commentsContainer = createEl("div", { className: "bsky-thread" });
+      for (const reply of replies) {
+        const el = renderComment(reply, true);
+        if (el) commentsContainer.appendChild(el);
+      }
+      contentEl.appendChild(commentsContainer);
+    } catch (err) {
+      console.error("BlueskyComments:", err);
+      loadingEl.classList.add("hidden");
+      errorEl.classList.remove("hidden");
+    }
+  }
+
+  loadComments();
+</script>
+
+<style>
+  .bsky-comments h2 {
+    margin-top: 0;
+  }
+
+  .bsky-avatar {
+    width: 1.5em;
+    height: 1.5em;
+    border-radius: 50%;
+    vertical-align: middle;
+    flex-shrink: 0;
+  }
+
+  .bsky-reply-link:hover {
+    filter: invert(1);
+  }
+
+  .bsky-comment p {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+</style>
