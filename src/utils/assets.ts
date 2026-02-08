@@ -1,52 +1,14 @@
-import { getEntry } from "astro:content";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 
 const ASSETS_CDN = "https://assets.just-be.dev";
 
-// Note: No longer need getImageManifest since we use getEntry directly
-
 /**
- * Construct R2 URL from hash and extension
- */
-function buildR2Url(hash: string, ext: string): string {
-  return `${ASSETS_CDN}/${hash}.${ext}`;
-}
-
-/**
- * Download an asset from R2 to local public/assets directory (background, non-blocking)
- * Used during development to incrementally populate local assets.
- *
- * @param url - R2 URL to download from
- * @param localPath - Absolute path to save to
- */
-function downloadAssetInBackground(url: string, localPath: string): void {
-  // Fire and forget - don't block the build
-  fetch(url)
-    .then(async (response) => {
-      if (!response.ok) {
-        console.warn(`[assets] Failed to download ${url}: ${response.status}`);
-        return;
-      }
-      const buffer = await response.arrayBuffer();
-      const dir = dirname(localPath);
-      mkdirSync(dir, { recursive: true });
-      writeFileSync(localPath, Buffer.from(buffer));
-      console.log(`[assets] Downloaded ${url} → ${localPath}`);
-    })
-    .catch((error) => {
-      console.warn(`[assets] Download error for ${url}:`, error.message);
-    });
-}
-
-/**
- * Resolve an asset URL with local-first fallback and auto-download
+ * Resolve an asset URL with local-first fallback
  *
  * Priority:
  * 1. If file exists locally in public/assets/, use /assets/{path}
- * 2. Otherwise, use R2 URL from manifest
- *    - If in dev mode, kick off background download to public/assets/
- * 3. If not in manifest, return null
+ * 2. Otherwise, use CDN URL
  *
  * @param path - Path relative to public/assets (e.g., "talks/codegen-in-rust/slide-1.png", "talks/codegen-in-rust/audio.m4a")
  * @returns URL to use for the asset
@@ -59,30 +21,8 @@ export async function resolveAssetUrl(path: string): Promise<string | null> {
     return `/assets/${path}`;
   }
 
-  // Get metadata from manifest (using path as entry ID) and construct R2 URL
-  const entry = await getEntry("assets", path);
-  const metadata = entry?.data;
-
-  if (!metadata) {
-    return null;
-  }
-
-  const r2Url = buildR2Url(metadata.hash, metadata.ext);
-
-  // In development, download asset in background for next time
-  // Check for dev mode: astro dev sets import.meta.env.DEV
-  const isDev = import.meta.env?.DEV ?? process.env.NODE_ENV !== "production";
-  if (isDev) {
-    downloadAssetInBackground(r2Url, localPath);
-  }
-
-  // Return R2 URL immediately (don't wait for download)
-  return r2Url;
-}
-
-export async function getAssetMetadata(path: string) {
-  const entry = await getEntry("assets", path);
-  return entry?.data ?? null;
+  // Otherwise use CDN URL with original path (no hashing)
+  return `${ASSETS_CDN}/${path}`;
 }
 
 /**
@@ -99,4 +39,12 @@ export async function resolveSlideImageUrl(
   const normalizedBase = basePath.startsWith("/") ? basePath.slice(1) : basePath;
   const fullPath = `${normalizedBase}/${filename}`;
   return resolveAssetUrl(fullPath);
+}
+
+/**
+ * Get asset metadata - deprecated, returns null
+ * @deprecated Assets no longer use content-addressable storage with manifests
+ */
+export async function getAssetMetadata(_path: string) {
+  return null;
 }

@@ -48,13 +48,18 @@ run = "bun test"
 [tasks.gen-codes]
 run = "bun scripts/gen-codes.ts"
 
-[tasks.upload-assets]
-run = "bun scripts/upload-assets.ts"
-description = "Upload assets (images, audio) to R2 and update manifest"
+[tasks."deploy:subdomains"]
+run = "bunx @just-be/deploy"
+description = "Deploy subdomains (assets, redirects, etc.)"
 
-[tasks.deploy]
+[tasks."deploy:main"]
 run = "wrangler deploy"
 depends = ["build"]
+description = "Deploy main site to just-be.dev"
+
+[tasks.deploy]
+depends = ["deploy:main", "deploy:subdomains"]
+description = "Deploy main site and all subdomains"
 
 [tasks."deploy:wildcard"]
 run = "cd services/wildcard && bun run deploy"

@@ -1,5 +1,11 @@
 {
+  "$schema": "./packages/deploy/schema.json",
   "rules": [
+    {
+      "subdomain": "assets",
+      "type": "static",
+      "dir": "./public/assets"
+    },
     {
       "subdomain": "git",
       "type": "redirect",
