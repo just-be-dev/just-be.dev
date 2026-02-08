@@ -97,6 +97,7 @@ const RouteRuleSchema = z.discriminatedUnion("type", [
 ]);
 
 export const DeployConfigSchema = z.object({
+  $schema: z.string().optional(),
   rules: z.array(RouteRuleSchema).min(1, "At least one rule is required"),
 });
 
