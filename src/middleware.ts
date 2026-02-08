@@ -1,9 +1,61 @@
 import { defineMiddleware } from "astro:middleware";
-import { getCollection } from "astro:content";
+import { getCollection, getEntry } from "astro:content";
+
+const ASSETS_CDN = "https://assets.just-be.dev";
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const url = new URL(context.request.url);
   const pathSegments = url.pathname.split("/").filter(Boolean);
+
+  // Proxy /assets/* requests to R2 CDN to avoid CORS issues
+  if (pathSegments[0] === "assets") {
+    // Extract path relative to /assets/
+    const assetPath = pathSegments.slice(1).join("/");
+
+    // Try to get asset metadata from manifest
+    const entry = await getEntry("assets", assetPath);
+
+    if (entry?.data) {
+      // Build R2 URL from hash and extension
+      const r2Url = `${ASSETS_CDN}/${entry.data.hash}.${entry.data.ext}`;
+
+      try {
+        // Fetch from R2 and proxy the response (don't follow redirects)
+        const response = await fetch(r2Url, { redirect: "manual" });
+
+        // Check for redirects (3xx status codes) - indicates R2 bucket misconfiguration
+        if (response.status >= 300 && response.status < 400) {
+          console.error(
+            `[middleware] R2 bucket misconfigured - got ${response.status} redirect for ${assetPath}. ` +
+              `Check your R2 custom domain setup for assets.just-be.dev`
+          );
+          // Fall through to let static file handler or 404 take over
+        } else if (response.ok) {
+          // Read the response body as arrayBuffer to properly proxy it
+          const body = await response.arrayBuffer();
+
+          // Create new headers with proper content type and caching
+          const headers = new Headers();
+          headers.set(
+            "Content-Type",
+            response.headers.get("Content-Type") || "application/octet-stream"
+          );
+          headers.set("Cache-Control", "public, max-age=31536000, immutable");
+          headers.set("Content-Length", body.byteLength.toString());
+
+          return new Response(body, {
+            status: 200,
+            headers,
+          });
+        }
+      } catch (error) {
+        console.error(`[middleware] Failed to proxy asset ${assetPath}:`, error);
+      }
+    }
+
+    // If asset not found in manifest or fetch failed, continue to next middleware
+    // This allows local files in public/assets to be served normally
+  }
 
   // Handle redirects from redirects collection
   const redirects = await getCollection("redirects");

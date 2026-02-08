@@ -40,11 +40,11 @@ function downloadAssetInBackground(url: string, localPath: string): void {
 }
 
 /**
- * Resolve an asset URL with local-first fallback and auto-download
+ * Resolve an asset URL with local-first fallback
  *
  * Priority:
  * 1. If file exists locally in public/assets/, use /assets/{path}
- * 2. Otherwise, use R2 URL from manifest
+ * 2. If in manifest, use /assets/{path} (middleware will proxy to R2)
  *    - If in dev mode, kick off background download to public/assets/
  * 3. If not in manifest, return null
  *
@@ -59,7 +59,7 @@ export async function resolveAssetUrl(path: string): Promise<string | null> {
     return `/assets/${path}`;
   }
 
-  // Get metadata from manifest (using path as entry ID) and construct R2 URL
+  // Get metadata from manifest (using path as entry ID)
   const entry = await getEntry("assets", path);
   const metadata = entry?.data;
 
@@ -67,17 +67,16 @@ export async function resolveAssetUrl(path: string): Promise<string | null> {
     return null;
   }
 
-  const r2Url = buildR2Url(metadata.hash, metadata.ext);
-
   // In development, download asset in background for next time
   // Check for dev mode: astro dev sets import.meta.env.DEV
   const isDev = import.meta.env?.DEV ?? process.env.NODE_ENV !== "production";
   if (isDev) {
+    const r2Url = buildR2Url(metadata.hash, metadata.ext);
     downloadAssetInBackground(r2Url, localPath);
   }
 
-  // Return R2 URL immediately (don't wait for download)
-  return r2Url;
+  // Return /assets/{path} - middleware will proxy to R2 if needed
+  return `/assets/${path}`;
 }
 
 export async function getAssetMetadata(path: string) {
