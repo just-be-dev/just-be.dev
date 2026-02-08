@@ -47,6 +47,7 @@ import { readdir, stat, access } from "fs/promises";
 import { join, relative, resolve } from "path";
 import { intro, outro, spinner } from "@clack/prompts";
 import { z } from "zod";
+import { createHash } from "crypto";
 import packageJson from "./package.json" with { type: "json" };
 import {
   StaticConfigSchema,
@@ -214,6 +215,61 @@ function getContentType(filePath: string): string | null {
 }
 
 /**
+ * Compute MD5 hash of a file
+ */
+async function computeFileMD5(filePath: string): Promise<string> {
+  const file = Bun.file(filePath);
+  const buffer = await file.arrayBuffer();
+  const hash = createHash("md5");
+  hash.update(new Uint8Array(buffer));
+  return hash.digest("hex");
+}
+
+/**
+ * Check if a file needs to be uploaded by comparing local MD5 with remote ETag
+ * Returns true if file should be uploaded (missing or different content)
+ */
+async function shouldUploadFile(
+  localPath: string,
+  r2Key: string,
+  subdomain: string
+): Promise<boolean> {
+  try {
+    // Compute local file hash
+    const localHash = await computeFileMD5(localPath);
+
+    // Make HEAD request to check remote file (don't follow redirects)
+    const url = `https://${subdomain}.just-be.dev/${r2Key.replace(`${subdomain}/`, "")}`;
+    const response = await fetch(url, {
+      method: "HEAD",
+      redirect: "manual",
+    });
+
+    // If file doesn't exist (4xx/5xx), upload it
+    if (!response.ok) {
+      return true;
+    }
+
+    // Get ETag from response (remove quotes if present)
+    const etag = response.headers.get("etag")?.replace(/"/g, "");
+
+    // If no ETag or ETag doesn't match local hash, upload
+    if (!etag || etag !== localHash) {
+      return true;
+    }
+
+    // File exists with same content, skip upload
+    return false;
+  } catch (error) {
+    // On error, default to uploading
+    if (DEBUG) {
+      console.error(`\nError checking if upload needed for ${localPath}:`, error);
+    }
+    return true;
+  }
+}
+
+/**
  * Upload a file to R2
  */
 async function uploadToR2(localPath: string, r2Key: string): Promise<boolean> {
@@ -377,11 +433,22 @@ async function deployStaticRule(rule: StaticRule, s: ReturnType<typeof spinner>)
 
   // Upload files to R2
   let uploadCount = 0;
+  let skippedCount = 0;
   const failedUploads: string[] = [];
 
   for (const filePath of filePaths) {
     const relativePath = relative(rule.dir, filePath);
     const r2Key = `${rule.subdomain}/${relativePath}`;
+
+    // Check if upload is needed
+    s.start(`Checking ${relativePath}`);
+    const needsUpload = await shouldUploadFile(filePath, r2Key, rule.subdomain);
+
+    if (!needsUpload) {
+      skippedCount++;
+      s.stop(`Skipped ${relativePath} (unchanged)`);
+      continue;
+    }
 
     s.start(`Uploading ${relativePath}`);
     const success = await uploadToR2(filePath, r2Key);
@@ -399,7 +466,7 @@ async function deployStaticRule(rule: StaticRule, s: ReturnType<typeof spinner>)
     throw new Error(`Failed to upload ${failedUploads.length} file(s)`);
   }
 
-  console.log(`✓ Uploaded ${uploadCount} files to R2`);
+  console.log(`✓ Uploaded ${uploadCount} files, skipped ${skippedCount} unchanged files`);
 
   // Create KV entry (path is derived from subdomain at runtime)
   const routeConfig: RouteConfig = {
