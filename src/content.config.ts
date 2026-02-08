@@ -10,7 +10,6 @@ import {
   researchSchema,
   talksSchema,
   pagesSchema,
-  assetsSchema,
   urlsSchema,
   redirectsSchema,
   redirectsFileSchema,
@@ -45,30 +44,6 @@ const devtools = defineCollection({
   loader: feedLoader({
     url: "https://www.devtools.fm/rss.xml",
   }),
-});
-
-const assets = defineCollection({
-  loader: {
-    name: "asset-manifest-loader",
-    load: ({ store, logger }) => {
-      logger.info("Loading asset manifest");
-
-      const manifestPath = join(process.cwd(), "src/content/manifest.json");
-      const manifestContent = readFileSync(manifestPath, "utf-8");
-      const manifest = JSON.parse(manifestContent);
-
-      // Transform {assets: {path: {metadata}}} to array of {id, ...metadata}
-      for (const [path, metadata] of Object.entries(manifest.assets)) {
-        store.set({
-          id: path,
-          data: metadata,
-        });
-      }
-
-      logger.info(`Loaded ${Object.keys(manifest.assets).length} assets`);
-    },
-  },
-  schema: assetsSchema,
 });
 
 const urls = defineCollection({
@@ -134,7 +109,6 @@ export const collections = {
   pages,
   devtools,
   talks,
-  assets,
   urls,
   redirects,
 };

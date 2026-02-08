@@ -47,6 +47,7 @@ import { readdir, stat, access } from "fs/promises";
 import { join, relative, resolve } from "path";
 import { intro, outro, spinner } from "@clack/prompts";
 import { z } from "zod";
+import { createHash } from "crypto";
 import packageJson from "./package.json" with { type: "json" };
 import {
   StaticConfigSchema,
@@ -176,19 +177,139 @@ async function findFiles(dir: string): Promise<string[]> {
 }
 
 /**
+ * Get content type based on file extension
+ */
+function getContentType(filePath: string): string | null {
+  const ext = filePath.toLowerCase().split(".").pop();
+  const contentTypes: Record<string, string> = {
+    // Text
+    html: "text/html",
+    css: "text/css",
+    js: "application/javascript",
+    json: "application/json",
+    xml: "application/xml",
+    txt: "text/plain",
+    // Images
+    png: "image/png",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    gif: "image/gif",
+    svg: "image/svg+xml",
+    webp: "image/webp",
+    // Audio
+    mp3: "audio/mpeg",
+    m4a: "audio/mp4",
+    wav: "audio/wav",
+    ogg: "audio/ogg",
+    aac: "audio/aac",
+    flac: "audio/flac",
+    // Video
+    mp4: "video/mp4",
+    webm: "video/webm",
+    // Fonts
+    woff: "font/woff",
+    woff2: "font/woff2",
+    ttf: "font/ttf",
+    otf: "font/otf",
+  };
+  return ext ? contentTypes[ext] || null : null;
+}
+
+/**
+ * Compute MD5 hash of a file
+ */
+async function computeFileMD5(filePath: string): Promise<string> {
+  const file = Bun.file(filePath);
+  const buffer = await file.arrayBuffer();
+  const hash = createHash("md5");
+  hash.update(new Uint8Array(buffer));
+  return hash.digest("hex");
+}
+
+/**
+ * Check if a file needs to be uploaded by comparing local MD5 with remote ETag
+ * Returns true if file should be uploaded (missing or different content)
+ */
+async function shouldUploadFile(
+  localPath: string,
+  r2Key: string,
+  subdomain: string
+): Promise<boolean> {
+  try {
+    // Compute local file hash
+    const localHash = await computeFileMD5(localPath);
+
+    // Make HEAD request to check remote file (don't follow redirects)
+    const url = `https://${subdomain}.just-be.dev/${r2Key.replace(`${subdomain}/`, "")}`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+    try {
+      const response = await fetch(url, {
+        method: "HEAD",
+        redirect: "manual",
+        signal: controller.signal,
+        headers: {
+          Connection: "close", // Ensure connection is closed
+        },
+      });
+
+      clearTimeout(timeoutId);
+
+      // If file doesn't exist (4xx/5xx), upload it
+      if (!response.ok) {
+        return true;
+      }
+
+      // Get ETag from response (remove quotes if present)
+      const etag = response.headers.get("etag")?.replace(/"/g, "");
+
+      // If no ETag or ETag doesn't match local hash, upload
+      if (!etag || etag !== localHash) {
+        return true;
+      }
+
+      // File exists with same content, skip upload
+      return false;
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      // On fetch error (timeout, network error), default to uploading
+      if (DEBUG) {
+        console.error(`\nFetch error checking ${localPath}:`, fetchError);
+      }
+      return true;
+    }
+  } catch (error) {
+    // On error, default to uploading
+    if (DEBUG) {
+      console.error(`\nError checking if upload needed for ${localPath}:`, error);
+    }
+    return true;
+  }
+}
+
+/**
  * Upload a file to R2
  */
 async function uploadToR2(localPath: string, r2Key: string): Promise<boolean> {
   try {
-    await wrangler(
+    const args = [
       "r2",
       "object",
       "put",
       `${BUCKET_NAME}/${r2Key}`,
       "--file",
       localPath,
-      "--remote"
-    );
+      "--remote",
+    ];
+
+    // Add content-type if we can determine it
+    const contentType = getContentType(localPath);
+    if (contentType) {
+      args.push("--content-type", contentType);
+    }
+
+    await wrangler(...args);
     return true;
   } catch (error) {
     if (DEBUG) {
@@ -331,11 +452,22 @@ async function deployStaticRule(rule: StaticRule, s: ReturnType<typeof spinner>)
 
   // Upload files to R2
   let uploadCount = 0;
+  let skippedCount = 0;
   const failedUploads: string[] = [];
 
   for (const filePath of filePaths) {
     const relativePath = relative(rule.dir, filePath);
     const r2Key = `${rule.subdomain}/${relativePath}`;
+
+    // Check if upload is needed
+    s.start(`Checking ${relativePath}`);
+    const needsUpload = await shouldUploadFile(filePath, r2Key, rule.subdomain);
+
+    if (!needsUpload) {
+      skippedCount++;
+      s.stop(`Skipped ${relativePath} (unchanged)`);
+      continue;
+    }
 
     s.start(`Uploading ${relativePath}`);
     const success = await uploadToR2(filePath, r2Key);
@@ -353,7 +485,7 @@ async function deployStaticRule(rule: StaticRule, s: ReturnType<typeof spinner>)
     throw new Error(`Failed to upload ${failedUploads.length} file(s)`);
   }
 
-  console.log(`✓ Uploaded ${uploadCount} files to R2`);
+  console.log(`✓ Uploaded ${uploadCount} files, skipped ${skippedCount} unchanged files`);
 
   // Create KV entry (path is derived from subdomain at runtime)
   const routeConfig: RouteConfig = {
@@ -563,8 +695,12 @@ if (import.meta.main) {
     process.exit(0);
   }
 
-  deploy().catch((error) => {
-    console.error("\n❌ Fatal error:", error);
-    process.exit(1);
-  });
+  deploy()
+    .then(() => {
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error("\n❌ Fatal error:", error);
+      process.exit(1);
+    });
 }

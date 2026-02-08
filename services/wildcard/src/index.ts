@@ -10,8 +10,69 @@ import { createR2FileLoader, createKVRouteConfigLoader, type Env } from "./adapt
 
 export type { Env };
 
+/**
+ * Add CORS headers to response if the origin is from allowed domains
+ */
+function addCorsHeaders(response: Response, request: Request): Response {
+  const origin = request.headers.get("Origin");
+
+  // Check if origin is from allowed domains
+  if (origin) {
+    const originUrl = new URL(origin);
+    const hostname = originUrl.hostname;
+
+    // Allow just-be.dev, *.just-be.dev, and *.just-be.workers.dev (for preview deployments)
+    const isAllowed =
+      hostname === "just-be.dev" ||
+      hostname.endsWith(".just-be.dev") ||
+      hostname.endsWith(".just-be.workers.dev");
+
+    if (isAllowed) {
+      const headers = new Headers(response.headers);
+      headers.set("Access-Control-Allow-Origin", origin);
+      headers.set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+      headers.set("Access-Control-Allow-Headers", "Content-Type");
+
+      return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers,
+      });
+    }
+  }
+
+  return response;
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    // Handle CORS preflight requests
+    if (request.method === "OPTIONS") {
+      const origin = request.headers.get("Origin");
+      if (origin) {
+        const originUrl = new URL(origin);
+        const hostname = originUrl.hostname;
+
+        // Allow just-be.dev, *.just-be.dev, and *.just-be.workers.dev (for preview deployments)
+        const isAllowed =
+          hostname === "just-be.dev" ||
+          hostname.endsWith(".just-be.dev") ||
+          hostname.endsWith(".just-be.workers.dev");
+
+        if (isAllowed) {
+          return new Response(null, {
+            status: 204,
+            headers: {
+              "Access-Control-Allow-Origin": origin,
+              "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+              "Access-Control-Allow-Headers": "Content-Type",
+              "Access-Control-Max-Age": "86400",
+            },
+          });
+        }
+      }
+    }
+
     const url = new URL(request.url);
     const hostname = url.hostname;
 
@@ -56,19 +117,26 @@ export default {
     const config = result.data;
 
     try {
+      let response: Response;
+
       switch (config.type) {
         case "static":
-          return await handleStatic(request, config, { fileLoader });
+          response = await handleStatic(request, config, { fileLoader });
+          break;
 
         case "redirect":
-          return await handleRedirect(request, config);
+          response = await handleRedirect(request, config);
+          break;
 
         case "rewrite":
-          return await handleRewrite(request, config);
+          response = await handleRewrite(request, config);
+          break;
 
         default:
-          return new Response("Service configuration error", { status: 500 });
+          response = new Response("Service configuration error", { status: 500 });
       }
+
+      return addCorsHeaders(response, request);
     } catch (error) {
       console.error("Handler error:", { subdomain, type: config.type, error });
       return new Response("Internal server error", { status: 500 });

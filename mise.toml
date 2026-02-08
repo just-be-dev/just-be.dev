@@ -48,16 +48,20 @@ run = "bun test"
 [tasks.gen-codes]
 run = "bun scripts/gen-codes.ts"
 
-[tasks.upload-assets]
-run = "bun scripts/upload-assets.ts"
-description = "Upload assets (images, audio) to R2 and update manifest"
+[tasks."deploy:subdomains"]
+raw = true
+depends = ["deploy:wildcard"]
+run = "bun packages/deploy/index.ts"
+description = "Deploy subdomains (assets, redirects, etc.)"
 
 [tasks.deploy]
-run = "wrangler deploy"
-depends = ["build"]
+depends = ["deploy:subdomains"]
+description = "Deploy main site and all subdomains"
 
 [tasks."deploy:wildcard"]
-run = "cd services/wildcard && bun run deploy"
+dir = "services/wildcard"
+run = "bun run deploy"
+raw = true
 description = "Deploy wildcard subdomain service"
 
 [tasks.transcribe]
