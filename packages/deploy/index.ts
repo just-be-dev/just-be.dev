@@ -175,19 +175,66 @@ async function findFiles(dir: string): Promise<string[]> {
 }
 
 /**
+ * Get content type based on file extension
+ */
+function getContentType(filePath: string): string | null {
+  const ext = filePath.toLowerCase().split(".").pop();
+  const contentTypes: Record<string, string> = {
+    // Text
+    html: "text/html",
+    css: "text/css",
+    js: "application/javascript",
+    json: "application/json",
+    xml: "application/xml",
+    txt: "text/plain",
+    // Images
+    png: "image/png",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    gif: "image/gif",
+    svg: "image/svg+xml",
+    webp: "image/webp",
+    // Audio
+    mp3: "audio/mpeg",
+    m4a: "audio/mp4",
+    wav: "audio/wav",
+    ogg: "audio/ogg",
+    aac: "audio/aac",
+    flac: "audio/flac",
+    // Video
+    mp4: "video/mp4",
+    webm: "video/webm",
+    // Fonts
+    woff: "font/woff",
+    woff2: "font/woff2",
+    ttf: "font/ttf",
+    otf: "font/otf",
+  };
+  return ext ? contentTypes[ext] || null : null;
+}
+
+/**
  * Upload a file to R2
  */
 async function uploadToR2(localPath: string, r2Key: string): Promise<boolean> {
   try {
-    await wrangler(
+    const args = [
       "r2",
       "object",
       "put",
       `${BUCKET_NAME}/${r2Key}`,
       "--file",
       localPath,
-      "--remote"
-    );
+      "--remote",
+    ];
+
+    // Add content-type if we can determine it
+    const contentType = getContentType(localPath);
+    if (contentType) {
+      args.push("--content-type", contentType);
+    }
+
+    await wrangler(...args);
     return true;
   } catch (error) {
     if (DEBUG) {
