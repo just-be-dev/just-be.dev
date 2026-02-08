@@ -78,7 +78,7 @@ function toPascalCase(str: string): string {
  */
 function convertAttributes(
   attrs: MdcAttributes | undefined,
-  fmAttrs: Record<string, unknown> | undefined
+  fmAttrs: Record<string, unknown> | undefined,
 ): MdxJsxAttribute[] {
   const result: MdxJsxAttribute[] = [];
 
@@ -383,7 +383,7 @@ export function remarkMdcToMdx() {
 
     // Filter out components that are already imported
     const componentsToImport = new Set(
-      Array.from(components).filter((comp) => !existingImports.has(comp))
+      Array.from(components).filter((comp) => !existingImports.has(comp)),
     );
 
     // Generate and insert import nodes at the beginning of the tree

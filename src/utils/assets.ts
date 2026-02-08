@@ -34,7 +34,7 @@ export async function resolveAssetUrl(path: string): Promise<string | null> {
  */
 export async function resolveSlideImageUrl(
   basePath: string,
-  filename: string
+  filename: string,
 ): Promise<string | null> {
   const normalizedBase = basePath.startsWith("/") ? basePath.slice(1) : basePath;
   const fullPath = `${normalizedBase}/${filename}`;

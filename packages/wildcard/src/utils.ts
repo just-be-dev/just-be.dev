@@ -248,10 +248,7 @@ const FETCH_TIMEOUT_MS = 5_000;
  * @param targetUrl - The target URL to proxy to
  * @returns Response from the proxied request
  */
-export async function proxyRequest(
-  request: Request,
-  targetUrl: URL
-): Promise<Response> {
+export async function proxyRequest(request: Request, targetUrl: URL): Promise<Response> {
   // Filter headers to only include safe ones (prevents header injection)
   const safeHeaders = filterSafeHeaders(request.headers);
 

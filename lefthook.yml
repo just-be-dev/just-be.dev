@@ -1,8 +1,12 @@
 pre-commit:
   parallel: true
   commands:
-    prettier:
-      glob: "*.{js,ts,jsx,tsx,astro,json,md,mdx,css,html}"
+    oxfmt:
+      glob: "*.{js,ts,jsx,tsx,json,md,mdx,css,html,yml,yaml}"
+      run: bunx oxfmt {staged_files}
+      stage_fixed: true
+    prettier-astro:
+      glob: "*.astro"
       run: bunx --bun prettier --write --list-different {staged_files}
       stage_fixed: true
     oxlint:

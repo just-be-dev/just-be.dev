@@ -166,7 +166,7 @@ export async function writeGitHubOutputs(outputs: Record<string, string | boolea
  */
 export async function publishPackage(
   packageName: string,
-  packagePath: string
+  packagePath: string,
 ): Promise<PublishResult> {
   // Get package version info
   const packageInfo = await getPackageInfo(packagePath);

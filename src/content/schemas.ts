@@ -46,7 +46,7 @@ export const talksSchema = z.object({
         z.object({
           image: z.string(),
           timestamp: z.union([z.number(), z.string()]).optional(),
-        })
+        }),
       ),
     ])
     .optional(),
@@ -83,6 +83,6 @@ export const redirectsFileSchema = z.object({
       from: z.string().startsWith("/"),
       to: z.string().url(),
       permanent: z.boolean().optional(),
-    })
+    }),
   ),
 });

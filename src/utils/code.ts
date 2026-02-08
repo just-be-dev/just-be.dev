@@ -175,7 +175,7 @@ export class Code {
    * @returns Array of path objects with code/slug params and entry props
    */
   static async getStaticPaths(
-    collection: Awaited<ReturnType<typeof import("astro:content").getCollection<any>>>
+    collection: Awaited<ReturnType<typeof import("astro:content").getCollection<any>>>,
   ) {
     return collection.map((entry) => {
       // Use code from frontmatter (entry.data.code)

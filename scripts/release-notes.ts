@@ -67,7 +67,7 @@ export function extractPRNumber(message: string): number | null {
  */
 export async function findPreviousTag(
   packageName: string,
-  currentVersion: string
+  currentVersion: string,
 ): Promise<string | null> {
   try {
     const fullPackageName = `@just-be/${packageName}`;
@@ -97,7 +97,7 @@ export async function findPreviousTag(
  */
 export async function getPRNumbersBetweenRefs(
   previousRef: string | null,
-  currentRef: string = "HEAD"
+  currentRef: string = "HEAD",
 ): Promise<number[]> {
   try {
     let range: string;
@@ -152,7 +152,7 @@ export async function fetchPRDetails(prNumbers: number[]): Promise<PRDetails[]> 
 export async function generateReleaseNotes(
   packageName: string,
   version: string,
-  githubRepo: string
+  githubRepo: string,
 ): Promise<string> {
   // Find the previous tag
   const previousTag = await findPreviousTag(packageName, version);
@@ -187,7 +187,7 @@ export async function generateReleaseNotes(
 
   for (const pr of relevantPRs) {
     lines.push(
-      `- ${pr.title} ([#${pr.number}](https://github.com/${githubRepo}/pull/${pr.number}))`
+      `- ${pr.title} ([#${pr.number}](https://github.com/${githubRepo}/pull/${pr.number}))`,
     );
   }
 
@@ -195,7 +195,7 @@ export async function generateReleaseNotes(
   lines.push("---");
   lines.push("");
   lines.push(
-    `**Full Changelog**: https://github.com/${githubRepo}/compare/${previousTag}...@just-be/${packageName}@${version}`
+    `**Full Changelog**: https://github.com/${githubRepo}/compare/${previousTag}...@just-be/${packageName}@${version}`,
   );
 
   return lines.join("\n");

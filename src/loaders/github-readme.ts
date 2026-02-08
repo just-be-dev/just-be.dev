@@ -35,7 +35,7 @@ function createRenderer(owner: string, repo: string, branch: string) {
 
     return html.replace(
       /href="[^"]*"/,
-      `href="${absoluteUrl}" target="_blank" rel="noopener noreferrer"`
+      `href="${absoluteUrl}" target="_blank" rel="noopener noreferrer"`,
     );
   };
 
@@ -76,7 +76,7 @@ export function githubReadmeLoader(): LiveLoader<ReadmeData, EntryFilter, Collec
       try {
         // Fetch list of repositories from GitHub API
         const reposResponse = await fetch(
-          `https://api.github.com/users/${owner}/repos?per_page=100&type=public`
+          `https://api.github.com/users/${owner}/repos?per_page=100&type=public`,
         );
 
         if (!reposResponse.ok) {

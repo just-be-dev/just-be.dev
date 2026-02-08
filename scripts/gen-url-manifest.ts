@@ -36,7 +36,7 @@ function processCollection(
   collection: string,
   manifest: UrlManifest,
   existingSlugToCode: Map<string, string>,
-  seenSlugsInCurrentRun: Map<string, string>
+  seenSlugsInCurrentRun: Map<string, string>,
 ): { processed: number; skipped: number; errors: number } {
   const dirPath = join(CONTENT_DIR, collection);
 
@@ -107,7 +107,7 @@ function processCollection(
         if (seenSlugsInCurrentRun.has(urlPath)) {
           const previousLocation = seenSlugsInCurrentRun.get(urlPath);
           console.error(
-            `  ❌ DUPLICATE: ${urlPath} appears in both ${previousLocation} and ${filename}`
+            `  ❌ DUPLICATE: ${urlPath} appears in both ${previousLocation} and ${filename}`,
           );
           errorCount++;
           continue;
@@ -118,7 +118,7 @@ function processCollection(
         const existingCode = existingSlugToCode.get(urlPath);
         if (existingCode && existingCode !== code) {
           console.error(
-            `  ❌ CONFLICT: ${urlPath} is already assigned to code ${existingCode}, cannot reassign to ${code}`
+            `  ❌ CONFLICT: ${urlPath} is already assigned to code ${existingCode}, cannot reassign to ${code}`,
           );
           errorCount++;
           continue;
@@ -144,7 +144,7 @@ function processCollection(
     } catch (error) {
       console.error(
         `  ❌ Error processing ${filename}:`,
-        error instanceof Error ? error.message : error
+        error instanceof Error ? error.message : error,
       );
       errorCount++;
     }
@@ -244,7 +244,7 @@ function genUrlManifest(collections: string[]) {
       collection,
       manifest,
       existingSlugToCode,
-      seenSlugsInCurrentRun
+      seenSlugsInCurrentRun,
     );
     totalProcessed += result.processed;
     totalSkipped += result.skipped;
