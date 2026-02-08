@@ -49,7 +49,7 @@ run = "bun test"
 run = "bun scripts/gen-codes.ts"
 
 [tasks."deploy:subdomains"]
-run = "bunx @just-be/deploy"
+run = "bun packages/deploy/index.ts"
 description = "Deploy subdomains (assets, redirects, etc.)"
 
 [tasks."deploy:main"]
