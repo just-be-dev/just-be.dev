@@ -7,7 +7,7 @@ import { matchPath, proxyRequest } from "../utils";
  */
 export async function handlePathRules(
   request: Request,
-  config: StaticConfig
+  config: StaticConfig,
 ): Promise<Response | null> {
   const url = new URL(request.url);
   const pathname = url.pathname;

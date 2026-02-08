@@ -190,7 +190,7 @@ function processDirectory(dir: string) {
     } catch (error) {
       console.error(
         `❌ Error processing ${filename}:`,
-        error instanceof Error ? error.message : error
+        error instanceof Error ? error.message : error,
       );
       errorCount++;
     }

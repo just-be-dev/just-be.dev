@@ -2,6 +2,24 @@
   "name": "@just-be/wildcard",
   "version": "0.6.0",
   "description": "Portable wildcard subdomain routing with pluggable storage backends",
+  "keywords": [
+    "proxy",
+    "redirect",
+    "routing",
+    "static-site",
+    "subdomain",
+    "wildcard"
+  ],
+  "license": "MIT",
+  "author": "Justin Bennett",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/just-be-dev/just-be.dev.git",
+    "directory": "packages/wildcard"
+  },
+  "files": [
+    "src"
+  ],
   "type": "module",
   "main": "./src/index.ts",
   "exports": {
@@ -10,28 +28,10 @@
     "./handlers": "./src/handlers/index.ts",
     "./types": "./src/types.ts"
   },
-  "files": [
-    "src"
-  ],
-  "keywords": [
-    "wildcard",
-    "subdomain",
-    "routing",
-    "static-site",
-    "redirect",
-    "proxy"
-  ],
-  "author": "Justin Bennett",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/just-be-dev/just-be.dev.git",
-    "directory": "packages/wildcard"
+  "publishConfig": {
+    "access": "public"
   },
   "peerDependencies": {
     "zod": "^4.0.0"
-  },
-  "publishConfig": {
-    "access": "public"
   }
 }

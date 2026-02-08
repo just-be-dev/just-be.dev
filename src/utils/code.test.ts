@@ -78,31 +78,31 @@ describe("Code.fromCode()", () => {
 
   it("should reject codes that are too short", () => {
     expect(() => Code.fromCode("B23")).toThrow(
-      "Code must be exactly 5 characters (1 kind + 4 date)"
+      "Code must be exactly 5 characters (1 kind + 4 date)",
     );
   });
 
   it("should reject codes that are too long", () => {
     expect(() => Code.fromCode("B23456")).toThrow(
-      "Code must be exactly 5 characters (1 kind + 4 date)"
+      "Code must be exactly 5 characters (1 kind + 4 date)",
     );
   });
 
   it("should reject codes with invalid kind", () => {
     expect(() => Code.fromCode("X2391")).toThrow(
-      `Invalid kind 'X'. Must be one of: ${VALID_KINDS.join(", ")}`
+      `Invalid kind 'X'. Must be one of: ${VALID_KINDS.join(", ")}`,
     );
   });
 
   it("should reject codes with non-hex characters in date portion", () => {
     expect(() => Code.fromCode("B239G")).toThrow(
-      "Date code must contain only hex characters (0-9, A-F)"
+      "Date code must contain only hex characters (0-9, A-F)",
     );
   });
 
   it("should reject codes with invalid characters", () => {
     expect(() => Code.fromCode("B239!")).toThrow(
-      "Date code must contain only hex characters (0-9, A-F)"
+      "Date code must contain only hex characters (0-9, A-F)",
     );
   });
 
@@ -148,7 +148,7 @@ describe("roundtrip", () => {
       const decodedDate = code.toDate();
       // Compare by day (ignoring time components)
       expect(decodedDate.toISOString().split("T")[0]).toBe(
-        originalDate.toISOString().split("T")[0]
+        originalDate.toISOString().split("T")[0],
       );
     }
   });

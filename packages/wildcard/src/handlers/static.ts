@@ -6,7 +6,7 @@ import { handlePathRules } from "./path-rules";
 export const handleStatic: Handler<StaticConfig, { fileLoader: FileLoader }> = async (
   request,
   config,
-  { fileLoader }
+  { fileLoader },
 ) => {
   // Check path-level redirects and rewrites first
   const pathResponse = await handlePathRules(request, config);
@@ -30,7 +30,7 @@ async function handleSpaMode(
   fileLoader: FileLoader,
   basePath: string,
   pathname: string,
-  request: Request
+  request: Request,
 ): Promise<Response> {
   // Sanitize paths to prevent directory traversal
   const sanitizedBase = sanitizePath(basePath);
@@ -79,7 +79,7 @@ async function handleStaticMode(
   basePath: string,
   pathname: string,
   request: Request,
-  fallback?: string
+  fallback?: string,
 ): Promise<Response> {
   // Sanitize paths to prevent directory traversal
   const sanitizedBase = sanitizePath(basePath);
@@ -145,7 +145,7 @@ function buildFileResponse(fileObject: FileObject, key: string, request: Request
   if (!headers.has("Content-Security-Policy")) {
     headers.set(
       "Content-Security-Policy",
-      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';"
+      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';",
     );
   }
 

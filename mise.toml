@@ -34,7 +34,16 @@ run = "astro preview"
 run = "astro"
 
 [tasks.fmt]
-run = "prettier -wl ."
+depends = ["fmt:oxfmt", "fmt:prettier"]
+description = "Format code with oxfmt and prettier (Astro files)"
+
+[tasks."fmt:oxfmt"]
+run = "oxfmt ."
+description = "Format JS/TS/JSON files with oxfmt"
+
+[tasks."fmt:prettier"]
+run = "prettier -wl '**/*.astro'"
+description = "Format Astro files with prettier"
 
 [tasks.lint]
 run = "oxlint"

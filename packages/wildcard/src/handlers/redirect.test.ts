@@ -56,10 +56,10 @@ describe("handleRedirect", () => {
       };
       const response = await handleRedirect(
         makeRequest("https://git.just-be.dev/pds?tab=readme"),
-        config
+        config,
       );
       expect(response.headers.get("location")).toBe(
-        "https://github.com/just-be-dev/pds?tab=readme"
+        "https://github.com/just-be-dev/pds?tab=readme",
       );
     });
 
@@ -90,7 +90,7 @@ describe("handleRedirect", () => {
       };
       const response = await handleRedirect(
         makeRequest("https://sub.just-be.dev/some/path"),
-        config
+        config,
       );
       expect(response.headers.get("location")).toBe("https://example.com");
     });

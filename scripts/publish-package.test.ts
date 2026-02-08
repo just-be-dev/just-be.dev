@@ -26,7 +26,7 @@ describe("publish-package", () => {
         JSON.stringify({
           name: "@test/package",
           version: "1.2.3",
-        })
+        }),
       );
 
       const info = await getPackageInfo(testPackagePath);
@@ -45,7 +45,7 @@ describe("publish-package", () => {
         JSON.stringify({
           // Missing required fields
           description: "test",
-        })
+        }),
       );
 
       await expect(getPackageInfo(testPackagePath)).rejects.toThrow();

@@ -233,7 +233,7 @@ async function computeFileMD5(filePath: string): Promise<string> {
 async function shouldUploadFile(
   localPath: string,
   r2Key: string,
-  subdomain: string
+  subdomain: string,
 ): Promise<boolean> {
   try {
     // Compute local file hash
@@ -408,7 +408,7 @@ async function createKVEntry(subdomain: string, routeConfig: RouteConfig): Promi
     KV_NAMESPACE_ID,
     subdomain,
     configJson,
-    "--remote"
+    "--remote",
   );
 }
 
@@ -506,7 +506,7 @@ async function deployStaticRule(rule: StaticRule, s: ReturnType<typeof spinner>)
  */
 async function deployRedirectRule(
   rule: RedirectRule,
-  s: ReturnType<typeof spinner>
+  s: ReturnType<typeof spinner>,
 ): Promise<void> {
   console.log(`\n🔀 Configuring redirect: ${rule.subdomain}.just-be.dev`);
   console.log(`   Target URL: ${rule.url}`);

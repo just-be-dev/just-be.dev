@@ -2,7 +2,19 @@
   "name": "@just-be/deploy",
   "version": "0.10.0",
   "description": "Deploy static sites to Cloudflare R2 with subdomain routing",
-  "type": "module",
+  "keywords": [
+    "cloudflare",
+    "deploy",
+    "r2",
+    "static-site"
+  ],
+  "license": "MIT",
+  "author": "Justin Bennett",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/just-be-dev/just-be.dev.git",
+    "directory": "packages/deploy"
+  },
   "bin": {
     "deploy": "index.ts"
   },
@@ -10,24 +22,12 @@
     "index.ts",
     "schema.json"
   ],
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "generate-schema": "bun run scripts/generate-schema.ts"
-  },
-  "keywords": [
-    "cloudflare",
-    "r2",
-    "deploy",
-    "static-site"
-  ],
-  "author": "Justin Bennett",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/just-be-dev/just-be.dev.git",
-    "directory": "packages/deploy"
-  },
-  "engines": {
-    "bun": ">=1.0.0"
   },
   "dependencies": {
     "@clack/prompts": "^0.11.0",
@@ -35,7 +35,7 @@
     "wrangler": "catalog:",
     "zod": "catalog:"
   },
-  "publishConfig": {
-    "access": "public"
+  "engines": {
+    "bun": ">=1.0.0"
   }
 }
