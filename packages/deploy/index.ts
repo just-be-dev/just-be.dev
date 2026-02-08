@@ -240,26 +240,44 @@ async function shouldUploadFile(
 
     // Make HEAD request to check remote file (don't follow redirects)
     const url = `https://${subdomain}.just-be.dev/${r2Key.replace(`${subdomain}/`, "")}`;
-    const response = await fetch(url, {
-      method: "HEAD",
-      redirect: "manual",
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
-    // If file doesn't exist (4xx/5xx), upload it
-    if (!response.ok) {
+    try {
+      const response = await fetch(url, {
+        method: "HEAD",
+        redirect: "manual",
+        signal: controller.signal,
+        headers: {
+          Connection: "close", // Ensure connection is closed
+        },
+      });
+
+      clearTimeout(timeoutId);
+
+      // If file doesn't exist (4xx/5xx), upload it
+      if (!response.ok) {
+        return true;
+      }
+
+      // Get ETag from response (remove quotes if present)
+      const etag = response.headers.get("etag")?.replace(/"/g, "");
+
+      // If no ETag or ETag doesn't match local hash, upload
+      if (!etag || etag !== localHash) {
+        return true;
+      }
+
+      // File exists with same content, skip upload
+      return false;
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      // On fetch error (timeout, network error), default to uploading
+      if (DEBUG) {
+        console.error(`\nFetch error checking ${localPath}:`, fetchError);
+      }
       return true;
     }
-
-    // Get ETag from response (remove quotes if present)
-    const etag = response.headers.get("etag")?.replace(/"/g, "");
-
-    // If no ETag or ETag doesn't match local hash, upload
-    if (!etag || etag !== localHash) {
-      return true;
-    }
-
-    // File exists with same content, skip upload
-    return false;
   } catch (error) {
     // On error, default to uploading
     if (DEBUG) {
@@ -676,8 +694,12 @@ if (import.meta.main) {
     process.exit(0);
   }
 
-  deploy().catch((error) => {
-    console.error("\n❌ Fatal error:", error);
-    process.exit(1);
-  });
+  deploy()
+    .then(() => {
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error("\n❌ Fatal error:", error);
+      process.exit(1);
+    });
 }

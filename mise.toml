@@ -49,20 +49,19 @@ run = "bun test"
 run = "bun scripts/gen-codes.ts"
 
 [tasks."deploy:subdomains"]
+raw = true
+depends = ["deploy:wildcard"]
 run = "bun packages/deploy/index.ts"
 description = "Deploy subdomains (assets, redirects, etc.)"
 
-[tasks."deploy:main"]
-run = "wrangler deploy"
-depends = ["build"]
-description = "Deploy main site to just-be.dev"
-
 [tasks.deploy]
-depends = ["deploy:main", "deploy:subdomains"]
+depends = ["deploy:subdomains"]
 description = "Deploy main site and all subdomains"
 
 [tasks."deploy:wildcard"]
-run = "cd services/wildcard && bun run deploy"
+dir = "services/wildcard"
+run = "bun run deploy"
+raw = true
 description = "Deploy wildcard subdomain service"
 
 [tasks.transcribe]
