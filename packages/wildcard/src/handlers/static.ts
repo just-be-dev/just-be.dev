@@ -22,14 +22,15 @@ export const handleStatic: Handler<StaticConfig, { fileLoader: FileLoader }> = a
   const basePath = subdomain;
 
   return spa
-    ? handleSpaMode(fileLoader, basePath, url.pathname)
-    : handleStaticMode(fileLoader, basePath, url.pathname, fallback);
+    ? handleSpaMode(fileLoader, basePath, url.pathname, request)
+    : handleStaticMode(fileLoader, basePath, url.pathname, request, fallback);
 };
 
 async function handleSpaMode(
   fileLoader: FileLoader,
   basePath: string,
-  pathname: string
+  pathname: string,
+  request: Request
 ): Promise<Response> {
   // Sanitize paths to prevent directory traversal
   const sanitizedBase = sanitizePath(basePath);
@@ -53,7 +54,7 @@ async function handleSpaMode(
     const fileObject = await fileLoader.loadFile(key);
 
     if (fileObject) {
-      return buildFileResponse(fileObject, key);
+      return buildFileResponse(fileObject, key, request);
     }
   }
 
@@ -70,13 +71,14 @@ async function handleSpaMode(
     return new Response("File not found", { status: 404 });
   }
 
-  return buildFileResponse(indexFile, indexKey);
+  return buildFileResponse(indexFile, indexKey, request);
 }
 
 async function handleStaticMode(
   fileLoader: FileLoader,
   basePath: string,
   pathname: string,
+  request: Request,
   fallback?: string
 ): Promise<Response> {
   // Sanitize paths to prevent directory traversal
@@ -99,7 +101,7 @@ async function handleStaticMode(
   const fileObject = await fileLoader.loadFile(key);
 
   if (fileObject) {
-    return buildFileResponse(fileObject, key);
+    return buildFileResponse(fileObject, key, request);
   }
 
   // Try fallback if configured
@@ -113,14 +115,14 @@ async function handleStaticMode(
     const fallbackObject = await fileLoader.loadFile(fallbackKey);
 
     if (fallbackObject) {
-      return buildFileResponse(fallbackObject, fallbackKey);
+      return buildFileResponse(fallbackObject, fallbackKey, request);
     }
   }
 
   return new Response("File not found", { status: 404 });
 }
 
-function buildFileResponse(fileObject: FileObject, key: string): Response {
+function buildFileResponse(fileObject: FileObject, key: string, request: Request): Response {
   const headers = new Headers(fileObject.headers);
 
   if (fileObject.etag) {
@@ -148,8 +150,16 @@ function buildFileResponse(fileObject: FileObject, key: string): Response {
   }
 
   // Cache control with Vary header for cache poisoning prevention
-  headers.set("Cache-Control", "public, max-age=3600");
+  headers.set("Cache-Control", "public, max-age=3600"); // 1 hour browser cache
+  headers.set("CDN-Cache-Control", "public, max-age=604800"); // 7 days edge cache
   headers.set("Vary", "Accept-Encoding");
+
+  // Handle conditional requests (If-None-Match)
+  const ifNoneMatch = request.headers.get("If-None-Match");
+  if (ifNoneMatch && fileObject.etag && ifNoneMatch === fileObject.etag) {
+    // Return 304 Not Modified with headers but no body
+    return new Response(null, { status: 304, headers });
+  }
 
   return new Response(fileObject.body, { headers });
 }
