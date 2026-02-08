@@ -52,6 +52,10 @@ run = "bun scripts/gen-codes.ts"
 run = "bun scripts/upload-assets.ts"
 description = "Upload assets (images, audio) to R2 and update manifest"
 
+[tasks.download-assets]
+run = "bun scripts/download-assets-locally.ts"
+description = "Download assets from R2 to local public/assets (for testing when R2 is misconfigured)"
+
 [tasks.deploy]
 run = "wrangler deploy"
 depends = ["build"]
