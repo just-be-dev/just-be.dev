@@ -45,7 +45,7 @@ function addCorsHeaders(response: Response, request: Request): Response {
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     // Handle CORS preflight requests
     if (request.method === "OPTIONS") {
       const origin = request.headers.get("Origin");
@@ -120,9 +120,28 @@ export default {
       let response: Response;
 
       switch (config.type) {
-        case "static":
+        case "static": {
+          // Cache API for static assets (only for GET/HEAD requests)
+          const shouldCache = request.method === "GET" || request.method === "HEAD";
+          const cache = caches.default;
+
+          if (shouldCache) {
+            // Check cache first
+            const cachedResponse = await cache.match(request);
+            if (cachedResponse) {
+              return addCorsHeaders(cachedResponse, request);
+            }
+          }
+
+          // Cache miss or non-cacheable method - handle normally
           response = await handleStatic(request, config, { fileLoader });
+
+          // Store successful responses in cache
+          if (shouldCache && response.ok) {
+            ctx.waitUntil(cache.put(request, response.clone()));
+          }
           break;
+        }
 
         case "redirect":
           response = await handleRedirect(request, config);
