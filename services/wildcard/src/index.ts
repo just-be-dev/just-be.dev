@@ -11,18 +11,23 @@ import { createR2FileLoader, createKVRouteConfigLoader, type Env } from "./adapt
 export type { Env };
 
 /**
- * Add CORS headers to response if the origin is from *.just-be.dev
+ * Add CORS headers to response if the origin is from allowed domains
  */
 function addCorsHeaders(response: Response, request: Request): Response {
   const origin = request.headers.get("Origin");
 
-  // Check if origin is from just-be.dev or any subdomain
+  // Check if origin is from allowed domains
   if (origin) {
     const originUrl = new URL(origin);
     const hostname = originUrl.hostname;
 
-    // Allow just-be.dev and any subdomain (*.just-be.dev)
-    if (hostname === "just-be.dev" || hostname.endsWith(".just-be.dev")) {
+    // Allow just-be.dev, *.just-be.dev, and *.just-be.workers.dev (for preview deployments)
+    const isAllowed =
+      hostname === "just-be.dev" ||
+      hostname.endsWith(".just-be.dev") ||
+      hostname.endsWith(".just-be.workers.dev");
+
+    if (isAllowed) {
       const headers = new Headers(response.headers);
       headers.set("Access-Control-Allow-Origin", origin);
       headers.set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
@@ -48,8 +53,13 @@ export default {
         const originUrl = new URL(origin);
         const hostname = originUrl.hostname;
 
-        // Allow just-be.dev and any subdomain
-        if (hostname === "just-be.dev" || hostname.endsWith(".just-be.dev")) {
+        // Allow just-be.dev, *.just-be.dev, and *.just-be.workers.dev (for preview deployments)
+        const isAllowed =
+          hostname === "just-be.dev" ||
+          hostname.endsWith(".just-be.dev") ||
+          hostname.endsWith(".just-be.workers.dev");
+
+        if (isAllowed) {
           return new Response(null, {
             status: 204,
             headers: {
