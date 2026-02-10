@@ -2,3 +2,8 @@ redirects:
   - from: /chat
     to: https://savvycal.com/just-be/chat
     permanent: true
+
+  - from: /git
+    to: https://github.com/just-be-dev
+    permanent: true
+    preservePath: true
