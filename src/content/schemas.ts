@@ -74,6 +74,7 @@ export const urlsSchema = z.object({
 export const redirectsSchema = z.object({
   to: z.string().url(),
   permanent: z.boolean(),
+  preservePath: z.boolean().optional(),
 });
 
 // Schema for the redirects YAML file structure
@@ -83,6 +84,7 @@ export const redirectsFileSchema = z.object({
       from: z.string().startsWith("/"),
       to: z.string().url(),
       permanent: z.boolean().optional(),
+      preservePath: z.boolean().optional(),
     }),
   ),
 });

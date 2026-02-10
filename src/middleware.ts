@@ -7,7 +7,23 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   // Handle redirects from redirects collection
   const redirects = await getCollection("redirects");
-  const redirect = redirects.find((r) => r.id === url.pathname);
+
+  // First try exact match
+  let redirect = redirects.find((r) => r.id === url.pathname);
+
+  // If no exact match, try prefix matches with preservePath
+  if (!redirect) {
+    for (const r of redirects) {
+      if (r.data.preservePath && url.pathname.startsWith(r.id)) {
+        const remainingPath = url.pathname.slice(r.id.length);
+        const target = r.data.to + remainingPath;
+        const status = r.data.permanent ? 301 : 302;
+        return context.redirect(target, status);
+      }
+    }
+  }
+
+  // Handle exact match redirect
   if (redirect) {
     const status = redirect.data.permanent ? 301 : 302;
     return context.redirect(redirect.data.to, status);

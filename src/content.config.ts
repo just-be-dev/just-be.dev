@@ -92,6 +92,7 @@ const redirects = defineCollection({
           data: {
             to: redirect.to,
             permanent: redirect.permanent ?? false,
+            preservePath: redirect.preservePath ?? false,
           },
         });
       }
