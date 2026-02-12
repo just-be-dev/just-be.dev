@@ -41,7 +41,7 @@ const code = project.data.code?.toUpperCase();
       {
         project.data.status && (
           <div class="flex gap-[1ch] justify-end">
-            <ProjectStatus status={project.data.status} variant="badge" />
+            <ProjectStatus status={project.data.status} />
           </div>
         )
       }

@@ -9,7 +9,15 @@ export interface LinkListItem {
   slug: string;
   title: string;
   date?: string;
-  status?: "active" | "completed" | "archived" | "maintenance" | "draft" | "working" | "final";
+  status?:
+    | "experimental"
+    | "active"
+    | "completed"
+    | "archived"
+    | "maintenance"
+    | "draft"
+    | "working"
+    | "final";
   description?: string;
   treeChar?: string;
   isLast?: boolean;
@@ -73,7 +81,14 @@ const HeadingTag = headingLevel;
                 if (statusType === "project") {
                   return (
                     <ProjectStatus
-                      status={item.status as "active" | "completed" | "archived" | "maintenance"}
+                      status={
+                        item.status as
+                          | "experimental"
+                          | "active"
+                          | "completed"
+                          | "archived"
+                          | "maintenance"
+                      }
                     />
                   );
                 } else if (statusType === "research") {
@@ -121,7 +136,14 @@ const HeadingTag = headingLevel;
                   if (statusType === "project") {
                     return (
                       <ProjectStatus
-                        status={item.status as "active" | "completed" | "archived" | "maintenance"}
+                        status={
+                          item.status as
+                            | "experimental"
+                            | "active"
+                            | "completed"
+                            | "archived"
+                            | "maintenance"
+                        }
                       />
                     );
                   } else if (statusType === "research") {

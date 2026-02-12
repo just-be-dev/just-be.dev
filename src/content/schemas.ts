@@ -16,7 +16,9 @@ export const projectsSchema = z.object({
   description: z.string().optional(),
   url: z.string().url().optional(),
   repository: z.string().url().optional(),
-  status: z.enum(["active", "completed", "archived", "maintenance"]).default("active"),
+  status: z
+    .enum(["experimental", "active", "completed", "archived", "maintenance"])
+    .default("active"),
   date: z.coerce.date(),
   code: z.string().optional(),
   slugs: z.array(z.string()).optional(),
