@@ -114,3 +114,10 @@ export const tagsFileSchema = z.object({
     }),
   ),
 });
+
+export const microSchema = z.object({
+  content: z.string().max(280, "Micro post content must be 280 characters or less"),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  syndicatedTo: z.array(z.string()).default([]),
+});
