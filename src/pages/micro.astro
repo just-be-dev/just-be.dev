@@ -1,0 +1,152 @@
+---
+import { getCollection } from "astro:content";
+import Layout from "@/layouts/Layout.astro";
+
+export const prerender = false;
+
+// Pagination settings
+const PAGE_SIZE = 20;
+const page = parseInt(Astro.url.searchParams.get("page") || "1");
+const offset = (page - 1) * PAGE_SIZE;
+
+// Get micro posts from D1 via content collection
+const allPosts = (await getCollection("micro")).sort(
+  (a, b) => b.data.createdAt.valueOf() - a.data.createdAt.valueOf()
+);
+
+const posts = allPosts.slice(offset, offset + PAGE_SIZE);
+const hasMore = allPosts.length > offset + PAGE_SIZE;
+const totalPosts = allPosts.length;
+
+// Format date helper
+function formatDate(date: Date): string {
+  const now = new Date();
+  const diffMs = now.valueOf() - date.valueOf();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+---
+
+<Layout title="Micro - Just Be" description="Micro blog posts from Just Be">
+  <header class="mb-2">
+    <h1 class="font-bold">~/micro</h1>
+    <p class="text-fg-2 text-sm">{totalPosts} {totalPosts === 1 ? "post" : "posts"}</p>
+  </header>
+
+  <div id="posts-container" class="space-y-2">
+    {
+      posts.map((post) => (
+        <article class="border-fg-2 border p-2">
+          <p class="whitespace-pre-wrap break-words">{post.data.content}</p>
+          <time class="text-fg-2 mt-1 block text-sm" datetime={post.data.createdAt.toISOString()}>
+            {formatDate(post.data.createdAt)}
+          </time>
+          {post.data.syndicatedTo && post.data.syndicatedTo.length > 0 && (
+            <div class="text-fg-2 mt-1 text-xs">
+              Syndicated to: {post.data.syndicatedTo.join(", ")}
+            </div>
+          )}
+        </article>
+      ))
+    }
+  </div>
+
+  {
+    hasMore && (
+      <div id="loading-indicator" class="text-fg-2 mt-4 text-center">
+        Loading more...
+      </div>
+    )
+  }
+
+  <div id="sentinel" class="h-px"></div>
+</Layout>
+
+<script define:vars={{ hasMore: hasMore, pageSize: PAGE_SIZE }}>
+  if (hasMore) {
+    let currentPage = 1;
+    let isLoading = false;
+
+    const postsContainer = document.getElementById("posts-container");
+    const loadingIndicator = document.getElementById("loading-indicator");
+    const sentinel = document.getElementById("sentinel");
+
+    async function loadMorePosts() {
+      if (isLoading) return;
+      isLoading = true;
+
+      if (loadingIndicator) {
+        loadingIndicator.style.display = "block";
+      }
+
+      try {
+        currentPage++;
+        const response = await fetch(`/micro?page=${currentPage}`);
+        const html = await response.text();
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
+        const newPosts = doc.querySelectorAll("#posts-container > article");
+        const newHasMore = doc.getElementById("loading-indicator") !== null;
+
+        if (postsContainer) {
+          newPosts.forEach((post) => {
+            postsContainer.appendChild(post.cloneNode(true));
+          });
+        }
+
+        if (!newHasMore) {
+          observer.disconnect();
+          if (loadingIndicator) {
+            loadingIndicator.textContent = "No more posts";
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load more posts:", error);
+        if (loadingIndicator) {
+          loadingIndicator.textContent = "Failed to load more posts";
+        }
+      } finally {
+        isLoading = false;
+        if (loadingIndicator && isLoading === false) {
+          loadingIndicator.style.display = "none";
+        }
+      }
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            loadMorePosts();
+          }
+        });
+      },
+      {
+        rootMargin: "100px",
+      }
+    );
+
+    if (sentinel) {
+      observer.observe(sentinel);
+    }
+  }
+</script>
+
+<style>
+  #loading-indicator {
+    display: none;
+  }
+</style>
