@@ -3,10 +3,11 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { YAML } from "bun";
+import { Code } from "../src/utils/code";
 
 const CONTENT_DIR = `${import.meta.dir}/../src/content`;
 const MANIFEST_PATH = `${import.meta.dir}/../src/content/url-manifest.yaml`;
-const DEFAULT_COLLECTIONS = ["blog", "games", "research", "projects", "talks"];
+const DEFAULT_COLLECTIONS = ["blog", "games", "research", "projects", "talks", "micro"];
 
 interface UrlManifest {
   version: string;
@@ -27,6 +28,133 @@ function parseFrontmatter(content: string): { data: Record<string, any>; body: s
   const data = YAML.parse(yamlStr) as Record<string, any>;
 
   return { data, body };
+}
+
+/**
+ * Process micro posts from D1 database
+ */
+async function processMicroCollection(
+  manifest: UrlManifest,
+  existingSlugToCode: Map<string, string>,
+  seenSlugsInCurrentRun: Map<string, string>,
+): Promise<{ processed: number; skipped: number; errors: number }> {
+  console.log("Processing collection: micro");
+
+  const databaseId = process.env.D1_DATABASE_ID;
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+  const apiToken = process.env.CLOUDFLARE_API_TOKEN;
+
+  // Skip if credentials are missing
+  if (!databaseId || !accountId || !apiToken) {
+    console.log(
+      "  ⚠️  Skipping micro posts: Missing D1 credentials (D1_DATABASE_ID, CLOUDFLARE_ACCOUNT_ID, or CLOUDFLARE_API_TOKEN)\n",
+    );
+    return { processed: 0, skipped: 0, errors: 0 };
+  }
+
+  try {
+    const query = "SELECT id, created_at FROM micro_posts ORDER BY created_at DESC";
+
+    const response = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${databaseId}/query`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          sql: query,
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`D1 API request failed: ${response.status} ${await response.text()}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.success) {
+      throw new Error(`D1 query failed: ${JSON.stringify(data.errors)}`);
+    }
+
+    const results = data.result[0]?.results || [];
+
+    let processedCount = 0;
+    let skippedCount = 0;
+    let errorCount = 0;
+
+    for (const post of results) {
+      const postId = String(post.id);
+      const createdAt = new Date(post.created_at * 1000);
+
+      // Generate code from creation date with 'M' kind
+      const code = Code.fromDate(createdAt, "M").toString().toLowerCase();
+
+      // Micro posts use anchor URLs: /micro#post-id
+      const urlPath = `/micro#${postId}`;
+
+      try {
+        // Check if this slug appears twice in current run
+        if (seenSlugsInCurrentRun.has(urlPath)) {
+          const previousLocation = seenSlugsInCurrentRun.get(urlPath);
+          console.error(
+            `  ❌ DUPLICATE: ${urlPath} appears in both ${previousLocation} and micro post ${postId}`,
+          );
+          errorCount++;
+          continue;
+        }
+        seenSlugsInCurrentRun.set(urlPath, `micro-${postId}`);
+
+        // Check if this slug is already assigned to a different code
+        const existingCode = existingSlugToCode.get(urlPath);
+        if (existingCode && existingCode !== code) {
+          console.error(
+            `  ❌ CONFLICT: ${urlPath} is already assigned to code ${existingCode}, cannot reassign to ${code}`,
+          );
+          errorCount++;
+          continue;
+        }
+
+        // Skip if already in manifest (idempotent)
+        if (manifest.codes[code]?.includes(urlPath)) {
+          console.log(`  ⏭  ${code} -> ${urlPath} (already exists)`);
+          processedCount++;
+          continue;
+        }
+
+        // Add new entry
+        if (!manifest.codes[code]) {
+          manifest.codes[code] = [];
+        }
+        manifest.codes[code].push(urlPath);
+        existingSlugToCode.set(urlPath, code);
+
+        console.log(`  ✅ ${code} -> ${urlPath}`);
+        processedCount++;
+      } catch (error) {
+        console.error(
+          `  ❌ Error processing micro post ${postId}:`,
+          error instanceof Error ? error.message : error,
+        );
+        errorCount++;
+      }
+    }
+
+    console.log();
+    return {
+      processed: processedCount,
+      skipped: skippedCount,
+      errors: errorCount,
+    };
+  } catch (error) {
+    console.error(
+      `  ❌ Failed to load micro posts: ${error instanceof Error ? error.message : String(error)}`,
+    );
+    console.log();
+    return { processed: 0, skipped: 0, errors: 1 };
+  }
 }
 
 /**
@@ -222,7 +350,7 @@ function buildSlugToCodeMap(manifest: UrlManifest): Map<string, string> {
 /**
  * Main function to generate URL manifest
  */
-function genUrlManifest(collections: string[]) {
+async function genUrlManifest(collections: string[]) {
   console.log(`Content directory: ${CONTENT_DIR}`);
   console.log(`Collections to process: ${collections.join(", ")}`);
   console.log(`Output manifest: ${MANIFEST_PATH}\n`);
@@ -240,12 +368,14 @@ function genUrlManifest(collections: string[]) {
   let totalErrors = 0;
 
   for (const collection of collections) {
-    const result = processCollection(
-      collection,
-      manifest,
-      existingSlugToCode,
-      seenSlugsInCurrentRun,
-    );
+    let result;
+    if (collection === "micro") {
+      // Special handling for micro posts from D1
+      result = await processMicroCollection(manifest, existingSlugToCode, seenSlugsInCurrentRun);
+    } else {
+      // File-based collections
+      result = processCollection(collection, manifest, existingSlugToCode, seenSlugsInCurrentRun);
+    }
     totalProcessed += result.processed;
     totalSkipped += result.skipped;
     totalErrors += result.errors;
@@ -288,7 +418,7 @@ const collections = process.argv.slice(2).length > 0 ? process.argv.slice(2) : D
 
 // Run the script
 try {
-  genUrlManifest(collections);
+  await genUrlManifest(collections);
 } catch (error) {
   console.error("Fatal error:", error);
   process.exit(1);

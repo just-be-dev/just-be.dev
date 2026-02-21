@@ -22,6 +22,8 @@ function inferKind(dir: string): Kind {
       return "P";
     case "talks":
       return "T";
+    case "micro":
+      return "M";
     default:
       throw new Error(`Unknown content directory: ${dir}`);
   }
