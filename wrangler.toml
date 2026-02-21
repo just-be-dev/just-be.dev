@@ -8,3 +8,8 @@ enabled = true
 [assets]
 directory = "./dist"
 binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "micro-blog"
+database_id = "cc5c17ec-ad2f-41b5-8d5c-cf542604c43b"

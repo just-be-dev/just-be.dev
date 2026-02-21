@@ -75,7 +75,9 @@ async function showPostActions(
   post: Post,
   allPosts: Post[],
 ) {
-  const syndicatedPlatforms = (post.syndicatedTo as string[] | null) || [];
+  const syndicatedData =
+    (post.syndicatedTo as Array<{ platform: string; id: string; url: string }> | null) || [];
+  const syndicatedPlatforms = syndicatedData.map((s) => s.platform);
   const syndicatedText = syndicatedPlatforms.length > 0 ? syndicatedPlatforms.join(", ") : "None";
 
   p.note(
@@ -115,21 +117,23 @@ async function showPostActions(
       break;
     }
     case "open-bluesky": {
-      if (!syndicatedPlatforms.includes("bluesky")) {
+      const blueskyData = syndicatedData.find((s) => s.platform === "bluesky");
+      if (!blueskyData) {
         p.note("This post hasn't been syndicated to Bluesky yet", "Not available");
         break;
       }
-      // TODO: Store Bluesky post URL in database
-      p.note("Bluesky URL tracking not yet implemented", "Coming soon");
+      console.log(`Opening: ${blueskyData.url}`);
+      await Bun.spawn(["open", blueskyData.url]);
       break;
     }
     case "open-twitter": {
-      if (!syndicatedPlatforms.includes("twitter")) {
+      const twitterData = syndicatedData.find((s) => s.platform === "twitter");
+      if (!twitterData) {
         p.note("This post hasn't been syndicated to Twitter yet", "Not available");
         break;
       }
-      // TODO: Store Twitter post URL in database
-      p.note("Twitter URL tracking not yet implemented", "Coming soon");
+      console.log(`Opening: ${twitterData.url}`);
+      await Bun.spawn(["open", twitterData.url]);
       break;
     }
     case "delete": {
