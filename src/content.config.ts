@@ -16,7 +16,9 @@ import {
   redirectsFileSchema,
   tagEntrySchema,
   tagsFileSchema,
+  microSchema,
 } from "./content/schemas";
+import { microLoader } from "./loaders/micro-loader";
 
 const blog = defineCollection({
   loader: glob({ base: "./src/content/blog", pattern: "**/*.{md,mdx}" }),
@@ -57,7 +59,7 @@ const devtools = defineCollection({
 const urls = defineCollection({
   loader: {
     name: "url-manifest-loader",
-    load: ({ store, logger }) => {
+    load: async ({ store, logger }) => {
       logger.info("Loading URL manifest");
 
       const manifestPath = join(process.cwd(), "src/content/url-manifest.yaml");
@@ -85,7 +87,7 @@ const urls = defineCollection({
 const redirects = defineCollection({
   loader: {
     name: "redirects-loader",
-    load: ({ store, logger }) => {
+    load: async ({ store, logger }) => {
       logger.info("Loading redirects");
 
       const redirectsPath = join(process.cwd(), "src/content/redirects.yaml");
@@ -114,7 +116,7 @@ const redirects = defineCollection({
 const tags = defineCollection({
   loader: {
     name: "tags-loader",
-    load: ({ store, logger }) => {
+    load: async ({ store, logger }) => {
       logger.info("Loading tags");
 
       const tagsPath = join(process.cwd(), "src/content/tags.yaml");
@@ -135,6 +137,14 @@ const tags = defineCollection({
   schema: tagEntrySchema,
 });
 
+const micro = defineCollection({
+  loader: microLoader({
+    databaseId: process.env.D1_DATABASE_ID || "",
+    accountId: process.env.CLOUDFLARE_ACCOUNT_ID || "",
+    apiToken: process.env.CLOUDFLARE_API_TOKEN || "",
+  }),
+  schema: microSchema,
+});
 export const collections = {
   blog,
   games,
@@ -146,4 +156,5 @@ export const collections = {
   urls,
   redirects,
   tags,
+  micro,
 };
