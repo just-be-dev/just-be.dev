@@ -29,8 +29,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return context.redirect(redirect.data.to, status);
   }
 
-  // Check if first or second path segment is a code (format: [brpt][0-9a-f]{4})
-  const codePattern = /^[bgrpt][0-9a-f]{4}$/i;
+  // Check if first or second path segment is a code (format: [bgrptm][0-9a-f]{4})
+  const codePattern = /^[bgrptm][0-9a-f]{4}$/i;
   const firstSegmentIsCode = pathSegments[0] && codePattern.test(pathSegments[0]);
   const secondSegmentIsCode = pathSegments[1] && codePattern.test(pathSegments[1]);
 
