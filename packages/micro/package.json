@@ -1,0 +1,38 @@
+{
+  "name": "@just-be/micro",
+  "version": "0.1.0",
+  "description": "CLI tool for creating and managing micro blog posts",
+  "keywords": [
+    "cli",
+    "microblog",
+    "tui"
+  ],
+  "license": "MIT",
+  "author": "Justin Bennett",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/just-be-dev/just-be.dev.git",
+    "directory": "packages/micro"
+  },
+  "bin": {
+    "micro": "index.ts"
+  },
+  "files": [
+    "index.ts",
+    "src"
+  ],
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@atproto/api": "^0.15.3",
+    "@clack/prompts": "^0.11.0",
+    "drizzle-orm": "^0.45.1",
+    "twitter-api-v2": "^1.17.3",
+    "wrangler": "4.48.0"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  }
+}
