@@ -5,6 +5,7 @@ export interface SyndicationResult {
   platform: string;
   success: boolean;
   error?: string;
+  id?: string;
   url?: string;
 }
 
@@ -75,10 +76,13 @@ async function syndicateToBluesky(
       createdAt: new Date().toISOString(),
     });
 
+    const postId = response.uri.split("/").pop() || "";
+
     return {
       platform: "bluesky",
       success: true,
-      url: `https://bsky.app/profile/${credentials.identifier}/post/${response.uri.split("/").pop()}`,
+      id: postId,
+      url: `https://bsky.app/profile/${credentials.identifier}/post/${postId}`,
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
@@ -141,6 +145,7 @@ async function syndicateToTwitter(
     return {
       platform: "twitter",
       success: true,
+      id: tweet.data.id,
       url: `https://twitter.com/i/web/status/${tweet.data.id}`,
     };
   } catch (error) {

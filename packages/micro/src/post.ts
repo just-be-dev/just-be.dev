@@ -70,23 +70,29 @@ export async function post(content?: string) {
       try {
         const syndicationResults = await syndicatePost(postContent, config);
 
-        const successfulPlatforms = syndicationResults
-          .filter((r) => r.success)
-          .map((r) => r.platform);
+        const successfulSyndications = syndicationResults
+          .filter((r) => r.success && r.id && r.url)
+          .map((r) => ({
+            platform: r.platform,
+            id: r.id!,
+            url: r.url!,
+          }));
 
         const failedPlatforms = syndicationResults.filter((r) => !r.success);
 
         // Update database with successful syndications
-        if (successfulPlatforms.length > 0) {
+        if (successfulSyndications.length > 0) {
           await db
             .update(microPosts)
-            .set({ syndicatedTo: successfulPlatforms })
+            .set({ syndicatedTo: successfulSyndications })
             .where(eq(microPosts.id, post.id));
         }
 
         // Report results
-        if (successfulPlatforms.length > 0) {
-          spinner.stop(`Syndicated to: ${successfulPlatforms.join(", ")}`);
+        if (successfulSyndications.length > 0) {
+          spinner.stop(
+            `Syndicated to: ${successfulSyndications.map((s) => s.platform).join(", ")}`,
+          );
         } else {
           spinner.stop("Syndication failed");
         }
