@@ -38,6 +38,7 @@
     "@astrojs/sitemap": "3.7.2",
     "@iconify-json/pixel": "^1.2.1",
     "@types/p5": "^1.7.6",
+    "@unocss/reset": "^66.6.0",
     "@webtui/css": "^0.1.5",
     "astro": "6.1.4",
     "beautiful-mermaid": "^1.0.0",
