@@ -12,50 +12,21 @@ const { id, tag, count, url = "/blog", class: className, description } = Astro.p
 const tagUrl = `${url}?tag=${encodeURIComponent(tag)}`;
 ---
 
-{
-  description ? (
-    <span class="tag-wrapper relative">
-      <a
-        id={id}
-        href={tagUrl}
-        class:list={[
-          "bg-2 text-accent hocus:bg-0 hocus:invert group flex items-center outline-none font-medium border-2 border-fg-0",
-          className,
-        ]}
-      >
-        <span class="px-[1ch]">{tag}</span>
-        {count !== undefined && (
-          <span class="text-fg-2 bg-1 border-l-2 border-fg-0 group-hocus:bg-2 group-hocus:text-accent px-[1ch]">
-            {count}
-          </span>
-        )}
-      </a>
-      <span class="tag-description absolute bottom-full left-0 mb-1 bg-0 border-2 border-fg-0 text-fg-0 px-[1ch] whitespace-nowrap z-20 hidden text-sm">
-        {description}
+<a
+  id={id}
+  href={tagUrl}
+  title={description}
+  class:list={[
+    "bg-2 text-accent hocus:bg-0 hocus:invert group flex items-center outline-none font-medium border-2 border-fg-0",
+    className,
+  ]}
+>
+  <span class="px-[1ch]">{tag}</span>
+  {
+    count !== undefined && (
+      <span class="text-fg-2 bg-1 border-l-2 border-fg-0 group-hocus:bg-2 group-hocus:text-accent px-[1ch]">
+        {count}
       </span>
-    </span>
-  ) : (
-    <a
-      id={id}
-      href={tagUrl}
-      class:list={[
-        "bg-2 text-accent hocus:bg-0 hocus:invert group flex items-center outline-none font-medium border-2 border-fg-0",
-        className,
-      ]}
-    >
-      <span class="px-[1ch]">{tag}</span>
-      {count !== undefined && (
-        <span class="text-fg-2 bg-1 border-l-2 border-fg-0 group-hocus:bg-2 group-hocus:text-accent px-[1ch]">
-          {count}
-        </span>
-      )}
-    </a>
-  )
-}
-
-<style>
-  .tag-wrapper:hover .tag-description,
-  .tag-wrapper:focus-within .tag-description {
-    display: block;
+    )
   }
-</style>
+</a>
