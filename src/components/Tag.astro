@@ -5,15 +5,17 @@ interface Props {
   count?: number;
   url?: string;
   class?: string;
+  description?: string;
 }
 
-const { id, tag, count, url = "/blog", class: className } = Astro.props;
+const { id, tag, count, url = "/blog", class: className, description } = Astro.props;
 const tagUrl = `${url}?tag=${encodeURIComponent(tag)}`;
 ---
 
 <a
   id={id}
   href={tagUrl}
+  title={description}
   class:list={[
     "bg-2 text-accent hocus:bg-0 hocus:invert group flex items-center outline-none font-medium border-2 border-fg-0",
     className,

@@ -9,6 +9,9 @@ import MDContent from "@/components/MDContent.astro";
 import Layout from "@/layouts/Layout.astro";
 import { Code } from "@/utils/code";
 
+const tagEntries = await getCollection("tags");
+const tagDescriptions = new Map(tagEntries.map((t) => [t.id, t.data.description]));
+
 export async function getStaticPaths() {
   const posts = await getCollection("blog");
   return posts.map((post) => ({
@@ -52,7 +55,7 @@ const code = post.data.code ? post.data.code.toUpperCase() : Code.fromId(post.id
               <div class="tag-list hidden absolute right-0 top-full pt-1 z-10">
                 <div class="flex flex-wrap gap-2 bg-1 px-2 py-1">
                   {post.data.tags.map((tag) => (
-                    <Tag tag={tag} url="/blog" />
+                    <Tag tag={tag} url="/blog" description={tagDescriptions.get(tag)} />
                   ))}
                 </div>
               </div>
