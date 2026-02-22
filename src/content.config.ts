@@ -13,6 +13,8 @@ import {
   urlsSchema,
   redirectsSchema,
   redirectsFileSchema,
+  tagEntrySchema,
+  tagsFileSchema,
 } from "./content/schemas";
 
 const blog = defineCollection({
@@ -103,6 +105,30 @@ const redirects = defineCollection({
   schema: redirectsSchema,
 });
 
+const tags = defineCollection({
+  loader: {
+    name: "tags-loader",
+    load: ({ store, logger }) => {
+      logger.info("Loading tags");
+
+      const tagsPath = join(process.cwd(), "src/content/tags.yaml");
+      const tagsContent = readFileSync(tagsPath, "utf-8");
+      const rawData = loadYAML(tagsContent);
+      const data = tagsFileSchema.parse(rawData);
+
+      for (const tag of data.tags) {
+        store.set({
+          id: tag.name,
+          data: { description: tag.description },
+        });
+      }
+
+      logger.info(`Loaded ${data.tags.length} tags`);
+    },
+  },
+  schema: tagEntrySchema,
+});
+
 export const collections = {
   blog,
   projects,
@@ -112,4 +138,5 @@ export const collections = {
   talks,
   urls,
   redirects,
+  tags,
 };

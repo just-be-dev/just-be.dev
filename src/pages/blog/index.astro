@@ -7,6 +7,9 @@ import type { LinkListItem } from "@/components/LinkList.astro";
 import Layout from "@/layouts/Layout.astro";
 import { Code } from "@/utils/code";
 
+const tagEntries = await getCollection("tags");
+const tagDescriptions = new Map(tagEntries.map((t) => [t.id, t.data.description]));
+
 export const prerender = false;
 
 // Get selected tag from query params
@@ -64,11 +67,14 @@ const linkListItems: LinkListItem[] = posts.map((post) => {
               url="/blog"
               class="invert"
               id="selected-tag"
+              description={tagDescriptions.get(selectedTag)}
             />
             <Button shortcut="c" label="clear" href="/blog" />
           </>
         ) : (
-          sortedTags.map(({ tag, count }) => <Tag tag={tag} count={count} url="/blog" />)
+          sortedTags.map(({ tag, count }) => (
+            <Tag tag={tag} count={count} url="/blog" description={tagDescriptions.get(tag)} />
+          ))
         )
       }
     </div>

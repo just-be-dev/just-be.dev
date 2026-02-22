@@ -1,0 +1,39 @@
+tags:
+  - name: ai
+    description: Artificial intelligence, large language models, and machine learning
+
+  - name: api
+    description: API design, standards, and integration patterns
+
+  - name: claude
+    description: Anthropic's Claude AI assistant and related tooling
+
+  - name: data
+    description: Data management, storage, and processing
+
+  - name: infrastructure
+    description: Backend systems, deployment, and platform engineering
+
+  - name: interoperability
+    description: Standards and protocols for system-to-system communication
+
+  - name: mcp
+    description: Model Context Protocol, Anthropic's open protocol for AI tool integration
+
+  - name: meta
+    description: Posts about this site, writing, or process
+
+  - name: privacy
+    description: Data privacy, self-sovereignty, and personal data control
+
+  - name: recurse
+    description: Recurse Center experiences and community
+
+  - name: schema
+    description: Data schemas, type systems, and validation
+
+  - name: self-hosting
+    description: Running your own services and infrastructure
+
+  - name: web
+    description: Web development, browsers, and the open web

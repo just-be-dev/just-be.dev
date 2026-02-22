@@ -90,3 +90,17 @@ export const redirectsFileSchema = z.object({
     }),
   ),
 });
+
+export const tagEntrySchema = z.object({
+  description: z.string(),
+});
+
+// Schema for the tags YAML file structure
+export const tagsFileSchema = z.object({
+  tags: z.array(
+    z.object({
+      name: z.string(),
+      description: z.string(),
+    }),
+  ),
+});
