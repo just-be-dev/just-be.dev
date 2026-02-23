@@ -1,14 +1,23 @@
 import * as p from "@clack/prompts";
-import { eq } from "drizzle-orm";
-import { getD1Database, microPosts } from "./db.ts";
-import { hasSyndicationConfig, loadSyndicationConfig, syndicatePost } from "./syndicate.ts";
 
 const MAX_LENGTH = 280;
+const DEFAULT_SITE_URL = "https://just-be.dev";
+
+function getConfig() {
+  const secret = process.env.MICRO_SECRET;
+  if (!secret) {
+    console.error("Error: MICRO_SECRET environment variable not set");
+    process.exit(1);
+  }
+  return {
+    secret,
+    siteUrl: process.env.MICRO_SITE_URL ?? DEFAULT_SITE_URL,
+  };
+}
 
 export async function post(content?: string) {
   let postContent = content;
 
-  // If no content provided, open TUI editor
   if (!postContent) {
     p.intro("Create a new micro post");
 
@@ -32,96 +41,55 @@ export async function post(content?: string) {
 
     postContent = result;
   } else {
-    // Validate direct content
     if (postContent.length > MAX_LENGTH) {
       console.error(`Error: Post is too long (${postContent.length}/${MAX_LENGTH} characters)`);
       process.exit(1);
     }
   }
 
+  const { secret, siteUrl } = getConfig();
   const spinner = p.spinner();
   spinner.start("Creating post...");
 
   try {
-    const { db, dispose } = await getD1Database();
+    const res = await fetch(`${siteUrl}/micro`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${secret}`,
+      },
+      body: JSON.stringify({ content: postContent }),
+    });
 
-    // Insert the post
-    const result = await db
-      .insert(microPosts)
-      .values({
-        content: postContent,
-      })
-      .returning();
-
-    const post = result[0];
-
-    if (!post) {
-      throw new Error("Failed to create post");
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Server returned ${res.status}: ${text}`);
     }
+
+    const { post: newPost, syndication } = (await res.json()) as {
+      post: { id: number; content: string; createdAt: string };
+      syndication: Array<{ platform: string; success: boolean; url?: string; error?: string }>;
+    };
 
     spinner.stop("Post created successfully!");
 
-    // Attempt syndication
-    const config = loadSyndicationConfig();
+    if (syndication && syndication.length > 0) {
+      const successful = syndication.filter((r) => r.success);
+      const failed = syndication.filter((r) => !r.success);
 
-    if (hasSyndicationConfig(config)) {
-      spinner.start("Syndicating to social media...");
-
-      try {
-        const syndicationResults = await syndicatePost(postContent, config);
-
-        const successfulSyndications = syndicationResults
-          .filter((r) => r.success && r.id && r.url)
-          .map((r) => ({
-            platform: r.platform,
-            id: r.id!,
-            url: r.url!,
-          }));
-
-        const failedPlatforms = syndicationResults.filter((r) => !r.success);
-
-        // Update database with successful syndications
-        if (successfulSyndications.length > 0) {
-          await db
-            .update(microPosts)
-            .set({ syndicatedTo: successfulSyndications })
-            .where(eq(microPosts.id, post.id));
+      if (successful.length > 0) {
+        p.log.info(`Syndicated to: ${successful.map((s) => s.platform).join(", ")}`);
+        for (const s of successful) {
+          if (s.url) p.log.info(`  ${s.platform}: ${s.url}`);
         }
-
-        // Report results
-        if (successfulSyndications.length > 0) {
-          spinner.stop(
-            `Syndicated to: ${successfulSyndications.map((s) => s.platform).join(", ")}`,
-          );
-        } else {
-          spinner.stop("Syndication failed");
-        }
-
-        // Show any errors
-        if (failedPlatforms.length > 0) {
-          for (const failure of failedPlatforms) {
-            p.log.warn(`${failure.platform}: ${failure.error}`);
-          }
-        }
-
-        // Show success URLs
-        for (const success of syndicationResults.filter((r) => r.success)) {
-          if (success.url) {
-            p.log.info(`${success.platform}: ${success.url}`);
-          }
-        }
-      } catch (error) {
-        spinner.stop("Syndication failed");
-        const errorMessage = error instanceof Error ? error.message : "Unknown error";
-        p.log.warn(`Syndication error: ${errorMessage}`);
+      }
+      for (const f of failed) {
+        p.log.warn(`${f.platform}: ${f.error}`);
       }
     }
 
-    await dispose();
-
-    // Show post details
     p.note(
-      `ID: ${post.id}\nContent: ${post.content}\nCreated: ${post.createdAt.toLocaleString()}`,
+      `ID: ${newPost.id}\nContent: ${newPost.content}\nCreated: ${new Date(newPost.createdAt).toLocaleString()}`,
       "Post Details",
     );
   } catch (error) {

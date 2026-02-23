@@ -19,28 +19,17 @@
   },
   "files": [
     "index.ts",
-    "src",
-    "db"
+    "src"
   ],
   "type": "module",
   "exports": {
-    ".": "./index.ts",
-    "./loader-db": "./src/loader-db.ts"
+    ".": "./index.ts"
   },
   "publishConfig": {
     "access": "public"
   },
-  "scripts": {
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
-  },
   "dependencies": {
-    "@atproto/api": "^0.15.3",
-    "@clack/prompts": "^0.11.0",
-    "drizzle-kit": "^0.31.9",
-    "drizzle-orm": "^0.45.1",
-    "twitter-api-v2": "^1.17.3",
-    "wrangler": "4.48.0"
+    "@clack/prompts": "^0.11.0"
   },
   "engines": {
     "bun": ">=1.0.0"

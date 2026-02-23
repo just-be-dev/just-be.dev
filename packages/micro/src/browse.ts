@@ -1,8 +1,26 @@
 import * as p from "@clack/prompts";
-import { desc, eq } from "drizzle-orm";
-import { getD1Database, microPosts } from "./db.ts";
 
-type Post = typeof microPosts.$inferSelect;
+interface Post {
+  id: number;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  syndicatedTo: Array<{ platform: string; id: string; url: string }>;
+}
+
+const DEFAULT_SITE_URL = "https://just-be.dev";
+
+function getConfig() {
+  const secret = process.env.MICRO_SECRET;
+  if (!secret) {
+    console.error("Error: MICRO_SECRET environment variable not set");
+    process.exit(1);
+  }
+  return {
+    secret,
+    siteUrl: process.env.MICRO_SITE_URL ?? DEFAULT_SITE_URL,
+  };
+}
 
 export async function browse() {
   p.intro("Micro Blog Browser");
@@ -10,78 +28,75 @@ export async function browse() {
   const spinner = p.spinner();
   spinner.start("Loading posts...");
 
+  const { secret, siteUrl } = getConfig();
+
+  let posts: Post[];
   try {
-    const { db, dispose } = await getD1Database();
-
-    // Fetch all posts, newest first
-    const posts = await db.select().from(microPosts).orderBy(desc(microPosts.createdAt));
-
-    spinner.stop(`Found ${posts.length} post(s)`);
-
-    if (posts.length === 0) {
-      p.note("No posts yet. Create one with 'micro post'", "Empty");
-      await dispose();
-      return;
-    }
-
-    // Show posts in a loop until user exits
-    let shouldContinue = true;
-
-    while (shouldContinue) {
-      const options = posts.map((post) => {
-        const preview =
-          post.content.length > 60 ? post.content.substring(0, 60) + "..." : post.content;
-        const date = post.createdAt.toLocaleDateString();
-        return {
-          value: post.id,
-          label: `[${post.id}] ${preview}`,
-          hint: date,
-        };
-      });
-
-      options.push({
-        value: -1,
-        label: "Exit",
-        hint: "",
-      });
-
-      const selectedId = await p.select({
-        message: "Select a post to view options",
-        options,
-      });
-
-      if (p.isCancel(selectedId) || selectedId === -1) {
-        shouldContinue = false;
-        continue;
-      }
-
-      const selectedPost = posts.find((p) => p.id === selectedId);
-      if (!selectedPost) continue;
-
-      // Show post details and actions
-      await showPostActions(db, selectedPost, posts);
-    }
-
-    await dispose();
-    p.outro("Goodbye!");
+    const res = await fetch(`${siteUrl}/micro`, {
+      headers: {
+        Authorization: `Bearer ${secret}`,
+        Accept: "application/json",
+      },
+    });
+    if (!res.ok) throw new Error(`Server returned ${res.status}`);
+    posts = (await res.json()) as Post[];
   } catch (error) {
     spinner.stop("Failed to load posts");
     throw error;
   }
+
+  spinner.stop(`Found ${posts.length} post(s)`);
+
+  if (posts.length === 0) {
+    p.note("No posts yet. Create one with 'micro post'", "Empty");
+    return;
+  }
+
+  let shouldContinue = true;
+
+  while (shouldContinue) {
+    const options = posts.map((post) => {
+      const preview =
+        post.content.length > 60 ? post.content.substring(0, 60) + "..." : post.content;
+      const date = new Date(post.createdAt).toLocaleDateString();
+      return {
+        value: post.id,
+        label: `[${post.id}] ${preview}`,
+        hint: date,
+      };
+    });
+
+    options.push({ value: -1, label: "Exit", hint: "" });
+
+    const selectedId = await p.select({
+      message: "Select a post to view options",
+      options,
+    });
+
+    if (p.isCancel(selectedId) || selectedId === -1) {
+      shouldContinue = false;
+      continue;
+    }
+
+    const selectedPost = posts.find((p) => p.id === selectedId);
+    if (!selectedPost) continue;
+
+    await showPostActions({ siteUrl, secret }, selectedPost, posts);
+  }
+
+  p.outro("Goodbye!");
 }
 
 async function showPostActions(
-  db: ReturnType<typeof getD1Database> extends Promise<{ db: infer D }> ? D : never,
+  config: { siteUrl: string; secret: string },
   post: Post,
   allPosts: Post[],
 ) {
-  const syndicatedData =
-    (post.syndicatedTo as Array<{ platform: string; id: string; url: string }> | null) || [];
-  const syndicatedPlatforms = syndicatedData.map((s) => s.platform);
+  const syndicatedPlatforms = post.syndicatedTo.map((s) => s.platform);
   const syndicatedText = syndicatedPlatforms.length > 0 ? syndicatedPlatforms.join(", ") : "None";
 
   p.note(
-    `${post.content}\n\nCreated: ${post.createdAt.toLocaleString()}\nSyndicated to: ${syndicatedText}`,
+    `${post.content}\n\nCreated: ${new Date(post.createdAt).toLocaleString()}\nSyndicated to: ${syndicatedText}`,
     `Post #${post.id}`,
   );
 
@@ -110,14 +125,13 @@ async function showPostActions(
 
   switch (action) {
     case "open-web": {
-      // Open in browser - construct URL based on post ID
-      const url = `https://just-be.dev/micro#post-${post.id}`;
+      const url = `${config.siteUrl}/micro#post-${post.id}`;
       console.log(`Opening: ${url}`);
       await Bun.spawn(["open", url]);
       break;
     }
     case "open-bluesky": {
-      const blueskyData = syndicatedData.find((s) => s.platform === "bluesky");
+      const blueskyData = post.syndicatedTo.find((s) => s.platform === "bluesky");
       if (!blueskyData) {
         p.note("This post hasn't been syndicated to Bluesky yet", "Not available");
         break;
@@ -127,7 +141,7 @@ async function showPostActions(
       break;
     }
     case "open-twitter": {
-      const twitterData = syndicatedData.find((s) => s.platform === "twitter");
+      const twitterData = post.syndicatedTo.find((s) => s.platform === "twitter");
       if (!twitterData) {
         p.note("This post hasn't been syndicated to Twitter yet", "Not available");
         break;
@@ -150,13 +164,19 @@ async function showPostActions(
       const spinner = p.spinner();
       spinner.start("Deleting post...");
 
-      await db.delete(microPosts).where(eq(microPosts.id, post.id));
+      const res = await fetch(`${config.siteUrl}/micro/${post.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${config.secret}` },
+      });
 
-      // Remove from the posts array
-      const index = allPosts.findIndex((p) => p.id === post.id);
-      if (index > -1) {
-        allPosts.splice(index, 1);
+      if (!res.ok) {
+        spinner.stop("Delete failed");
+        p.log.warn(`Server returned ${res.status}`);
+        break;
       }
+
+      const index = allPosts.findIndex((p) => p.id === post.id);
+      if (index > -1) allPosts.splice(index, 1);
 
       spinner.stop(`Post #${post.id} deleted successfully`);
       break;

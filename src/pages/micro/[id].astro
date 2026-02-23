@@ -1,10 +1,36 @@
 ---
 import { getCollection } from "astro:content";
+import { createMicroStorage } from "@/lib/micro-r2.ts";
 
 export const prerender = false;
 
-const PAGE_SIZE = 20;
+const env = Astro.locals.runtime.env;
 const { id } = Astro.params;
+
+// DELETE /micro/:id — delete a post
+if (Astro.request.method === "DELETE") {
+  const secret = env.MICRO_SECRET;
+  if (!secret || Astro.request.headers.get("Authorization") !== `Bearer ${secret}`) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  const postId = Number(id);
+  if (!Number.isFinite(postId)) {
+    return new Response(JSON.stringify({ error: "Invalid post ID" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const storage = createMicroStorage(env.MICRO_BUCKET);
+  await storage.deletePost(postId);
+
+  return new Response(JSON.stringify({ success: true }), {
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+const PAGE_SIZE = 20;
 
 const allPosts = (await getCollection("micro")).sort(
   (a, b) => b.data.createdAt.valueOf() - a.data.createdAt.valueOf()
