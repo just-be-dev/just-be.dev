@@ -92,3 +92,8 @@ description = "Assemble changelog fragments into CHANGELOG.md"
 [tasks."release-notes"]
 run = "bun scripts/release-notes.ts"
 description = "Preview release notes for a package version"
+
+[tasks.micro]
+run = "bun packages/micro/index.ts"
+description = "Micro blog CLI (browse posts or create new ones)"
+raw = true
