@@ -1,21 +1,17 @@
 import * as p from "@clack/prompts";
 
 const MAX_LENGTH = 280;
-const DEFAULT_SITE_URL = "https://just-be.dev";
 
-function getConfig() {
+function getSecret(): string {
   const secret = process.env.MICRO_SECRET;
   if (!secret) {
     console.error("Error: MICRO_SECRET environment variable not set");
     process.exit(1);
   }
-  return {
-    secret,
-    siteUrl: process.env.MICRO_SITE_URL ?? DEFAULT_SITE_URL,
-  };
+  return secret;
 }
 
-export async function post(content?: string) {
+export async function post(content: string | undefined, siteUrl: string) {
   let postContent = content;
 
   if (!postContent) {
@@ -47,7 +43,7 @@ export async function post(content?: string) {
     }
   }
 
-  const { secret, siteUrl } = getConfig();
+  const secret = getSecret();
   const spinner = p.spinner();
   spinner.start("Creating post...");
 
