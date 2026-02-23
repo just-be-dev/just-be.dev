@@ -18,7 +18,6 @@ import {
   tagsFileSchema,
   microSchema,
 } from "./content/schemas";
-import { microLoader } from "./loaders/micro-loader";
 
 const blog = defineCollection({
   loader: glob({ base: "./src/content/blog", pattern: "**/*.{md,mdx}" }),
