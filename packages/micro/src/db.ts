@@ -1,4 +1,5 @@
 import { drizzle } from "drizzle-orm/d1";
+import { getPlatformProxy } from "wrangler";
 import { microPosts } from "./schema";
 
 export { microPosts };
@@ -7,8 +8,6 @@ export async function getD1Database() {
   // Use wrangler to get local D1 access
   // Find the project root (where wrangler.toml is)
   const projectRoot = import.meta.dir + "/../../..";
-
-  const { getPlatformProxy } = await import("wrangler");
   const { env, dispose } = await getPlatformProxy<{ DB: D1Database }>({
     configPath: `${projectRoot}/wrangler.toml`,
     persist: { path: `${projectRoot}/.wrangler/state/v3` },

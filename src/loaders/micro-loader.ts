@@ -24,10 +24,9 @@ export function microLoader(): Loader {
 
         logger.info(`Loaded ${posts.length} micro posts`);
       } catch (error) {
-        logger.error(
-          `Failed to load micro posts: ${error instanceof Error ? error.message : String(error)}`,
+        logger.warn(
+          `Skipping micro posts: ${error instanceof Error ? error.message : String(error)}`,
         );
-        throw error;
       }
     },
   };
