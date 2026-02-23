@@ -1,5 +1,4 @@
 ---
-import { getCollection } from "astro:content";
 import { createMicroStorage } from "@/lib/micro-r2.ts";
 
 export const prerender = false;
@@ -32,11 +31,17 @@ if (Astro.request.method === "DELETE") {
 
 const PAGE_SIZE = 20;
 
-const allPosts = (await getCollection("micro")).sort(
-  (a, b) => b.data.createdAt.valueOf() - a.data.createdAt.valueOf()
+const postId = Number(id);
+if (!Number.isFinite(postId)) {
+  return new Response(null, { status: 404 });
+}
+
+const storage = createMicroStorage(env.MICRO_BUCKET);
+const allPosts = (await storage.readPosts()).sort(
+  (a, b) => b.createdAt.valueOf() - a.createdAt.valueOf()
 );
 
-const idx = allPosts.findIndex((p) => p.id === id);
+const idx = allPosts.findIndex((post) => post.id === postId);
 
 if (idx === -1) {
   return new Response(null, { status: 404 });
@@ -46,12 +51,12 @@ const pageNum = Math.floor(idx / PAGE_SIZE);
 
 if (pageNum === 0) {
   // Post is on the first page — no cursor needed
-  return Astro.redirect(`/micro#${id}`, 302);
+  return Astro.redirect(`/micro#${postId}`, 302);
 } else {
   // Cursor is the createdAt of the last post on the preceding page,
   // which is the boundary that makes dir=next load this page.
   const cursorPost = allPosts[pageNum * PAGE_SIZE - 1];
-  const cursor = cursorPost.data.createdAt.valueOf();
-  return Astro.redirect(`/micro?cursor=${cursor}&dir=next#${id}`, 302);
+  const cursor = cursorPost.createdAt.valueOf();
+  return Astro.redirect(`/micro?cursor=${cursor}&dir=next#${postId}`, 302);
 }
 ---

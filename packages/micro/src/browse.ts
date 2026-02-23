@@ -78,7 +78,7 @@ export async function browse() {
       continue;
     }
 
-    const selectedPost = posts.find((p) => p.id === selectedId);
+    const selectedPost = posts.find((post) => post.id === selectedId);
     if (!selectedPost) continue;
 
     await showPostActions({ siteUrl, secret }, selectedPost, posts);
@@ -125,7 +125,7 @@ async function showPostActions(
 
   switch (action) {
     case "open-web": {
-      const url = `${config.siteUrl}/micro#post-${post.id}`;
+      const url = `${config.siteUrl}/micro#${post.id}`;
       console.log(`Opening: ${url}`);
       await Bun.spawn(["open", url]);
       break;

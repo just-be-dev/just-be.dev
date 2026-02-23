@@ -10,7 +10,7 @@ CLI tool for creating and managing micro blog posts.
 - Automatic syndication to Bluesky and Twitter
 - Delete posts
 - Open posts in browser
-- D1 database integration via Drizzle ORM
+- R2 JSONL storage via HTTP API
 
 ## Installation
 
@@ -52,7 +52,7 @@ Creates a post directly from the command line.
 ## Requirements
 
 - Bun >= 1.0.0
-- Cloudflare D1 database configured in wrangler.toml
+- A running instance of the site with `MICRO_BUCKET` (R2) and `MICRO_SECRET` configured
 
 ## Social Media Syndication
 
@@ -92,9 +92,9 @@ To get Twitter API credentials:
 
 ### Syndication Behavior
 
-- Posts are created in the database first, ensuring they're saved even if syndication fails
+- Posts are saved to R2 first, ensuring they're preserved even if syndication fails
 - Syndication attempts are made to all configured platforms
-- The `syndicated_to` field in the database tracks which platforms received the post
+- The `syndicatedTo` field tracks which platforms received the post
 - Syndication failures are logged but don't prevent post creation
 - Rate limits and authentication errors are handled gracefully with clear error messages
 
@@ -104,4 +104,4 @@ To test syndication without real API credentials, simply don't set the environme
 
 ## Development
 
-The CLI uses Wrangler's `getPlatformProxy` to access the local D1 database. Make sure you have a `wrangler.toml` configured with a D1 database binding named `DB`.
+The CLI talks to the site's HTTP API. Set `MICRO_SECRET` to authenticate and `MICRO_SITE_URL` to point at a local dev server (defaults to `https://just-be.dev`).
