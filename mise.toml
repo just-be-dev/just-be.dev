@@ -93,3 +93,13 @@ description = "Preview release notes for a package version"
 run = "bun packages/micro/index.ts"
 description = "Micro blog CLI (browse posts or create new ones)"
 raw = true
+
+[tasks."micro:db:generate"]
+dir = "packages/micro"
+run = "bun run db:generate"
+description = "Generate drizzle migrations for micro blog"
+
+[tasks."micro:db:migrate"]
+dir = "packages/micro"
+run = "bun run db:migrate"
+description = "Apply drizzle migrations for micro blog"

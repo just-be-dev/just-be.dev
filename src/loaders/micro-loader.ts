@@ -1,17 +1,10 @@
 import type { Loader } from "astro/loaders";
+import { getMicroPosts } from "@just-be/micro/loader-db";
 
 interface MicroLoaderOptions {
   databaseId: string;
   accountId: string;
   apiToken: string;
-}
-
-interface MicroPost {
-  id: number;
-  content: string;
-  created_at: number;
-  updated_at: number;
-  syndicated_to: string;
 }
 
 export function microLoader(options: MicroLoaderOptions): Loader {
@@ -20,7 +13,6 @@ export function microLoader(options: MicroLoaderOptions): Loader {
     load: async ({ store, logger }) => {
       logger.info("Loading micro posts from D1");
 
-      // Skip loading if required credentials are missing
       if (!options.databaseId || !options.accountId || !options.apiToken) {
         logger.warn(
           "Skipping micro posts: Missing D1 credentials (D1_DATABASE_ID, CLOUDFLARE_ACCOUNT_ID, or CLOUDFLARE_API_TOKEN)",
@@ -29,74 +21,25 @@ export function microLoader(options: MicroLoaderOptions): Loader {
       }
 
       try {
-        const query =
-          "SELECT id, content, created_at, updated_at, syndicated_to FROM micro_posts ORDER BY created_at DESC";
+        const posts = await getMicroPosts({
+          accountId: options.accountId,
+          databaseId: options.databaseId,
+          apiToken: options.apiToken,
+        });
 
-        const response = await fetch(
-          `https://api.cloudflare.com/client/v4/accounts/${options.accountId}/d1/database/${options.databaseId}/query`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${options.apiToken}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              sql: query,
-            }),
-          },
-        );
-
-        if (!response.ok) {
-          throw new Error(`D1 API request failed: ${response.status} ${await response.text()}`);
-        }
-
-        const data = await response.json();
-
-        if (!data.success) {
-          throw new Error(`D1 query failed: ${JSON.stringify(data.errors)}`);
-        }
-
-        if (!Array.isArray(data.result) || data.result.length === 0) {
-          logger.warn("D1 query returned unexpected result structure");
-          return;
-        }
-
-        const resultRows = data.result[0]?.results;
-        if (!Array.isArray(resultRows)) {
-          logger.warn("D1 query results is not an array");
-          return;
-        }
-
-        const results = resultRows as MicroPost[];
-
-        // Store each post in the collection
-        for (const post of results) {
-          let syndicatedTo: string[] = [];
-          if (post.syndicated_to) {
-            try {
-              const parsed = JSON.parse(post.syndicated_to);
-              if (Array.isArray(parsed) && parsed.every((s) => typeof s === "string")) {
-                syndicatedTo = parsed;
-              } else {
-                logger.warn(`Invalid syndicated_to value for post ${post.id}, defaulting to []`);
-              }
-            } catch {
-              logger.warn(`Failed to parse syndicated_to for post ${post.id}, defaulting to []`);
-            }
-          }
-
+        for (const post of posts) {
           store.set({
             id: String(post.id),
             data: {
               content: post.content,
-              createdAt: new Date(post.created_at * 1000),
-              updatedAt: new Date(post.updated_at * 1000),
-              syndicatedTo,
+              createdAt: post.createdAt,
+              updatedAt: post.updatedAt,
+              syndicatedTo: (post.syndicatedTo ?? []).map((item) => item.url),
             },
           });
         }
 
-        logger.info(`Loaded ${results.length} micro posts`);
+        logger.info(`Loaded ${posts.length} micro posts`);
       } catch (error) {
         logger.error(
           `Failed to load micro posts: ${error instanceof Error ? error.message : String(error)}`,
