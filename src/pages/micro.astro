@@ -1,8 +1,109 @@
 ---
 import { getCollection } from "astro:content";
 import Layout from "@/layouts/Layout.astro";
+import { createMicroStorage } from "@/lib/micro-r2.ts";
+import {
+  type SyndicationConfig,
+  type SyndicationResult,
+  syndicatePost,
+} from "@/lib/micro-syndicate.ts";
 
 export const prerender = false;
+
+const env = Astro.locals.runtime.env;
+
+function isAuthorized(): boolean {
+  const secret = env.MICRO_SECRET;
+  if (!secret) return false;
+  return Astro.request.headers.get("Authorization") === `Bearer ${secret}`;
+}
+
+// POST /micro — create a post (and optionally syndicate)
+if (Astro.request.method === "POST") {
+  if (!isAuthorized()) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  let body: { content?: string };
+  try {
+    body = await Astro.request.json();
+  } catch {
+    return new Response(JSON.stringify({ error: "Invalid JSON" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const content = body.content?.trim();
+  if (!content) {
+    return new Response(JSON.stringify({ error: "content is required" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  if (content.length > 280) {
+    return new Response(JSON.stringify({ error: "content must be 280 characters or less" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const storage = createMicroStorage(env.MICRO_BUCKET);
+  const post = await storage.addPost(content);
+
+  const config: SyndicationConfig = {};
+  if (env.BLUESKY_IDENTIFIER && env.BLUESKY_PASSWORD) {
+    config.bluesky = { identifier: env.BLUESKY_IDENTIFIER, password: env.BLUESKY_PASSWORD };
+  }
+  if (
+    env.TWITTER_APP_KEY &&
+    env.TWITTER_APP_SECRET &&
+    env.TWITTER_ACCESS_TOKEN &&
+    env.TWITTER_ACCESS_SECRET
+  ) {
+    config.twitter = {
+      appKey: env.TWITTER_APP_KEY,
+      appSecret: env.TWITTER_APP_SECRET,
+      accessToken: env.TWITTER_ACCESS_TOKEN,
+      accessSecret: env.TWITTER_ACCESS_SECRET,
+    };
+  }
+
+  let syndication: SyndicationResult[] = [];
+  if (config.bluesky || config.twitter) {
+    try {
+      syndication = await syndicatePost(content, config);
+      const successful = syndication
+        .filter((r) => r.success && r.id && r.url)
+        .map((r) => ({ platform: r.platform, id: r.id!, url: r.url! }));
+      if (successful.length > 0) {
+        await storage.updatePost(post.id, { syndicatedTo: successful });
+        post.syndicatedTo = successful;
+      }
+    } catch {
+      // syndication errors are non-fatal
+    }
+  }
+
+  return new Response(JSON.stringify({ post, syndication }), {
+    status: 201,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+// GET /micro with auth + Accept: application/json — return post list for CLI
+if (
+  Astro.request.method === "GET" &&
+  Astro.request.headers.get("Accept")?.includes("application/json") &&
+  isAuthorized()
+) {
+  const storage = createMicroStorage(env.MICRO_BUCKET);
+  const posts = await storage.readPosts();
+  posts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  return new Response(JSON.stringify(posts), {
+    headers: { "Content-Type": "application/json" },
+  });
+}
 
 // Cursor-based pagination settings
 const PAGE_SIZE = 20;
@@ -14,7 +115,7 @@ if (cursorParam !== null && !Number.isFinite(Number(cursorParam))) {
   return Astro.redirect("/micro", 302);
 }
 
-// Get micro posts from D1 via content collection
+// Get micro posts from content collection
 const allPosts = (await getCollection("micro")).sort(
   (a, b) => b.data.createdAt.valueOf() - a.data.createdAt.valueOf()
 );
