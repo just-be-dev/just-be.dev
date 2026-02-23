@@ -1,0 +1,31 @@
+---
+import { getCollection } from "astro:content";
+
+export const prerender = false;
+
+const PAGE_SIZE = 20;
+const { id } = Astro.params;
+
+const allPosts = (await getCollection("micro")).sort(
+  (a, b) => b.data.createdAt.valueOf() - a.data.createdAt.valueOf()
+);
+
+const idx = allPosts.findIndex((p) => p.id === id);
+
+if (idx === -1) {
+  return new Response(null, { status: 404 });
+}
+
+const pageNum = Math.floor(idx / PAGE_SIZE);
+
+if (pageNum === 0) {
+  // Post is on the first page — no cursor needed
+  return Astro.redirect(`/micro#${id}`, 302);
+} else {
+  // Cursor is the createdAt of the last post on the preceding page,
+  // which is the boundary that makes dir=next load this page.
+  const cursorPost = allPosts[pageNum * PAGE_SIZE - 1];
+  const cursor = cursorPost.data.createdAt.valueOf();
+  return Astro.redirect(`/micro?cursor=${cursor}&dir=next#${id}`, 302);
+}
+---

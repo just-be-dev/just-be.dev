@@ -82,7 +82,6 @@ async function processMicroCollection(
     const results = data.result[0]?.results || [];
 
     let processedCount = 0;
-    let skippedCount = 0;
     let errorCount = 0;
 
     for (const post of results) {
@@ -145,7 +144,7 @@ async function processMicroCollection(
     console.log();
     return {
       processed: processedCount,
-      skipped: skippedCount,
+      skipped: 0,
       errors: errorCount,
     };
   } catch (error) {

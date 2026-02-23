@@ -9,6 +9,11 @@ const PAGE_SIZE = 20;
 const cursorParam = Astro.url.searchParams.get("cursor");
 const direction = Astro.url.searchParams.get("dir") || "next";
 
+// Validate cursor before using it
+if (cursorParam !== null && !Number.isFinite(Number(cursorParam))) {
+  return Astro.redirect("/micro", 302);
+}
+
 // Get micro posts from D1 via content collection
 const allPosts = (await getCollection("micro")).sort(
   (a, b) => b.data.createdAt.valueOf() - a.data.createdAt.valueOf()
@@ -28,7 +33,7 @@ if (!cursorParam) {
     nextCursor = posts[posts.length - 1].data.createdAt.valueOf();
   }
 } else {
-  const cursor = parseInt(cursorParam);
+  const cursor = Number(cursorParam);
 
   if (direction === "prev") {
     // Previous page - get posts newer than cursor
@@ -96,7 +101,7 @@ function formatDate(date: Date): string {
   <div class="space-y-2">
     {
       posts.map((post) => (
-        <article class="border-fg-2 border p-2">
+        <article id={post.id} class="border-fg-2 border p-2">
           <p class="whitespace-pre-wrap break-words">{post.data.content}</p>
           <time class="text-fg-2 mt-1 block text-sm" datetime={post.data.createdAt.toISOString()}>
             {formatDate(post.data.createdAt)}
