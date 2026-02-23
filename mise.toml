@@ -107,3 +107,7 @@ description = "Generate drizzle migrations for micro blog"
 dir = "packages/micro"
 run = "bun run db:migrate"
 description = "Apply drizzle migrations for micro blog"
+
+[tasks."deploy:micro"]
+run = "wrangler d1 migrations apply micro-blog --remote"
+description = "Apply D1 migrations to remote micro-blog database"
