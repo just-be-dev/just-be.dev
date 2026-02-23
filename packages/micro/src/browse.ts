@@ -8,27 +8,22 @@ interface Post {
   syndicatedTo: Array<{ platform: string; id: string; url: string }>;
 }
 
-const DEFAULT_SITE_URL = "https://just-be.dev";
-
-function getConfig() {
+function getSecret(): string {
   const secret = process.env.MICRO_SECRET;
   if (!secret) {
     console.error("Error: MICRO_SECRET environment variable not set");
     process.exit(1);
   }
-  return {
-    secret,
-    siteUrl: process.env.MICRO_SITE_URL ?? DEFAULT_SITE_URL,
-  };
+  return secret;
 }
 
-export async function browse() {
+export async function browse(siteUrl: string) {
   p.intro("Micro Blog Browser");
 
   const spinner = p.spinner();
   spinner.start("Loading posts...");
 
-  const { secret, siteUrl } = getConfig();
+  const secret = getSecret();
 
   let posts: Post[];
   try {

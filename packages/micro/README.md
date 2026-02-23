@@ -53,6 +53,20 @@ Creates a post directly from the command line.
 
 - Bun >= 1.0.0
 - A running instance of the site with `MICRO_BUCKET` (R2) and `MICRO_SECRET` configured
+- `MICRO_SECRET` environment variable set locally to authenticate with the API
+
+## Targeting a Branch Preview
+
+By default the CLI talks to the production site (`https://just-be.dev`). Pass `--branch`
+(or `-b`) to target the Cloudflare Workers preview URL for any branch:
+
+```bash
+micro --branch add-micro-blog-section
+micro post --branch add-micro-blog-section "Hello from the preview"
+```
+
+Branch names are automatically sanitized for subdomain use. Passing `main` (or omitting
+the flag entirely) always resolves to the production URL.
 
 ## Social Media Syndication
 
@@ -104,4 +118,5 @@ To test syndication without real API credentials, simply don't set the environme
 
 ## Development
 
-The CLI talks to the site's HTTP API. Set `MICRO_SECRET` to authenticate and `MICRO_SITE_URL` to point at a local dev server (defaults to `https://just-be.dev`).
+The CLI talks to the site's HTTP API. Set `MICRO_SECRET` to authenticate, then use
+`--branch <name>` to point at the preview URL for your branch.
