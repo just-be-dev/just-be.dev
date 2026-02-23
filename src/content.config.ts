@@ -138,13 +138,10 @@ const tags = defineCollection({
 });
 
 const micro = defineCollection({
-  loader: microLoader({
-    databaseId: process.env.D1_DATABASE_ID || "",
-    accountId: process.env.CLOUDFLARE_ACCOUNT_ID || "",
-    apiToken: process.env.CLOUDFLARE_API_TOKEN || "",
-  }),
+  loader: microLoader(),
   schema: microSchema,
 });
+
 export const collections = {
   blog,
   games,
