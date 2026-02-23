@@ -35,6 +35,7 @@ describe("Code.fromDate()", () => {
     expect(Code.fromDate(date, "R").toString()).toBe("R2392");
     expect(Code.fromDate(date, "P").toString()).toBe("P2392");
     expect(Code.fromDate(date, "T").toString()).toBe("T2392");
+    expect(Code.fromDate(date, "M").toString()).toBe("M2392");
   });
 });
 
@@ -113,6 +114,7 @@ describe("Code.fromCode()", () => {
     expect(Code.fromCode("R2391").getKind()).toBe("R");
     expect(Code.fromCode("P2391").getKind()).toBe("P");
     expect(Code.fromCode("T2391").getKind()).toBe("T");
+    expect(Code.fromCode("M2391").getKind()).toBe("M");
   });
 });
 
@@ -180,6 +182,7 @@ describe("getters", () => {
     expect(Code.fromCode("R2392").getKind()).toBe("R");
     expect(Code.fromCode("P2392").getKind()).toBe("P");
     expect(Code.fromCode("T2392").getKind()).toBe("T");
+    expect(Code.fromCode("M2392").getKind()).toBe("M");
   });
 
   it("should return date code via getDateCode()", () => {
@@ -241,5 +244,9 @@ describe("Code.getCollection()", () => {
 
   it("should return 'talks' for kind T", () => {
     expect(Code.fromCode("T2392").getCollection()).toBe("talks");
+  });
+
+  it("should return 'micro' for kind M", () => {
+    expect(Code.fromCode("M2392").getCollection()).toBe("micro");
   });
 });

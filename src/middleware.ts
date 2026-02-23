@@ -42,9 +42,17 @@ export const onRequest = defineMiddleware(async (context, next) => {
     const matchingEntry = entries.find((entry) => entry.data.code === code);
 
     if (matchingEntry) {
-      // The manifest ID is the canonical URL path (e.g., "/blog/slug")
+      // The manifest ID is the canonical URL path (e.g., "/blog/slug" or "/micro#123")
+      // Handle hash fragments explicitly — setting URL.pathname encodes '#' as '%23'
+      const targetPath = matchingEntry.id;
       const newUrl = new URL(url);
-      newUrl.pathname = matchingEntry.id;
+      const hashIdx = targetPath.indexOf("#");
+      if (hashIdx !== -1) {
+        newUrl.pathname = targetPath.slice(0, hashIdx);
+        newUrl.hash = targetPath.slice(hashIdx);
+      } else {
+        newUrl.pathname = targetPath;
+      }
       return context.redirect(newUrl.toString(), 301);
     }
   }

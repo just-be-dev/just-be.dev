@@ -56,17 +56,42 @@ export function microLoader(options: MicroLoaderOptions): Loader {
           throw new Error(`D1 query failed: ${JSON.stringify(data.errors)}`);
         }
 
-        const results = data.result[0]?.results || [];
+        if (!Array.isArray(data.result) || data.result.length === 0) {
+          logger.warn("D1 query returned unexpected result structure");
+          return;
+        }
+
+        const resultRows = data.result[0]?.results;
+        if (!Array.isArray(resultRows)) {
+          logger.warn("D1 query results is not an array");
+          return;
+        }
+
+        const results = resultRows as MicroPost[];
 
         // Store each post in the collection
-        for (const post of results as MicroPost[]) {
+        for (const post of results) {
+          let syndicatedTo: string[] = [];
+          if (post.syndicated_to) {
+            try {
+              const parsed = JSON.parse(post.syndicated_to);
+              if (Array.isArray(parsed) && parsed.every((s) => typeof s === "string")) {
+                syndicatedTo = parsed;
+              } else {
+                logger.warn(`Invalid syndicated_to value for post ${post.id}, defaulting to []`);
+              }
+            } catch {
+              logger.warn(`Failed to parse syndicated_to for post ${post.id}, defaulting to []`);
+            }
+          }
+
           store.set({
             id: String(post.id),
             data: {
               content: post.content,
               createdAt: new Date(post.created_at * 1000),
               updatedAt: new Date(post.updated_at * 1000),
-              syndicatedTo: post.syndicated_to ? JSON.parse(post.syndicated_to) : [],
+              syndicatedTo,
             },
           });
         }
