@@ -31,7 +31,7 @@ function parseFrontmatter(content: string): { data: Record<string, any>; body: s
 }
 
 /**
- * Process micro posts from D1 database
+ * Process micro posts from R2 JSONL
  */
 async function processMicroCollection(
   manifest: UrlManifest,
@@ -40,53 +40,41 @@ async function processMicroCollection(
 ): Promise<{ processed: number; skipped: number; errors: number }> {
   console.log("Processing collection: micro");
 
-  const databaseId = process.env.D1_DATABASE_ID;
-  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-  const apiToken = process.env.CLOUDFLARE_API_TOKEN;
-
-  // Skip if credentials are missing
-  if (!databaseId || !accountId || !apiToken) {
-    console.log(
-      "  ⚠️  Skipping micro posts: Missing D1 credentials (D1_DATABASE_ID, CLOUDFLARE_ACCOUNT_ID, or CLOUDFLARE_API_TOKEN)\n",
-    );
-    return { processed: 0, skipped: 0, errors: 0 };
-  }
-
   try {
-    const query = "SELECT id, created_at FROM micro_posts ORDER BY created_at DESC";
+    const { getPlatformProxy } = await import("wrangler");
+    const projectRoot = import.meta.dir + "/..";
+    const { env, dispose } = await getPlatformProxy<{ MICRO_BUCKET: R2Bucket }>({
+      configPath: `${projectRoot}/wrangler.toml`,
+      persist: { path: `${projectRoot}/.wrangler/state/v3` },
+    });
 
-    const response = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${databaseId}/query`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          sql: query,
-        }),
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error(`D1 API request failed: ${response.status} ${await response.text()}`);
+    if (!env.MICRO_BUCKET) {
+      console.log("  ⚠️  Skipping micro posts: MICRO_BUCKET not available\n");
+      await dispose();
+      return { processed: 0, skipped: 0, errors: 0 };
     }
 
-    const data = await response.json();
+    const obj = await env.MICRO_BUCKET.get("micro-posts.jsonl");
+    await dispose();
 
-    if (!data.success) {
-      throw new Error(`D1 query failed: ${JSON.stringify(data.errors)}`);
+    if (!obj) {
+      console.log("  ⚠️  Skipping micro posts: micro-posts.jsonl not found in R2\n");
+      return { processed: 0, skipped: 0, errors: 0 };
     }
 
-    const results = data.result[0]?.results || [];
+    const text = await obj.text();
+    const posts = text
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line) as { id: number; createdAt: string });
 
     let processedCount = 0;
     let errorCount = 0;
 
-    for (const post of results) {
+    for (const post of posts) {
       const postId = String(post.id);
-      const createdAt = new Date(post.created_at * 1000);
+      const createdAt = new Date(post.createdAt);
 
       // Generate code from creation date with 'M' kind
       const code = Code.fromDate(createdAt, "M").toString().toLowerCase();
@@ -369,7 +357,7 @@ async function genUrlManifest(collections: string[]) {
   for (const collection of collections) {
     let result;
     if (collection === "micro") {
-      // Special handling for micro posts from D1
+      // Special handling for micro posts from R2
       result = await processMicroCollection(manifest, existingSlugToCode, seenSlugsInCurrentRun);
     } else {
       // File-based collections
