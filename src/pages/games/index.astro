@@ -1,5 +1,16 @@
 ---
 import Layout from "@/layouts/Layout.astro";
+import LinkList from "@/components/LinkList.astro";
+import type { LinkListItem } from "@/components/LinkList.astro";
+
+const games: LinkListItem[] = [
+  {
+    code: "G23FB",
+    slug: "/games/hangul-hero",
+    title: "hangul-hero",
+    description: "Korean typing arcade game",
+  },
+];
 ---
 
 <Layout title="Games - Just Be">
@@ -7,15 +18,5 @@ import Layout from "@/layouts/Layout.astro";
     <h1 class="font-bold">~/games</h1>
   </header>
 
-  <ul>
-    <li>
-      <a
-        href="/games/hangul-hero"
-        class="-mx-[1ch] px-[1ch] inline-flex gap-2 items-baseline hocus:invert"
-      >
-        <span class="font-bold">hangul-hero</span>
-        <span class="text-fg-1">Korean typing arcade game</span>
-      </a>
-    </li>
-  </ul>
+  <LinkList items={games} columns={["code", "title"]} variant="grid" gap="tight" />
 </Layout>

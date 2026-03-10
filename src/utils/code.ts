@@ -1,11 +1,12 @@
 const EPOCH = Date.UTC(2000, 0, 1); // January 1, 2000 UTC
 const BASE16_CHARS = "0123456789ABCDEF" as const;
 
-export const VALID_KINDS = ["B", "R", "P", "T"] as const;
+export const VALID_KINDS = ["B", "G", "R", "P", "T"] as const;
 export type Kind = (typeof VALID_KINDS)[number];
 
 export const KIND_TO_COLLECTION = {
   B: "blog",
+  G: "games",
   R: "research",
   P: "projects",
   T: "talks",
