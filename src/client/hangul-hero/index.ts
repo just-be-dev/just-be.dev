@@ -21,6 +21,8 @@ function loadSound(p: p5, path: string): Promise<p5.SoundFile> {
 // Initialize p5.js
 const container = document.getElementById("game-container");
 if (container) {
+  const assetBase = container.dataset.assetBase ?? "/assets/games/hangul-hero";
+
   new p5((p: p5) => {
     let game: Game;
 
@@ -52,23 +54,23 @@ if (container) {
         success2,
         success3,
       ] = await Promise.all([
-        loadFont(p, "/fonts/PressStart2P-Regular.ttf"),
-        loadFont(p, "/fonts/UnifontExMono.ttf"),
-        loadSound(p, "/sounds/button-pressed.mp3"),
-        loadSound(p, "/sounds/button-depressed.mp3"),
-        loadSound(p, "/sounds/hangul-hero-intro.mp3"),
-        loadSound(p, "/sounds/game-over.mp3"),
-        loadSound(p, "/sounds/game-over-song.mp3"),
-        loadSound(p, "/sounds/game-music-1.mp3"),
-        loadSound(p, "/sounds/game-music-2.mp3"),
-        loadSound(p, "/sounds/game-music-3.mp3"),
-        loadSound(p, "/sounds/game-music-4.mp3"),
-        loadSound(p, "/sounds/explosion-1.mp3"),
-        loadSound(p, "/sounds/explosion-2.mp3"),
-        loadSound(p, "/sounds/explosion-3.mp3"),
-        loadSound(p, "/sounds/success-1.mp3"),
-        loadSound(p, "/sounds/success-2.mp3"),
-        loadSound(p, "/sounds/success-3.mp3"),
+        loadFont(p, `${assetBase}/fonts/PressStart2P-Regular.ttf`),
+        loadFont(p, `${assetBase}/fonts/UnifontExMono.ttf`),
+        loadSound(p, `${assetBase}/sounds/button-pressed.mp3`),
+        loadSound(p, `${assetBase}/sounds/button-depressed.mp3`),
+        loadSound(p, `${assetBase}/sounds/hangul-hero-intro.mp3`),
+        loadSound(p, `${assetBase}/sounds/game-over.mp3`),
+        loadSound(p, `${assetBase}/sounds/game-over-song.mp3`),
+        loadSound(p, `${assetBase}/sounds/game-music-1.mp3`),
+        loadSound(p, `${assetBase}/sounds/game-music-2.mp3`),
+        loadSound(p, `${assetBase}/sounds/game-music-3.mp3`),
+        loadSound(p, `${assetBase}/sounds/game-music-4.mp3`),
+        loadSound(p, `${assetBase}/sounds/explosion-1.mp3`),
+        loadSound(p, `${assetBase}/sounds/explosion-2.mp3`),
+        loadSound(p, `${assetBase}/sounds/explosion-3.mp3`),
+        loadSound(p, `${assetBase}/sounds/success-1.mp3`),
+        loadSound(p, `${assetBase}/sounds/success-2.mp3`),
+        loadSound(p, `${assetBase}/sounds/success-3.mp3`),
       ]);
 
       game = new Game(p, pixelFont, koreanPixelFont, {

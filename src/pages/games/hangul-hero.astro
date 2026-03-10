@@ -1,5 +1,8 @@
 ---
 import Layout from "@/layouts/Layout.astro";
+import { resolveAssetUrl } from "@/utils/assets";
+
+const assetBase = (await resolveAssetUrl("games/hangul-hero")) ?? "/assets/games/hangul-hero";
 ---
 
 <Layout
@@ -88,7 +91,11 @@ import Layout from "@/layouts/Layout.astro";
           <div class="screen-container">
             <div class="screen-overlay"></div>
             <div class="screen-content">
-              <div id="game-container" class="game-screen view-transition-name:cartridge">
+              <div
+                id="game-container"
+                class="game-screen view-transition-name:cartridge"
+                data-asset-base={assetBase}
+              >
                 <input
                   type="text"
                   id="korean-input"
