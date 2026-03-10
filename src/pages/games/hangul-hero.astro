@@ -1,0 +1,1045 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { resolveAssetUrl } from "@/utils/assets";
+
+const assetBase = (await resolveAssetUrl("games/hangul-hero")) ?? "/assets/games/hangul-hero";
+---
+
+<Layout
+  title="Hangul Hero - Korean Typing Game"
+  description="A game to practice typing Korean characters (Hangul)"
+>
+  <div>
+    <div class="max-w-2xl mx-auto">
+      <div class="mobile-message">
+        <h2>MOBILE NOT SUPPORTED</h2>
+        <p>SORRY, THIS GAME IS ONLY SUPPORTED ON DESKTOP (FOR NOW).</p>
+      </div>
+      <div class="arcade-cabinet">
+        <div class="cabinet-top">
+          <div class="marquee">
+            <div class="marquee-pattern"></div>
+            <div class="marquee-decoration left">
+              <div class="korean-chars">
+                <div class="char-column">
+                  <span style="color: #FF6B6B">ㄱ</span>
+                  <span style="color: #4ECDC4">ㅏ</span>
+                  <span style="color: #45B7D1">ㄴ</span>
+                  <span style="color: #96CEB4">ㅗ</span>
+                  <span style="color: #FFEEAD">ㄹ</span>
+                  <span style="color: #D4A5A5">ㅎ</span>
+                </div>
+                <div class="char-column">
+                  <span style="color: #45B7D1">ㅂ</span>
+                  <span style="color: #FF6B6B">ㅓ</span>
+                  <span style="color: #FFEEAD">ㅅ</span>
+                  <span style="color: #4ECDC4">ㅜ</span>
+                  <span style="color: #96CEB4">ㅈ</span>
+                  <span style="color: #D4A5A5">ㅣ</span>
+                </div>
+                <div class="char-column">
+                  <span style="color: #FF6B6B">ㅊ</span>
+                  <span style="color: #4ECDC4">ㅑ</span>
+                  <span style="color: #45B7D1">ㅋ</span>
+                  <span style="color: #FFEEAD">ㅠ</span>
+                  <span style="color: #96CEB4">ㅌ</span>
+                  <span style="color: #D4A5A5">ㅡ</span>
+                </div>
+              </div>
+            </div>
+            <div class="marquee-decoration right">
+              <div class="korean-chars">
+                <div class="char-column">
+                  <span style="color: #4ECDC4">ㅍ</span>
+                  <span style="color: #FF6B6B">ㅕ</span>
+                  <span style="color: #96CEB4">ㄷ</span>
+                  <span style="color: #FFEEAD">ㅛ</span>
+                  <span style="color: #45B7D1">ㅇ</span>
+                  <span style="color: #D4A5A5">ㅐ</span>
+                </div>
+                <div class="char-column">
+                  <span style="color: #FF6B6B">ㅁ</span>
+                  <span style="color: #4ECDC4">ㅔ</span>
+                  <span style="color: #D4A5A5">ㅃ</span>
+                  <span style="color: #96CEB4">ㅒ</span>
+                  <span style="color: #FFEEAD">ㄸ</span>
+                  <span style="color: #45B7D1">ㅉ</span>
+                </div>
+                <div class="char-column">
+                  <span style="color: #4ECDC4">ㄲ</span>
+                  <span style="color: #FF6B6B">ㅖ</span>
+                  <span style="color: #96CEB4">ㅆ</span>
+                  <span style="color: #FFEEAD">ㅢ</span>
+                  <span style="color: #45B7D1">ㅚ</span>
+                  <span style="color: #D4A5A5">ㅟ</span>
+                </div>
+              </div>
+            </div>
+            <h1
+              class="font-bold text-center font-bangers tracking-wider marquee-title"
+              style="text-shadow: 3px 3px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;"
+            >
+              <span style="color: #FF6B6B">한</span><span
+                style="color: #4ECDC4; margin-right: 0.75rem">글</span
+              ><span style="color: #96CEB4">H</span><span style="color: #FFEEAD">E</span><span
+                style="color: #D4A5A5">R</span
+              ><span style="color: #FF6B6B">O</span>
+            </h1>
+          </div>
+        </div>
+        <div class="screen-bezel">
+          <div class="screen-container">
+            <div class="screen-overlay"></div>
+            <div class="screen-content">
+              <div
+                id="game-container"
+                class="game-screen view-transition-name:cartridge"
+                data-asset-base={assetBase}
+              >
+                <input
+                  type="text"
+                  id="korean-input"
+                  class="opacity-0 absolute pointer-events-none w-0 h-0 overflow-hidden"
+                  autocomplete="off"
+                  aria-hidden="true"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cabinet-bottom">
+          <div class="control-panel">
+            <div class="speaker-grill">
+              <div class="speaker-pattern"></div>
+            </div>
+            <div class="led-container">
+              <div class="led-housing">
+                <div class="led-glow"></div>
+                <div class="led-core"></div>
+                <div class="led-highlight"></div>
+              </div>
+            </div>
+            <div class="button-mount">
+              <button id="start-button" class="arcade-start-button off">
+                <div class="button-trim">
+                  <div class="button-surface">
+                    <div class="button-text">시작</div>
+                  </div>
+                  <div class="button-base"></div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="text-center m-2 text-sm text-gray-400">
+      <a
+        href="mailto:hangul-hero@just-be.dev"
+        class="bg-gradient-to-r from-[#ff3366] to-[#ff6633] bg-clip-text text-transparent hover:from-[#ff6633] hover:to-[#ff3366] transition-all duration-300 animate-gradient bg-[length:200%_auto]"
+        >Email me</a
+      > to leave feedback or report bugs
+    </div>
+  </div>
+</Layout>
+
+<style>
+  @import url("https://fonts.googleapis.com/css2?family=Bangers&display=swap");
+
+  .font-bangers {
+    font-family: "Bangers", cursive;
+  }
+
+  :root {
+    --cabinet-color: #c8b2b2;
+    --button-color: #4ade80; /* Light green */
+    --button-glow: rgba(74, 222, 128, 0.5);
+    --button-color-active: #fbbf24; /* Amber/yellow */
+    --button-glow-active: rgba(251, 191, 36, 0.5);
+    --button-color-off: #ef4444; /* Red */
+    --button-glow-off: rgba(239, 68, 68, 0.5);
+  }
+
+  .arcade-cabinet {
+    background: linear-gradient(
+      45deg,
+      color-mix(in srgb, var(--cabinet-color) 85%, white),
+      var(--cabinet-color)
+    );
+    padding: 2rem;
+    border-radius: 1rem;
+    box-shadow:
+      0 0 0 4px color-mix(in srgb, var(--cabinet-color) 85%, black),
+      0 0 0 8px color-mix(in srgb, var(--cabinet-color) 75%, black),
+      0 10px 20px rgba(0, 0, 0, 0.5);
+    border: 1px solid color-mix(in srgb, var(--cabinet-color) 65%, black);
+  }
+
+  .arcade-cabinet::before {
+    display: none;
+  }
+
+  .cabinet-top {
+    margin: -2rem -2rem 1rem -2rem;
+    padding: 1.5rem;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--cabinet-color) 85%, white),
+      var(--cabinet-color)
+    );
+    border-radius: 1rem 1rem 0 0;
+    border-bottom: 4px solid color-mix(in srgb, var(--cabinet-color) 75%, black);
+    box-shadow:
+      inset 0 2px 5px rgba(255, 255, 255, 0.2),
+      inset 0 -2px 5px rgba(0, 0, 0, 0.2);
+  }
+
+  .cabinet-bottom {
+    margin: 1rem -2rem -2rem -2rem;
+    padding: 1rem;
+    background: linear-gradient(
+      0deg,
+      color-mix(in srgb, var(--cabinet-color) 85%, white),
+      var(--cabinet-color)
+    );
+    border-radius: 0 0 1rem 1rem;
+    border-top: 4px solid color-mix(in srgb, var(--cabinet-color) 75%, black);
+  }
+
+  .control-panel {
+    background: linear-gradient(
+      90deg,
+      var(--cabinet-color),
+      color-mix(in srgb, var(--cabinet-color) 85%, black),
+      var(--cabinet-color)
+    );
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow:
+      inset 0 2px 8px rgba(255, 255, 255, 0.15),
+      inset 0 -2px 8px rgba(0, 0, 0, 0.2),
+      0 2px 4px rgba(0, 0, 0, 0.15);
+    text-align: center;
+    position: relative;
+    min-height: 80px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    border: 1px solid color-mix(in srgb, var(--cabinet-color) 75%, black);
+  }
+
+  .speaker-grill {
+    position: relative;
+    width: 140px;
+    height: 124px;
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--cabinet-color) 95%, black) 0%,
+      color-mix(in srgb, var(--cabinet-color) 85%, black) 50%,
+      color-mix(in srgb, var(--cabinet-color) 98%, black) 100%
+    );
+    border-radius: 4px;
+    box-shadow:
+      inset 0 2px 8px rgba(0, 0, 0, 0.5),
+      inset -2px -2px 6px rgba(0, 0, 0, 0.4),
+      inset 2px 2px 6px rgba(255, 255, 255, 0.15),
+      1px 1px 2px rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+    margin: -3rem 0rem -3rem -1.5rem;
+    border-radius: 0.5rem 50% 50% 0.5rem;
+    border: 1px solid color-mix(in srgb, var(--cabinet-color) 65%, black);
+  }
+
+  .speaker-pattern {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image:
+      radial-gradient(
+        circle at center,
+        rgba(0, 0, 0, 0.7) 0,
+        rgba(0, 0, 0, 0.7) 1.5px,
+        transparent 1.5px
+      ),
+      linear-gradient(135deg, transparent 0%, rgba(0, 0, 0, 0.15) 50%, transparent 100%);
+    background-size:
+      6px 6px,
+      100% 100%;
+    background-position:
+      2px 2px,
+      0 0;
+    opacity: 0.85;
+  }
+
+  .speaker-inner {
+    display: none;
+  }
+
+  .button-mount {
+    position: relative;
+    width: 92px;
+    height: 92px;
+    background: linear-gradient(
+      45deg,
+      color-mix(in srgb, var(--cabinet-color) 85%, white),
+      var(--cabinet-color)
+    );
+    border-radius: 14px;
+    padding: 4px 6px 4px 4px;
+    box-shadow:
+      inset 0 2px 4px rgba(255, 255, 255, 0.8),
+      inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+    border: 2px solid color-mix(in srgb, var(--cabinet-color) 75%, black);
+    transform: translateZ(5px);
+    transition: box-shadow 0.1s;
+  }
+
+  .button-mount::before {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    right: 2px;
+    bottom: 2px;
+    border-radius: 10px;
+    background: linear-gradient(
+      45deg,
+      color-mix(in srgb, var(--cabinet-color) 90%, white),
+      color-mix(in srgb, var(--cabinet-color) 85%, white)
+    );
+    box-shadow:
+      inset 0 2px 4px rgba(255, 255, 255, 0.8),
+      inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 0;
+  }
+
+  .button-mount::after {
+    content: "";
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    right: 4px;
+    bottom: 4px;
+    border-radius: 8px;
+    background: linear-gradient(45deg, #2a2a2a, #1a1a1a);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+    z-index: 0;
+  }
+
+  .arcade-start-button:active + .button-mount {
+    box-shadow:
+      inset 0 2px 4px rgba(255, 255, 255, 0.8),
+      inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .arcade-start-button.active + .button-mount {
+    box-shadow:
+      inset 0 2px 4px rgba(255, 255, 255, 0.8),
+      inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .arcade-start-button.active:active + .button-mount {
+    box-shadow:
+      inset 0 2px 4px rgba(255, 255, 255, 0.8),
+      inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .button-trim {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, #2a2a2a, #1a1a1a);
+    border-radius: 10px;
+    padding: 2px;
+    box-shadow:
+      inset 0 0 10px rgba(0, 0, 0, 0.5),
+      0 4px 8px rgba(0, 0, 0, 0.4),
+      0 8px 16px rgba(0, 0, 0, 0.3);
+    transform: translateZ(10px);
+  }
+
+  .arcade-start-button {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    outline: none;
+    padding: 0;
+    transform-style: preserve-3d;
+    transform: translateZ(15px);
+    z-index: 1;
+  }
+
+  .arcade-start-button:active .button-surface {
+    transform: translateY(0);
+    box-shadow:
+      0 0 15px var(--button-glow),
+      0 0 30px var(--button-glow),
+      0 0 45px var(--button-glow),
+      inset 0 0 8px rgba(255, 255, 255, 0.5);
+  }
+
+  .arcade-start-button .button-surface {
+    position: absolute;
+    top: 1px;
+    left: 2px;
+    width: calc(100% - 4px);
+    height: calc(100% - 4px);
+    background: radial-gradient(
+      circle at 30% 30%,
+      color-mix(in srgb, var(--button-color) 85%, white),
+      var(--button-color) 60%,
+      color-mix(in srgb, var(--button-color) 85%, black)
+    );
+    border-radius: 8px;
+    transform: translateY(-4px) translateZ(20px);
+    transition:
+      transform 0.1s,
+      box-shadow 0.1s,
+      background 0.3s;
+    box-shadow:
+      0 0 30px var(--button-glow),
+      0 0 60px var(--button-glow),
+      0 0 90px var(--button-glow),
+      inset 0 0 15px rgba(255, 255, 255, 0.8),
+      inset 2px 2px 2px rgba(255, 255, 255, 0.5),
+      inset -2px -2px 2px rgba(0, 0, 0, 0.3),
+      0 4px 8px rgba(0, 0, 0, 0.4),
+      0 8px 16px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+  }
+
+  .button-base {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: calc(100% - 4px);
+    height: calc(100% - 4px);
+    background: color-mix(in srgb, var(--button-color) 85%, black);
+    border-radius: 8px;
+    z-index: 1;
+    box-shadow:
+      inset 0 0 2px rgba(0, 0, 0, 0.5),
+      0 4px 8px rgba(0, 0, 0, 0.4),
+      0 8px 16px rgba(0, 0, 0, 0.3);
+    transition: background 0.3s;
+  }
+
+  .button-text {
+    color: white;
+    font-family: Arial, sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    text-shadow:
+      0 0 5px rgba(255, 255, 255, 0.8),
+      0 0 10px rgba(255, 255, 255, 0.5);
+    transform: translateY(-1px);
+  }
+
+  .marquee {
+    position: relative;
+    background: linear-gradient(90deg, #ff3366, #ff6633);
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    box-shadow:
+      inset 0 0 20px rgba(255, 255, 255, 0.5),
+      inset 0 0 40px rgba(255, 255, 255, 0.2),
+      0 2px 4px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    overflow: hidden;
+    border: 2px solid #333;
+  }
+
+  .marquee::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    background:
+      radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.2) 0%, transparent 60%),
+      linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.1) 0%,
+        rgba(255, 255, 255, 0.2) 25%,
+        rgba(255, 255, 255, 0.1) 50%,
+        rgba(255, 255, 255, 0.2) 75%,
+        rgba(255, 255, 255, 0.1) 100%
+      );
+    animation: shine 3s linear infinite;
+  }
+
+  .marquee-decoration {
+    position: absolute;
+    top: 50%;
+    width: 160px;
+    transform: translateY(-50%);
+  }
+
+  .marquee-decoration.left {
+    left: 0;
+  }
+
+  .marquee-decoration.right {
+    right: 0;
+  }
+
+  .korean-chars {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+
+  .char-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .korean-chars span {
+    font-size: 20px;
+    font-weight: bold;
+    text-shadow:
+      0 0 5px currentColor,
+      0 0 10px currentColor,
+      0 0 15px currentColor;
+  }
+
+  .marquee-pattern {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+      radial-gradient(circle at 25% 50%, #fff 1px, transparent 1px),
+      radial-gradient(circle at 75% 50%, #fff 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.1;
+    animation: twinkle 2s ease-in-out infinite alternate;
+  }
+
+  @keyframes shine {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  @keyframes twinkle {
+    from {
+      opacity: 0.05;
+    }
+    to {
+      opacity: 0.15;
+    }
+  }
+
+  .marquee-title :global(span) {
+    font-size: 5rem;
+    line-height: 1;
+  }
+
+  .marquee-title {
+    position: relative;
+    z-index: 1;
+    margin: 0;
+    padding: 0.5rem;
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.1) 20%,
+      rgba(255, 255, 255, 0.1) 80%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    animation: title-shine 3s ease-in-out infinite;
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
+  }
+
+  @keyframes title-shine {
+    0%,
+    100% {
+      background-position: -200% center;
+    }
+    50% {
+      background-position: 200% center;
+    }
+  }
+
+  .screen-bezel {
+    background: linear-gradient(45deg, #111, #333);
+    padding: 1rem;
+    border-radius: 1rem;
+    box-shadow:
+      inset 0 0 10px rgba(0, 0, 0, 0.8),
+      0 2px 4px rgba(0, 0, 0, 0.3);
+    border: 2px solid #444;
+  }
+
+  .screen-container {
+    position: relative;
+    background: #000;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    border: 2px solid #1a1a1a;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+  }
+
+  .screen-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+      linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+      linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    background-size:
+      100% 2px,
+      3px 100%;
+    pointer-events: none;
+    z-index: 10;
+    border-radius: 0.5rem;
+  }
+
+  .screen-content {
+    position: relative;
+    z-index: 1;
+    background: #000;
+    animation: flicker 0.15s infinite;
+  }
+
+  .game-screen {
+    background: #000;
+    position: relative;
+    overflow: hidden;
+    min-height: 400px;
+  }
+
+  #game-container canvas {
+    border-radius: 0;
+    display: block;
+  }
+
+  @keyframes flicker {
+    0% {
+      opacity: 0.97;
+    }
+    5% {
+      opacity: 0.95;
+    }
+    10% {
+      opacity: 0.9;
+    }
+    15% {
+      opacity: 0.95;
+    }
+    20% {
+      opacity: 0.98;
+    }
+    25% {
+      opacity: 0.95;
+    }
+    30% {
+      opacity: 0.9;
+    }
+    35% {
+      opacity: 0.95;
+    }
+    40% {
+      opacity: 0.98;
+    }
+    45% {
+      opacity: 0.95;
+    }
+    50% {
+      opacity: 0.9;
+    }
+    55% {
+      opacity: 0.95;
+    }
+    60% {
+      opacity: 0.98;
+    }
+    65% {
+      opacity: 0.95;
+    }
+    70% {
+      opacity: 0.9;
+    }
+    75% {
+      opacity: 0.95;
+    }
+    80% {
+      opacity: 0.98;
+    }
+    85% {
+      opacity: 0.95;
+    }
+    90% {
+      opacity: 0.9;
+    }
+    95% {
+      opacity: 0.95;
+    }
+    100% {
+      opacity: 0.98;
+    }
+  }
+
+  .arcade-start-button.active .button-surface {
+    background: radial-gradient(
+      circle at 30% 30%,
+      color-mix(in srgb, var(--button-color-active) 85%, white),
+      var(--button-color-active) 60%,
+      color-mix(in srgb, var(--button-color-active) 85%, black)
+    );
+    box-shadow:
+      0 0 30px var(--button-glow-active),
+      0 0 60px var(--button-glow-active),
+      0 0 90px var(--button-glow-active),
+      inset 0 0 15px rgba(255, 255, 255, 0.8),
+      inset 2px 2px 2px rgba(255, 255, 255, 0.5),
+      inset -2px -2px 2px rgba(0, 0, 0, 0.3);
+  }
+
+  .arcade-start-button.active:active .button-surface {
+    box-shadow:
+      0 0 15px var(--button-glow-active),
+      0 0 30px var(--button-glow-active),
+      0 0 45px var(--button-glow-active),
+      inset 0 0 8px rgba(255, 255, 255, 0.5);
+  }
+
+  .arcade-start-button.active .button-base {
+    background: color-mix(in srgb, var(--button-color-active) 85%, black);
+  }
+
+  .arcade-start-button:active .button-trim {
+    box-shadow:
+      inset 0 0 10px rgba(0, 0, 0, 0.5),
+      0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .arcade-start-button.active:active .button-trim {
+    box-shadow:
+      inset 0 0 10px rgba(0, 0, 0, 0.5),
+      0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .led-container {
+    position: relative;
+    width: 24px;
+    height: 24px;
+    margin-right: 20px;
+    z-index: 10;
+  }
+
+  .led-housing {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    z-index: 11;
+    border-radius: 50%;
+    overflow: hidden;
+    transition: box-shadow 0.5s ease;
+  }
+
+  .led-housing::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
+    border-radius: 50%;
+    box-shadow:
+      inset 0 2px 4px rgba(255, 255, 255, 0.1),
+      inset 0 -2px 4px rgba(0, 0, 0, 0.3),
+      0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 12;
+    transition: box-shadow 0.5s ease;
+  }
+
+  .led-housing::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    right: 2px;
+    bottom: 2px;
+    background: linear-gradient(135deg, #333333, #2a2a2a);
+    border-radius: 50%;
+    box-shadow:
+      inset 0 2px 4px rgba(255, 255, 255, 0.15),
+      inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 13;
+    transition: box-shadow 0.5s ease;
+  }
+
+  .led-glow {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    right: 4px;
+    bottom: 4px;
+    background: radial-gradient(
+      circle at 30% 30%,
+      rgba(255, 0, 0, 0.8) 0%,
+      rgba(255, 0, 0, 0.4) 50%,
+      rgba(255, 0, 0, 0) 100%
+    );
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    filter: blur(1px);
+    z-index: 14;
+  }
+
+  .led-core {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    right: 6px;
+    bottom: 6px;
+    background: radial-gradient(circle at 30% 30%, #ff0000 0%, #cc0000 50%, #990000 100%);
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    box-shadow:
+      inset 0 2px 4px rgba(255, 255, 255, 0.3),
+      inset 0 -2px 4px rgba(0, 0, 0, 0.5);
+    z-index: 15;
+  }
+
+  .led-highlight {
+    position: absolute;
+    top: 7px;
+    left: 7px;
+    width: 6px;
+    height: 6px;
+    background: radial-gradient(
+      circle at center,
+      rgba(255, 255, 255, 0.9) 0%,
+      rgba(255, 255, 255, 0.4) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    filter: blur(0.5px);
+    z-index: 16;
+  }
+
+  .led-housing.powered {
+    box-shadow:
+      0 0 10px rgba(255, 0, 0, 0.3),
+      0 0 20px rgba(255, 0, 0, 0.2),
+      0 0 30px rgba(255, 0, 0, 0.1);
+  }
+
+  .led-housing.powered::before {
+    box-shadow:
+      inset 0 2px 4px rgba(255, 255, 255, 0.1),
+      inset 0 -2px 4px rgba(0, 0, 0, 0.3),
+      0 2px 4px rgba(0, 0, 0, 0.2),
+      0 0 5px rgba(255, 0, 0, 0.2);
+  }
+
+  .led-housing.powered::after {
+    box-shadow:
+      inset 0 2px 4px rgba(255, 255, 255, 0.15),
+      inset 0 -2px 4px rgba(0, 0, 0, 0.2),
+      0 0 3px rgba(255, 0, 0, 0.3);
+  }
+
+  .led-housing.powered .led-glow,
+  .led-housing.powered .led-core,
+  .led-housing.powered .led-highlight {
+    opacity: 1;
+  }
+
+  @keyframes ledPulse {
+    0%,
+    100% {
+      opacity: 0.3;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  .arcade-start-button.off .button-surface {
+    background: radial-gradient(
+      circle at 30% 30%,
+      color-mix(in srgb, var(--button-color-off) 85%, white),
+      var(--button-color-off) 60%,
+      color-mix(in srgb, var(--button-color-off) 85%, black)
+    );
+    box-shadow:
+      0 0 30px var(--button-glow-off),
+      0 0 60px var(--button-glow-off),
+      0 0 90px var(--button-glow-off),
+      inset 0 0 15px rgba(255, 255, 255, 0.8),
+      inset 2px 2px 2px rgba(255, 255, 255, 0.5),
+      inset -2px -2px 2px rgba(0, 0, 0, 0.3);
+  }
+
+  .arcade-start-button.off:active .button-surface {
+    box-shadow:
+      0 0 15px var(--button-glow-off),
+      0 0 30px var(--button-glow-off),
+      0 0 45px var(--button-glow-off),
+      inset 0 0 8px rgba(255, 255, 255, 0.5);
+  }
+
+  .arcade-start-button.off .button-base {
+    background: color-mix(in srgb, var(--button-color-off) 85%, black);
+  }
+
+  @keyframes ledPulse {
+    0%,
+    100% {
+      opacity: 0.3;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  .arcade-start-button.off .button-surface {
+    background: radial-gradient(
+      circle at 30% 30%,
+      color-mix(in srgb, var(--button-color-off) 85%, white),
+      var(--button-color-off) 60%,
+      color-mix(in srgb, var(--button-color-off) 85%, black)
+    );
+    box-shadow:
+      0 0 30px var(--button-glow-off),
+      0 0 60px var(--button-glow-off),
+      0 0 90px var(--button-glow-off),
+      inset 0 0 15px rgba(255, 255, 255, 0.8),
+      inset 2px 2px 2px rgba(255, 255, 255, 0.5),
+      inset -2px -2px 2px rgba(0, 0, 0, 0.3);
+  }
+
+  .arcade-start-button.off:active .button-surface {
+    box-shadow:
+      0 0 15px var(--button-glow-off),
+      0 0 30px var(--button-glow-off),
+      0 0 45px var(--button-glow-off),
+      inset 0 0 8px rgba(255, 255, 255, 0.5);
+  }
+
+  .arcade-start-button.off .button-base {
+    background: color-mix(in srgb, var(--button-color-off) 85%, black);
+  }
+
+  @keyframes gradient {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  .animate-gradient {
+    animation: gradient 3s ease infinite;
+  }
+
+  /* Mobile message styles */
+  .mobile-message {
+    display: none;
+    text-align: center;
+    padding: 2rem;
+    background: #000;
+    border: 4px solid #333;
+    border-radius: 8px;
+    margin: 2rem auto;
+    max-width: 90%;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .mobile-message::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+      linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+    background-size: 8px 8px;
+    opacity: 0.1;
+    pointer-events: none;
+  }
+
+  .mobile-message h2 {
+    font-family: "Press Start 2P", "Courier New", Courier, monospace;
+    color: #ff3366;
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    text-shadow: 2px 2px 0 #000;
+  }
+
+  .mobile-message p {
+    font-family: "Press Start 2P", "Courier New", Courier, monospace;
+    color: #fff;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    text-shadow: 2px 2px 0 #000;
+  }
+
+  /* Hide game on mobile */
+  @media (max-width: 768px) {
+    .arcade-cabinet {
+      display: none;
+    }
+
+    .mobile-message {
+      display: block;
+    }
+
+    .text-center.mt-4 {
+      display: none;
+    }
+  }
+
+  /* View transition styles */
+  ::view-transition-old(cartridge),
+  ::view-transition-new(cartridge) {
+    animation: none;
+    mix-blend-mode: normal;
+  }
+
+  ::view-transition-old(cartridge) {
+    z-index: 1;
+  }
+
+  ::view-transition-new(cartridge) {
+    z-index: 999;
+  }
+</style>
+
+<script>
+  import "@/client/hangul-hero";
+</script>

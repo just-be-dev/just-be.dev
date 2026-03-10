@@ -1,0 +1,22 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import LinkList from "@/components/LinkList.astro";
+import type { LinkListItem } from "@/components/LinkList.astro";
+
+const games: LinkListItem[] = [
+  {
+    code: "G23FB",
+    slug: "/games/hangul-hero",
+    title: "hangul-hero",
+    description: "Korean typing arcade game",
+  },
+];
+---
+
+<Layout title="Games - Just Be">
+  <header class="mb-2">
+    <h1 class="font-bold">~/games</h1>
+  </header>
+
+  <LinkList items={games} columns={["code", "title"]} variant="grid" gap="tight" />
+</Layout>
