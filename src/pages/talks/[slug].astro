@@ -12,7 +12,7 @@ import { resolveAssetUrl } from "@/utils/assets";
 export async function getStaticPaths() {
   const talks = await getCollection("talks");
   return talks.map((talk) => ({
-    params: { slug: talk.id },
+    params: { slug: talk.id.toLowerCase() },
     props: talk,
   }));
 }

@@ -13,7 +13,7 @@ import { Code } from "@/utils/code";
 export async function getStaticPaths() {
   const research = await getCollection("research");
   return research.map((item) => ({
-    params: { slug: item.id },
+    params: { slug: item.id.toLowerCase() },
     props: item,
   }));
 }

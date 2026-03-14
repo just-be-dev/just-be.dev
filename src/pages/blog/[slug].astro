@@ -15,7 +15,7 @@ const tagDescriptions = new Map(tagEntries.map((t) => [t.id, t.data.description]
 export async function getStaticPaths() {
   const posts = await getCollection("blog");
   return posts.map((post) => ({
-    params: { slug: post.id },
+    params: { slug: post.id.toLowerCase() },
     props: post,
   }));
 }
