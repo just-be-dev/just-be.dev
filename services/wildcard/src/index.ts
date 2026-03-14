@@ -21,11 +21,12 @@ function addCorsHeaders(response: Response, request: Request): Response {
     const originUrl = new URL(origin);
     const hostname = originUrl.hostname;
 
-    // Allow just-be.dev, *.just-be.dev, and *.just-be.workers.dev (for preview deployments)
+    // Allow just-be.dev, *.just-be.dev, *.just-be.workers.dev, and localhost (dev)
     const isAllowed =
       hostname === "just-be.dev" ||
       hostname.endsWith(".just-be.dev") ||
-      hostname.endsWith(".just-be.workers.dev");
+      hostname.endsWith(".just-be.workers.dev") ||
+      hostname === "localhost";
 
     if (isAllowed) {
       const headers = new Headers(response.headers);
@@ -53,11 +54,12 @@ export default {
         const originUrl = new URL(origin);
         const hostname = originUrl.hostname;
 
-        // Allow just-be.dev, *.just-be.dev, and *.just-be.workers.dev (for preview deployments)
+        // Allow just-be.dev, *.just-be.dev, *.just-be.workers.dev, and localhost (dev)
         const isAllowed =
           hostname === "just-be.dev" ||
           hostname.endsWith(".just-be.dev") ||
-          hostname.endsWith(".just-be.workers.dev");
+          hostname.endsWith(".just-be.workers.dev") ||
+          hostname === "localhost";
 
         if (isAllowed) {
           return new Response(null, {

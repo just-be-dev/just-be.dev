@@ -1,5 +1,5 @@
 import { defineLiveCollection } from "astro:content";
-import { z } from "astro:content";
+import { z } from "astro/zod";
 import { githubReadmeLoader } from "./loaders/github-readme";
 
 const readme = defineLiveCollection({

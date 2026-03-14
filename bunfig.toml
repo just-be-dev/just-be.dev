@@ -1,3 +1,17 @@
 [install]
 # Only install package versions published at least 7 days ago
-minimumReleaseAge = 604800
+minimumReleaseAge = 259200
+
+minimumReleaseAgeExcludes = [
+  "@types/bun",
+  "typescript",
+  "astro",
+  "@astrojs/cloudflare",
+  "@astrojs/internal-helpers",
+  "@astrojs/markdown-remark",
+  "@astrojs/mdx",
+  "@astrojs/prism",
+  "@astrojs/rss",
+  "@astrojs/sitemap",
+  "@astrojs/underscore-redirects",
+]
