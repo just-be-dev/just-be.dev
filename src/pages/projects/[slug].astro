@@ -11,7 +11,7 @@ import { Code } from "@/utils/code";
 export async function getStaticPaths() {
   const projects = await getCollection("projects");
   return projects.map((project) => ({
-    params: { slug: project.id },
+    params: { slug: project.id.toLowerCase() },
     props: project,
   }));
 }
