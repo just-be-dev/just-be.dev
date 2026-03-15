@@ -1,6 +1,6 @@
 name = "just-be-dev"
-compatibility_date = "2025-12-15"
-compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
+compatibility_date = "2026-03-13"
+compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public", "disable_nodejs_process_v2"]
 
 [observability]
 enabled = true
