@@ -1,5 +1,5 @@
 ---
-import { getCollection, render } from "astro:content";
+import { getCollection, getEntry, render } from "astro:content";
 import FormattedDate from "@/components/FormattedDate.astro";
 import ProjectStatus from "@/components/ProjectStatus.astro";
 import Link from "@/components/Link.astro";
@@ -8,17 +8,15 @@ import MDContent from "@/components/MDContent.astro";
 import Layout from "@/layouts/Layout.astro";
 import { Code } from "@/utils/code";
 
-export async function getStaticPaths() {
-  const projects = await getCollection("projects");
-  return projects.map((project) => ({
-    params: { slug: project.id.toLowerCase() },
-    props: project,
-  }));
+export const prerender = false;
+
+const { slug } = Astro.params;
+const project = await getEntry("projects", slug!);
+
+if (!project) {
+  return Astro.redirect("/projects");
 }
 
-type Props = Awaited<ReturnType<typeof getStaticPaths>>[number]["props"];
-
-const project = Astro.props;
 const { Content } = await render(project);
 
 // Get code from frontmatter
