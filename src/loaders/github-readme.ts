@@ -2,6 +2,7 @@ import type { LiveLoader } from "astro:content";
 import { marked } from "marked";
 
 const DEFAULT_OWNER = "just-be-dev";
+const USER_AGENT = "just-be-dev-website";
 
 /**
  * Creates a custom renderer that handles both external and relative links
@@ -77,6 +78,7 @@ export function githubReadmeLoader(): LiveLoader<ReadmeData, EntryFilter, Collec
         // Fetch list of repositories from GitHub API
         const reposResponse = await fetch(
           `https://api.github.com/users/${owner}/repos?per_page=100&type=public`,
+          { headers: { "User-Agent": USER_AGENT } },
         );
 
         if (!reposResponse.ok) {
@@ -120,7 +122,9 @@ export function githubReadmeLoader(): LiveLoader<ReadmeData, EntryFilter, Collec
 
       try {
         // Get the default branch from the API response first
-        const repoResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}`);
+        const repoResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+          headers: { "User-Agent": USER_AGENT },
+        });
         const repoInfo = repoResponse.ok ? await repoResponse.json() : { default_branch: "main" };
         const branch = repoInfo.default_branch || "main";
 
@@ -128,6 +132,7 @@ export function githubReadmeLoader(): LiveLoader<ReadmeData, EntryFilter, Collec
         const readmeResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/readme`, {
           headers: {
             Accept: "application/vnd.github.v3+json",
+            "User-Agent": USER_AGENT,
           },
         });
 
