@@ -6,7 +6,7 @@ import { YAML } from "bun";
 
 const CONTENT_DIR = `${import.meta.dir}/../src/content`;
 const MANIFEST_PATH = `${import.meta.dir}/../src/content/url-manifest.yaml`;
-const DEFAULT_COLLECTIONS = ["blog", "research", "projects", "talks"];
+const DEFAULT_COLLECTIONS = ["blog", "games", "research", "projects", "talks"];
 
 interface UrlManifest {
   version: string;

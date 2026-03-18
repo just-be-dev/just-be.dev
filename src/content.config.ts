@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { load as loadYAML } from "js-yaml";
 import {
   blogSchema,
+  gamesSchema,
   projectsSchema,
   researchSchema,
   talksSchema,
@@ -20,6 +21,11 @@ import {
 const blog = defineCollection({
   loader: glob({ base: "./src/content/blog", pattern: "**/*.{md,mdx}" }),
   schema: blogSchema,
+});
+
+const games = defineCollection({
+  loader: glob({ base: "./src/content/games", pattern: "**/*.{md,mdx}" }),
+  schema: gamesSchema,
 });
 
 const projects = defineCollection({
@@ -131,6 +137,7 @@ const tags = defineCollection({
 
 export const collections = {
   blog,
+  games,
   projects,
   research,
   pages,

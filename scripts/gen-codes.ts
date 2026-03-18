@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { Code, type Kind } from "../src/utils/code";
 
 const CONTENT_DIR = `${import.meta.dir}/../src/content`;
-const DEFAULT_DIRS = ["blog", "research", "projects", "talks"];
+const DEFAULT_DIRS = ["blog", "games", "research", "projects", "talks"];
 
 /**
  * Infer kind prefix from directory name
@@ -14,6 +14,8 @@ function inferKind(dir: string): Kind {
   switch (dir) {
     case "blog":
       return "B";
+    case "games":
+      return "G";
     case "research":
       return "R";
     case "projects":

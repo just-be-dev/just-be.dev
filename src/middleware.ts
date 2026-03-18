@@ -30,7 +30,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
 
   // Check if first or second path segment is a code (format: [brpt][0-9a-f]{4})
-  const codePattern = /^[brpt][0-9a-f]{4}$/i;
+  const codePattern = /^[bgrpt][0-9a-f]{4}$/i;
   const firstSegmentIsCode = pathSegments[0] && codePattern.test(pathSegments[0]);
   const secondSegmentIsCode = pathSegments[1] && codePattern.test(pathSegments[1]);
 
