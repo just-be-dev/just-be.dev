@@ -351,7 +351,7 @@ async function genUrlManifest(collections: string[]) {
   for (const collection of collections) {
     let result;
     if (collection === "micro") {
-      // Special handling for micro posts from D1
+      // Special handling for micro posts from R2
       result = await processMicroCollection(manifest, existingSlugToCode, seenSlugsInCurrentRun);
     } else {
       // File-based collections
