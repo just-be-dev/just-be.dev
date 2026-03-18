@@ -73,12 +73,6 @@ export const pagesSchema = z.object({
   description: z.string().optional(),
 });
 
-export const assetsSchema = z.object({
-  hash: z.string(),
-  size: z.number(),
-  ext: z.string(),
-});
-
 export const urlsSchema = z.object({
   code: z.string(),
 });
@@ -113,11 +107,4 @@ export const tagsFileSchema = z.object({
       description: z.string(),
     }),
   ),
-});
-
-export const microSchema = z.object({
-  content: z.string().max(280, "Micro post content must be 280 characters or less"),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-  syndicatedTo: z.array(z.string()).default([]),
 });

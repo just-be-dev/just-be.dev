@@ -1,6 +1,6 @@
 ---
 import Layout from "@/layouts/Layout.astro";
-import { createMicroStorage, type MicroPost } from "@/lib/micro-r2.ts";
+import { microStore, type MicroPost } from "@/lib/micro.ts";
 import {
   type SyndicationConfig,
   type SyndicationResult,
@@ -47,7 +47,7 @@ if (Astro.request.method === "POST") {
     });
   }
 
-  const storage = createMicroStorage(env.MICRO_BUCKET);
+  const storage = microStore(env.MICRO_DB);
   const post = await storage.addPost(content);
 
   const config: SyndicationConfig = {};
@@ -96,7 +96,7 @@ if (
   Astro.request.headers.get("Accept")?.includes("application/json") &&
   isAuthorized()
 ) {
-  const storage = createMicroStorage(env.MICRO_BUCKET);
+  const storage = microStore(env.MICRO_DB);
   const posts = await storage.readPosts();
   posts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   return new Response(JSON.stringify(posts), {
@@ -114,8 +114,8 @@ if (cursorParam !== null && !Number.isFinite(Number(cursorParam))) {
   return Astro.redirect("/micro", 302);
 }
 
-// Read micro posts live from R2
-const storage = createMicroStorage(env.MICRO_BUCKET);
+// Read micro posts from D1
+const storage = microStore(env.MICRO_DB);
 const allPosts = (await storage.readPosts()).sort(
   (a, b) => b.createdAt.valueOf() - a.createdAt.valueOf()
 );

@@ -31,7 +31,7 @@ function parseFrontmatter(content: string): { data: Record<string, any>; body: s
 }
 
 /**
- * Process micro posts from R2 JSONL
+ * Process micro posts from D1
  */
 async function processMicroCollection(
   manifest: UrlManifest,
@@ -43,31 +43,24 @@ async function processMicroCollection(
   try {
     const { getPlatformProxy } = await import("wrangler");
     const projectRoot = import.meta.dir + "/..";
-    const { env, dispose } = await getPlatformProxy<{ MICRO_BUCKET: R2Bucket }>({
+    const { env, dispose } = await getPlatformProxy<{ MICRO_DB: D1Database }>({
       configPath: `${projectRoot}/wrangler.toml`,
       persist: { path: `${projectRoot}/.wrangler/state/v3` },
     });
 
-    if (!env.MICRO_BUCKET) {
-      console.log("  [WARN] Skipping micro posts: MICRO_BUCKET not available\n");
+    if (!env.MICRO_DB) {
+      console.log("  [WARN] Skipping micro posts: MICRO_DB not available\n");
       await dispose();
       return { processed: 0, skipped: 0, errors: 0 };
     }
 
-    const obj = await env.MICRO_BUCKET.get("micro-posts.jsonl");
+    const { results } = await env.MICRO_DB.prepare("SELECT id, created_at FROM micro_posts").all<{
+      id: number;
+      created_at: string;
+    }>();
     await dispose();
 
-    if (!obj) {
-      console.log("  [WARN] Skipping micro posts: micro-posts.jsonl not found in R2\n");
-      return { processed: 0, skipped: 0, errors: 0 };
-    }
-
-    const text = await obj.text();
-    const posts = text
-      .trim()
-      .split("\n")
-      .filter(Boolean)
-      .map((line) => JSON.parse(line) as { id: number; createdAt: string });
+    const posts = results.map((r) => ({ id: r.id, createdAt: r.created_at }));
 
     let processedCount = 0;
     let errorCount = 0;
@@ -136,11 +129,10 @@ async function processMicroCollection(
       errors: errorCount,
     };
   } catch (error) {
-    console.error(
-      `  [ERROR] Failed to load micro posts: ${error instanceof Error ? error.message : String(error)}`,
+    console.log(
+      `  [WARN] Skipping micro posts: ${error instanceof Error ? error.message : String(error)}\n`,
     );
-    console.log();
-    return { processed: 0, skipped: 0, errors: 1 };
+    return { processed: 0, skipped: 0, errors: 0 };
   }
 }
 
@@ -359,7 +351,7 @@ async function genUrlManifest(collections: string[]) {
   for (const collection of collections) {
     let result;
     if (collection === "micro") {
-      // Special handling for micro posts from R2
+      // Special handling for micro posts from D1
       result = await processMicroCollection(manifest, existingSlugToCode, seenSlugsInCurrentRun);
     } else {
       // File-based collections

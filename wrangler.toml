@@ -9,6 +9,8 @@ enabled = true
 directory = "./dist"
 binding = "ASSETS"
 
-[[r2_buckets]]
-binding = "MICRO_BUCKET"
-bucket_name = "micro"
+[[d1_databases]]
+binding = "MICRO_DB"
+database_name = "micro-db"
+database_id = "dc1fe5ad-2410-4a3b-bf2d-24262eb56494"
+migrations_dir = "migrations"

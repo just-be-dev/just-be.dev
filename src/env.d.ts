@@ -1,7 +1,7 @@
 /// <reference types="@cloudflare/workers-types" />
 
 type Runtime = import("@astrojs/cloudflare").Runtime<{
-  MICRO_BUCKET: R2Bucket;
+  MICRO_DB: D1Database;
   MICRO_SECRET?: string;
   BLUESKY_IDENTIFIER?: string;
   BLUESKY_PASSWORD?: string;

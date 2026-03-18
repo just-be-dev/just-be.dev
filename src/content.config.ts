@@ -16,7 +16,6 @@ import {
   redirectsFileSchema,
   tagEntrySchema,
   tagsFileSchema,
-  microSchema,
 } from "./content/schemas";
 
 const blog = defineCollection({
@@ -136,11 +135,6 @@ const tags = defineCollection({
   schema: tagEntrySchema,
 });
 
-const micro = defineCollection({
-  loader: microLoader(),
-  schema: microSchema,
-});
-
 export const collections = {
   blog,
   games,
@@ -152,5 +146,4 @@ export const collections = {
   urls,
   redirects,
   tags,
-  micro,
 };

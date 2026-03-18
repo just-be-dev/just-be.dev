@@ -1,12 +1,12 @@
 import rss from "@astrojs/rss";
 import { SITE_TITLE } from "@/consts";
-import { createMicroStorage } from "@/lib/micro-r2.ts";
+import { microStore } from "@/lib/micro.ts";
 
 export const prerender = false;
 
 export async function GET(context) {
   const env = context.locals.runtime.env;
-  const storage = createMicroStorage(env.MICRO_BUCKET);
+  const storage = microStore(env.MICRO_DB);
   const posts = await storage.readPosts();
 
   // Sort by createdAt descending (newest first)

@@ -1,5 +1,5 @@
 ---
-import { createMicroStorage } from "@/lib/micro-r2.ts";
+import { microStore } from "@/lib/micro.ts";
 
 export const prerender = false;
 
@@ -21,7 +21,7 @@ if (Astro.request.method === "DELETE") {
     });
   }
 
-  const storage = createMicroStorage(env.MICRO_BUCKET);
+  const storage = microStore(env.MICRO_DB);
   await storage.deletePost(postId);
 
   return new Response(JSON.stringify({ success: true }), {
@@ -36,7 +36,7 @@ if (!Number.isFinite(postId)) {
   return new Response(null, { status: 404 });
 }
 
-const storage = createMicroStorage(env.MICRO_BUCKET);
+const storage = microStore(env.MICRO_DB);
 const allPosts = (await storage.readPosts()).sort(
   (a, b) => b.createdAt.valueOf() - a.createdAt.valueOf()
 );
