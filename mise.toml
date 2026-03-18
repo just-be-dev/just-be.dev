@@ -77,6 +77,11 @@ description = "Deploy wildcard subdomain service"
 run = "uv run --with openai-whisper python scripts/transcribe.py"
 description = "Generate word-level transcript from audio/video"
 
+[tasks.micro]
+run = "bun packages/micro/index.ts"
+description = "Micro blog CLI (list posts, create, or delete)"
+raw = true
+
 [tasks."changelog:entry"]
 run = "bun scripts/changelog-entry.ts"
 description = "Generate changelog entry for a PR"
