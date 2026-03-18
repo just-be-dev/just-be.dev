@@ -34,7 +34,6 @@
     "@astrojs/rss": "4.0.17",
     "@astrojs/sitemap": "3.7.1",
     "@iconify-json/pixel": "^1.2.1",
-    "@sentry/astro": "^10.30.0",
     "@types/p5": "^1.7.6",
     "@webtui/css": "^0.1.5",
     "astro": "6.0.4",
