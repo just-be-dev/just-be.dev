@@ -10,8 +10,6 @@ import remarkMdc from "remark-mdc";
 import { remarkMdcToMdx } from "./src/plugins/remark-mdc-to-mdx.ts";
 import { remarkMermaidAscii } from "./src/plugins/remark-mermaid-ascii.ts";
 import cloudflare from "@astrojs/cloudflare";
-import sentry from "@sentry/astro";
-
 /**
  * Vite plugin that removes public/assets from the build output. These files
  * are served externally and would otherwise cause miniflare to reject the
@@ -36,13 +34,6 @@ export default defineConfig({
   output: "static",
   adapter: cloudflare(),
   integrations: [
-    sentry({
-      dsn: process.env.PUBLIC_SENTRY_DSN,
-      sourceMapsUploadOptions: {
-        project: process.env.SENTRY_PROJECT,
-        authToken: process.env.SENTRY_AUTH_TOKEN,
-      },
-    }),
     mdx({
       syntaxHighlight: "shiki",
       shikiConfig: {
