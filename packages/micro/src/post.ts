@@ -1,5 +1,3 @@
-import * as p from "@clack/prompts";
-
 const MAX_LENGTH = 280;
 
 function getSecret(): string {
@@ -15,81 +13,50 @@ export async function post(content: string | undefined, siteUrl: string) {
   let postContent = content;
 
   if (!postContent) {
-    p.intro("Create a new micro post");
-
-    const result = await p.text({
-      message: "What's on your mind?",
-      placeholder: "Type your post here...",
-      validate: (value) => {
-        if (!value || value.trim().length === 0) {
-          return "Post cannot be empty";
-        }
-        if (value.length > MAX_LENGTH) {
-          return `Post is too long (${value.length}/${MAX_LENGTH} characters)`;
-        }
-      },
-    });
-
-    if (p.isCancel(result)) {
-      p.cancel("Post cancelled");
-      process.exit(0);
+    const chunks: Buffer[] = [];
+    for await (const chunk of process.stdin) {
+      chunks.push(chunk as Buffer);
     }
+    postContent = Buffer.concat(chunks).toString("utf8").trim();
+  }
 
-    postContent = result;
-  } else {
-    if (postContent.length > MAX_LENGTH) {
-      console.error(`Error: Post is too long (${postContent.length}/${MAX_LENGTH} characters)`);
-      process.exit(1);
-    }
+  if (!postContent) {
+    console.error("Error: no content provided (pass as argument or pipe via stdin)");
+    process.exit(1);
+  }
+
+  if (postContent.length > MAX_LENGTH) {
+    console.error(`Error: too long (${postContent.length}/${MAX_LENGTH} characters)`);
+    process.exit(1);
   }
 
   const secret = getSecret();
-  const spinner = p.spinner();
-  spinner.start("Creating post...");
 
-  try {
-    const res = await fetch(`${siteUrl}/micro`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${secret}`,
-      },
-      body: JSON.stringify({ content: postContent }),
-    });
+  const res = await fetch(`${siteUrl}/micro`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${secret}`,
+    },
+    body: JSON.stringify({ content: postContent }),
+  });
 
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`Server returned ${res.status}: ${text}`);
+  if (!res.ok) {
+    throw new Error(`${res.status}: ${await res.text()}`);
+  }
+
+  const { post: newPost, syndication } = (await res.json()) as {
+    post: { id: number; content: string; createdAt: string };
+    syndication: Array<{ platform: string; success: boolean; url?: string; error?: string }>;
+  };
+
+  console.log(`posted #${newPost.id}`);
+
+  for (const s of syndication) {
+    if (s.success) {
+      console.log(`  ${s.platform}: ${s.url}`);
+    } else {
+      console.error(`  ${s.platform}: ${s.error}`);
     }
-
-    const { post: newPost, syndication } = (await res.json()) as {
-      post: { id: number; content: string; createdAt: string };
-      syndication: Array<{ platform: string; success: boolean; url?: string; error?: string }>;
-    };
-
-    spinner.stop("Post created successfully!");
-
-    if (syndication && syndication.length > 0) {
-      const successful = syndication.filter((r) => r.success);
-      const failed = syndication.filter((r) => !r.success);
-
-      if (successful.length > 0) {
-        p.log.info(`Syndicated to: ${successful.map((s) => s.platform).join(", ")}`);
-        for (const s of successful) {
-          if (s.url) p.log.info(`  ${s.platform}: ${s.url}`);
-        }
-      }
-      for (const f of failed) {
-        p.log.warn(`${f.platform}: ${f.error}`);
-      }
-    }
-
-    p.note(
-      `ID: ${newPost.id}\nContent: ${newPost.content}\nCreated: ${new Date(newPost.createdAt).toLocaleString()}`,
-      "Post Details",
-    );
-  } catch (error) {
-    spinner.stop("Failed to create post");
-    throw error;
   }
 }

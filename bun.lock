@@ -61,9 +61,6 @@
       "bin": {
         "micro": "index.ts",
       },
-      "dependencies": {
-        "@clack/prompts": "^0.11.0",
-      },
     },
     "packages/wildcard": {
       "name": "@just-be/wildcard",

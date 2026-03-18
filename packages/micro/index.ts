@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { browse } from "./src/browse.ts";
+import { deletePost, list } from "./src/browse.ts";
 import { post } from "./src/post.ts";
 
 const PRODUCTION_URL = "https://just-be.dev";
@@ -9,7 +9,6 @@ const WORKERS_DEV_SUBDOMAIN = "just-be";
 
 function siteUrlFromBranch(branch: string | undefined): string {
   if (!branch || branch === "main") return PRODUCTION_URL;
-  // Sanitize branch name for subdomain use: replace non-alphanumeric chars with hyphens
   const sanitized = branch
     .toLowerCase()
     .replace(/[^a-z0-9-]+/g, "-")
@@ -17,7 +16,6 @@ function siteUrlFromBranch(branch: string | undefined): string {
   return `https://${sanitized}-${WORKER_NAME}.${WORKERS_DEV_SUBDOMAIN}.workers.dev`;
 }
 
-// Extract global --branch / -b flag and leave remaining args for command parsing
 const rawArgs = process.argv.slice(2);
 let branch: string | undefined;
 const args: string[] = [];
@@ -34,17 +32,25 @@ const command = args[0];
 const siteUrl = siteUrlFromBranch(branch);
 
 async function main() {
-  if (!command) {
-    await browse(siteUrl);
+  if (!command || command === "list") {
+    await list(siteUrl);
   } else if (command === "post") {
-    const content = args[1];
-    await post(content, siteUrl);
+    await post(args[1], siteUrl);
+  } else if (command === "delete") {
+    const id = Number(args[1]);
+    if (!args[1] || !Number.isFinite(id)) {
+      console.error("Usage: micro delete <id>");
+      process.exit(1);
+    }
+    await deletePost(id, siteUrl);
   } else {
     console.error(`Unknown command: ${command}`);
     console.log("Usage:");
-    console.log("  micro [--branch <name>]               - Browse all posts");
-    console.log("  micro post [--branch <name>]          - Create a new post (TUI editor)");
-    console.log('  micro post [--branch <name>] "text"   - Create a new post directly');
+    console.log("  micro [list] [--branch <name>]              - List all posts");
+    console.log(
+      '  micro post [--branch <name>] ["text"]       - Create a post (reads stdin if no text)',
+    );
+    console.log("  micro delete [--branch <name>] <id>         - Delete a post");
     process.exit(1);
   }
 }
