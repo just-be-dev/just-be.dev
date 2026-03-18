@@ -1,3 +1,5 @@
+/// <reference types="@cloudflare/workers-types" />
+
 type Runtime = import("@astrojs/cloudflare").Runtime<{
   MICRO_BUCKET: R2Bucket;
   MICRO_SECRET?: string;
