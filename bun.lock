@@ -53,16 +53,6 @@
         "zod": "catalog:",
       },
     },
-    "packages/micro": {
-      "name": "@just-be/micro",
-      "version": "0.1.0",
-      "bin": {
-        "micro": "index.ts",
-      },
-      "dependencies": {
-        "@clack/prompts": "^0.11.0",
-      },
-    },
     "packages/wildcard": {
       "name": "@just-be/wildcard",
       "version": "0.6.0",
@@ -292,8 +282,6 @@
     "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
 
     "@just-be/deploy": ["@just-be/deploy@workspace:packages/deploy"],
-
-    "@just-be/micro": ["@just-be/micro@workspace:packages/micro"],
 
     "@just-be/wildcard": ["@just-be/wildcard@workspace:packages/wildcard"],
 
