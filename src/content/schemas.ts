@@ -11,6 +11,16 @@ export const blogSchema = z.object({
   slugs: z.array(z.string()).optional(),
 });
 
+export const gamesSchema = z.object({
+  title: z.string(),
+  description: z.string().optional(),
+  date: z.coerce.date(),
+  tags: z.array(z.string()).default([]),
+  draft: z.boolean().default(false),
+  code: z.string().optional(),
+  slugs: z.array(z.string()).optional(),
+});
+
 export const projectsSchema = z.object({
   title: z.string(),
   description: z.string().optional(),

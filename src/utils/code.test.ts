@@ -31,6 +31,7 @@ describe("Code.fromDate()", () => {
   it("should support different kinds", () => {
     const date = new Date(Date.UTC(2024, 11, 6));
     expect(Code.fromDate(date, "B").toString()).toBe("B2392");
+    expect(Code.fromDate(date, "G").toString()).toBe("G2392");
     expect(Code.fromDate(date, "R").toString()).toBe("R2392");
     expect(Code.fromDate(date, "P").toString()).toBe("P2392");
     expect(Code.fromDate(date, "T").toString()).toBe("T2392");
@@ -108,6 +109,7 @@ describe("Code.fromCode()", () => {
 
   it("should accept all valid kinds", () => {
     expect(Code.fromCode("B2391").getKind()).toBe("B");
+    expect(Code.fromCode("G2391").getKind()).toBe("G");
     expect(Code.fromCode("R2391").getKind()).toBe("R");
     expect(Code.fromCode("P2391").getKind()).toBe("P");
     expect(Code.fromCode("T2391").getKind()).toBe("T");
@@ -174,6 +176,7 @@ describe("Code.fromId()", () => {
 describe("getters", () => {
   it("should return kind via getKind()", () => {
     expect(Code.fromCode("B2392").getKind()).toBe("B");
+    expect(Code.fromCode("G2392").getKind()).toBe("G");
     expect(Code.fromCode("R2392").getKind()).toBe("R");
     expect(Code.fromCode("P2392").getKind()).toBe("P");
     expect(Code.fromCode("T2392").getKind()).toBe("T");
@@ -230,6 +233,10 @@ describe("Code.getCollection()", () => {
 
   it("should return 'projects' for kind P", () => {
     expect(Code.fromCode("P2392").getCollection()).toBe("projects");
+  });
+
+  it("should return 'games' for kind G", () => {
+    expect(Code.fromCode("G2392").getCollection()).toBe("games");
   });
 
   it("should return 'talks' for kind T", () => {
