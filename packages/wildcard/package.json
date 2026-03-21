@@ -1,6 +1,6 @@
 {
   "name": "@just-be/wildcard",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Portable wildcard subdomain routing with pluggable storage backends",
   "keywords": [
     "proxy",
