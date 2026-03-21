@@ -237,6 +237,40 @@ export function isValidSubdomain(subdomain: string): boolean {
 }
 
 /**
+ * Checks if a request has valid HTTP Basic Auth credentials
+ * Any username is accepted; only the password is validated.
+ */
+export function checkBasicAuth(request: Request, expectedPassword: string): boolean {
+  const authorization = request.headers.get("Authorization");
+  if (!authorization || !authorization.startsWith("Basic ")) {
+    return false;
+  }
+
+  try {
+    const encoded = authorization.slice("Basic ".length);
+    const decoded = atob(encoded);
+    const colonIndex = decoded.indexOf(":");
+    if (colonIndex === -1) {
+      return false;
+    }
+    const password = decoded.slice(colonIndex + 1);
+    return password === expectedPassword;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Returns a 401 Unauthorized response that triggers the browser's Basic Auth dialog
+ */
+export function unauthorizedResponse(): Response {
+  return new Response("Unauthorized", {
+    status: 401,
+    headers: { "WWW-Authenticate": 'Basic realm="Protected"' },
+  });
+}
+
+/**
  * Timeout for proxy requests in milliseconds
  */
 const FETCH_TIMEOUT_MS = 5_000;

@@ -45,7 +45,7 @@
 import { $ } from "bun";
 import { readdir, stat, access } from "fs/promises";
 import { join, relative, resolve } from "path";
-import { intro, outro, spinner } from "@clack/prompts";
+import { intro, outro, spinner, password as passwordPrompt } from "@clack/prompts";
 import { z } from "zod";
 import { createHash } from "crypto";
 import packageJson from "./package.json" with { type: "json" };
@@ -81,14 +81,17 @@ function wrangler(...args: string[]) {
 const StaticRuleSchema = StaticConfigSchema.safeExtend({
   subdomain: subdomain(),
   dir: z.string().min(1),
+  password: z.string().optional(),
 });
 
 const RedirectRuleSchema = RedirectConfigSchema.safeExtend({
   subdomain: subdomain(),
+  password: z.string().optional(),
 });
 
 const RewriteRuleSchema = RewriteConfigSchema.safeExtend({
   subdomain: subdomain(),
+  password: z.string().optional(),
 });
 
 const RouteRuleSchema = z.discriminatedUnion("type", [
@@ -365,6 +368,52 @@ async function validateKVAccess(): Promise<boolean> {
 }
 
 /**
+ * List secrets configured on the wildcard worker
+ */
+async function listWorkerSecrets(): Promise<string[]> {
+  try {
+    const output = await wrangler("secret", "list", "--name", "just-be-dev-wildcard").text();
+    const secrets = JSON.parse(output);
+    return Array.isArray(secrets) ? secrets.map((s: { name: string }) => s.name) : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Ensure a secret exists on the wildcard worker, prompting the user if it doesn't
+ */
+async function ensureSecretExists(
+  secretName: string,
+  s: ReturnType<typeof spinner>,
+): Promise<void> {
+  s.start(`Checking if secret "${secretName}" exists`);
+  const existingSecrets = await listWorkerSecrets();
+
+  if (existingSecrets.includes(secretName)) {
+    s.stop(`Secret "${secretName}" already exists`);
+    return;
+  }
+
+  s.stop(`Secret "${secretName}" not found`);
+
+  const value = await passwordPrompt({
+    message: `Enter the password value for secret "${secretName}":`,
+  });
+
+  if (typeof value !== "string" || !value) {
+    console.error("Error: No password provided");
+    process.exit(1);
+  }
+
+  s.start(`Uploading secret "${secretName}"`);
+  await $`echo ${value}`.pipe(
+    wrangler("secret", "put", secretName, "--name", "just-be-dev-wildcard"),
+  );
+  s.stop(`Secret "${secretName}" uploaded`);
+}
+
+/**
  * Get the current git branch name
  */
 async function getCurrentBranch(): Promise<string> {
@@ -487,6 +536,11 @@ async function deployStaticRule(rule: StaticRule, s: ReturnType<typeof spinner>)
 
   console.log(`✓ Uploaded ${uploadCount} files, skipped ${skippedCount} unchanged files`);
 
+  // Ensure password secret exists if configured
+  if (rule.password) {
+    await ensureSecretExists(rule.password, s);
+  }
+
   // Create KV entry (path is derived from subdomain at runtime)
   const routeConfig: RouteConfig = {
     type: "static",
@@ -494,6 +548,7 @@ async function deployStaticRule(rule: StaticRule, s: ReturnType<typeof spinner>)
     ...(rule.fallback && { fallback: rule.fallback }),
     ...(rule.redirects?.length && { redirects: rule.redirects }),
     ...(rule.rewrites?.length && { rewrites: rule.rewrites }),
+    ...(rule.password && { password: rule.password }),
   };
 
   s.start(`Creating KV routing entry`);
@@ -512,11 +567,17 @@ async function deployRedirectRule(
   console.log(`   Target URL: ${rule.url}`);
   console.log(`   Permanent: ${rule.permanent ?? false}`);
 
+  // Ensure password secret exists if configured
+  if (rule.password) {
+    await ensureSecretExists(rule.password, s);
+  }
+
   const routeConfig: RouteConfig = {
     type: "redirect",
     url: rule.url,
     ...(rule.permanent !== undefined && { permanent: rule.permanent }),
     ...(rule.preservePath !== undefined && { preservePath: rule.preservePath }),
+    ...(rule.password && { password: rule.password }),
   };
 
   s.start(`Creating KV routing entry`);
@@ -532,10 +593,16 @@ async function deployRewriteRule(rule: RewriteRule, s: ReturnType<typeof spinner
   console.log(`   Target URL: ${rule.url}`);
   console.log(`   Allowed Methods: ${rule.allowedMethods?.join(", ") || "GET, HEAD, OPTIONS"}`);
 
+  // Ensure password secret exists if configured
+  if (rule.password) {
+    await ensureSecretExists(rule.password, s);
+  }
+
   const routeConfig: RouteConfig = {
     type: "rewrite",
     url: rule.url,
     ...(rule.allowedMethods && { allowedMethods: rule.allowedMethods }),
+    ...(rule.password && { password: rule.password }),
   };
 
   s.start(`Creating KV routing entry`);

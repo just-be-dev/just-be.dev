@@ -6,6 +6,8 @@ import {
   filterSafeHeaders,
   isValidSubdomain,
   matchPath,
+  checkBasicAuth,
+  unauthorizedResponse,
   SAFE_REQUEST_HEADERS,
 } from "./utils";
 
@@ -340,6 +342,68 @@ describe("isValidSubdomain", () => {
       expect(isValidSubdomain(".")).toBe(false);
       expect(isValidSubdomain("@")).toBe(false);
     });
+  });
+});
+
+describe("checkBasicAuth", () => {
+  function requestWithAuth(username: string, password: string): Request {
+    const encoded = btoa(`${username}:${password}`);
+    return new Request("https://example.com", {
+      headers: { Authorization: `Basic ${encoded}` },
+    });
+  }
+
+  it("should return true for correct password with any username", () => {
+    expect(checkBasicAuth(requestWithAuth("user", "secret"), "secret")).toBe(true);
+    expect(checkBasicAuth(requestWithAuth("admin", "secret"), "secret")).toBe(true);
+    expect(checkBasicAuth(requestWithAuth("", "secret"), "secret")).toBe(true);
+  });
+
+  it("should return false for wrong password", () => {
+    expect(checkBasicAuth(requestWithAuth("user", "wrong"), "secret")).toBe(false);
+  });
+
+  it("should return false when no Authorization header", () => {
+    const request = new Request("https://example.com");
+    expect(checkBasicAuth(request, "secret")).toBe(false);
+  });
+
+  it("should return false for non-Basic auth schemes", () => {
+    const request = new Request("https://example.com", {
+      headers: { Authorization: "Bearer token123" },
+    });
+    expect(checkBasicAuth(request, "secret")).toBe(false);
+  });
+
+  it("should return false for malformed base64", () => {
+    const request = new Request("https://example.com", {
+      headers: { Authorization: "Basic !!!invalid!!!" },
+    });
+    expect(checkBasicAuth(request, "secret")).toBe(false);
+  });
+
+  it("should return false for base64 without colon separator", () => {
+    const encoded = btoa("nocolon");
+    const request = new Request("https://example.com", {
+      headers: { Authorization: `Basic ${encoded}` },
+    });
+    expect(checkBasicAuth(request, "nocolon")).toBe(false);
+  });
+
+  it("should handle passwords containing colons", () => {
+    expect(checkBasicAuth(requestWithAuth("user", "pass:word:here"), "pass:word:here")).toBe(true);
+  });
+});
+
+describe("unauthorizedResponse", () => {
+  it("should return 401 status", () => {
+    const response = unauthorizedResponse();
+    expect(response.status).toBe(401);
+  });
+
+  it("should include WWW-Authenticate header", () => {
+    const response = unauthorizedResponse();
+    expect(response.headers.get("WWW-Authenticate")).toBe('Basic realm="Protected"');
   });
 });
 

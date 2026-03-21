@@ -37,6 +37,7 @@ export const StaticConfigSchema = z
     fallback: z.string().optional(), // Fallback file path for non-SPA mode (e.g., "404.html")
     redirects: z.array(PathRedirectSchema).optional(),
     rewrites: z.array(PathRewriteSchema).optional(),
+    password: z.string().optional(), // Name of the Worker secret containing the password for HTTP Basic Auth
   })
   .refine((data) => (data.spa && data.fallback ? false : true), {
     message: "fallback cannot be used with spa mode (spa: true)",
@@ -47,12 +48,14 @@ export const RedirectConfigSchema = z.object({
   url: safeUrl(),
   permanent: z.boolean().optional(),
   preservePath: z.boolean().optional(),
+  password: z.string().optional(),
 });
 
 export const RewriteConfigSchema = z.object({
   type: z.literal("rewrite"),
   url: safeUrl(),
   allowedMethods: z.array(HttpMethod).optional().default(["GET", "HEAD", "OPTIONS"]),
+  password: z.string().optional(),
 });
 
 export const RouteConfigSchema = z.discriminatedUnion("type", [
