@@ -78,6 +78,10 @@
               "dir": {
                 "type": "string",
                 "minLength": 1
+              },
+              "password": {
+                "type": "string",
+                "description": "Name of the Cloudflare Worker secret containing the password for HTTP Basic Auth protection"
               }
             },
             "required": ["type", "subdomain", "dir"],
@@ -102,6 +106,10 @@
               },
               "subdomain": {
                 "type": "string"
+              },
+              "password": {
+                "type": "string",
+                "description": "Name of the Cloudflare Worker secret containing the password for HTTP Basic Auth protection"
               }
             },
             "required": ["type", "url", "subdomain"],
@@ -128,6 +136,10 @@
               },
               "subdomain": {
                 "type": "string"
+              },
+              "password": {
+                "type": "string",
+                "description": "Name of the Cloudflare Worker secret containing the password for HTTP Basic Auth protection"
               }
             },
             "required": ["type", "url", "allowedMethods", "subdomain"],

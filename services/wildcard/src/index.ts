@@ -4,6 +4,8 @@ import {
   handleRedirect,
   handleRewrite,
   isValidSubdomain,
+  checkBasicAuth,
+  unauthorizedResponse,
 } from "@just-be/wildcard";
 import { z } from "zod";
 import { createR2FileLoader, createKVRouteConfigLoader, type Env } from "./adapters";
@@ -117,6 +119,18 @@ export default {
     }
 
     const config = result.data;
+
+    // Check password protection
+    if (config.password) {
+      const expectedPassword = (env as Record<string, unknown>)[config.password];
+      if (typeof expectedPassword !== "string" || !expectedPassword) {
+        console.error("Password secret not configured:", { subdomain, secret: config.password });
+        return new Response("Service configuration error", { status: 500 });
+      }
+      if (!checkBasicAuth(request, expectedPassword)) {
+        return unauthorizedResponse();
+      }
+    }
 
     try {
       let response: Response;
