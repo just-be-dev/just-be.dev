@@ -51,6 +51,10 @@ run = "oxlint"
 [tasks."lint:fix"]
 run = "oxlint --fix"
 
+[tasks.typecheck]
+run = "astro check"
+description = "Type-check the project"
+
 [tasks.test]
 run = "bun test"
 
