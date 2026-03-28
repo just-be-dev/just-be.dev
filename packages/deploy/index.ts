@@ -59,6 +59,7 @@ import {
 
 const BUCKET_NAME = process.env.R2_BUCKET_NAME || "content-bucket";
 const KV_NAMESPACE_ID = process.env.KV_NAMESPACE_ID || "6118ae3b937c4883b3c582dfef8a0c05";
+const ZONE_ID = "c6959958185b0b0eacbdba10930be28a";
 const DEBUG = process.env.DEBUG === "1" || process.env.DEBUG === "true";
 
 /**
@@ -445,6 +446,29 @@ function sanitizeBranchName(branch: string): string {
 }
 
 /**
+ * Purge Cloudflare edge cache for a specific subdomain
+ */
+async function purgeSubdomainCache(subdomain: string): Promise<void> {
+  const token = (await wrangler("auth", "token").text()).trim();
+  const response = await fetch(
+    `https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/purge_cache`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ hosts: [`${subdomain}.just-be.dev`] }),
+    },
+  );
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Cache purge failed (${response.status}): ${body}`);
+  }
+}
+
+/**
  * Create KV entry for subdomain routing
  */
 async function createKVEntry(subdomain: string, routeConfig: RouteConfig): Promise<void> {
@@ -554,6 +578,11 @@ async function deployStaticRule(rule: StaticRule, s: ReturnType<typeof spinner>)
   s.start(`Creating KV routing entry`);
   await createKVEntry(rule.subdomain, routeConfig);
   s.stop(`✓ KV routing entry created`);
+
+  // Purge edge cache for this subdomain
+  s.start(`Purging edge cache for ${rule.subdomain}.just-be.dev`);
+  await purgeSubdomainCache(rule.subdomain);
+  s.stop(`✓ Edge cache purged for ${rule.subdomain}.just-be.dev`);
 }
 
 /**
