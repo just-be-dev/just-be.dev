@@ -1,6 +1,6 @@
 {
   "name": "@just-be/deploy",
-  "version": "0.12.1",
+  "version": "0.12.2",
   "description": "Deploy static sites to Cloudflare R2 with subdomain routing",
   "keywords": [
     "cloudflare",

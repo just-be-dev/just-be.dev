@@ -449,7 +449,7 @@ function sanitizeBranchName(branch: string): string {
  * Purge Cloudflare edge cache for a specific subdomain
  */
 async function purgeSubdomainCache(subdomain: string): Promise<void> {
-  const token = (await wrangler("auth", "token").text()).trim();
+  const { token } = await wrangler("auth", "token", "--json").json();
   const response = await fetch(
     `https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/purge_cache`,
     {
