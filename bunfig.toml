@@ -6,6 +6,7 @@ minimumReleaseAgeExcludes = [
   "@types/bun",
   "typescript",
   "wrangler",
+  "miniflare",
   "astro",
   "@astrojs/cloudflare",
   "@astrojs/internal-helpers",
