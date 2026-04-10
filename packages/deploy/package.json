@@ -30,7 +30,7 @@
     "generate-schema": "bun run scripts/generate-schema.ts"
   },
   "dependencies": {
-    "@clack/prompts": "^0.11.0",
+    "@clack/prompts": "^1.0.0",
     "@just-be/wildcard": "workspace:*",
     "wrangler": "catalog:",
     "zod": "catalog:"
