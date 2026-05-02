@@ -73,12 +73,6 @@ export const pagesSchema = z.object({
   description: z.string().optional(),
 });
 
-export const assetsSchema = z.object({
-  hash: z.string(),
-  size: z.number(),
-  ext: z.string(),
-});
-
 export const urlsSchema = z.object({
   code: z.string(),
 });

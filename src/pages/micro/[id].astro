@@ -1,0 +1,62 @@
+---
+import { microStore } from "@/lib/micro.ts";
+
+export const prerender = false;
+
+const env = Astro.locals.runtime.env;
+const { id } = Astro.params;
+
+// DELETE /micro/:id — delete a post
+if (Astro.request.method === "DELETE") {
+  const secret = env.MICRO_SECRET;
+  if (!secret || Astro.request.headers.get("Authorization") !== `Bearer ${secret}`) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  const postId = Number(id);
+  if (!Number.isFinite(postId)) {
+    return new Response(JSON.stringify({ error: "Invalid post ID" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const storage = microStore(env.MICRO_DB);
+  await storage.deletePost(postId);
+
+  return new Response(JSON.stringify({ success: true }), {
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+const PAGE_SIZE = 20;
+
+const postId = Number(id);
+if (!Number.isFinite(postId)) {
+  return new Response(null, { status: 404 });
+}
+
+const storage = microStore(env.MICRO_DB);
+const allPosts = (await storage.readPosts()).sort(
+  (a, b) => b.createdAt.valueOf() - a.createdAt.valueOf()
+);
+
+const idx = allPosts.findIndex((post) => post.id === postId);
+
+if (idx === -1) {
+  return new Response(null, { status: 404 });
+}
+
+const pageNum = Math.floor(idx / PAGE_SIZE);
+
+if (pageNum === 0) {
+  // Post is on the first page — no cursor needed
+  return Astro.redirect(`/micro#${postId}`, 302);
+} else {
+  // Cursor is the createdAt of the last post on the preceding page,
+  // which is the boundary that makes dir=next load this page.
+  const cursorPost = allPosts[pageNum * PAGE_SIZE - 1];
+  const cursor = cursorPost.createdAt.valueOf();
+  return Astro.redirect(`/micro?cursor=${cursor}&dir=next#${postId}`, 302);
+}
+---

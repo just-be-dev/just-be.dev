@@ -29,8 +29,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return context.redirect(redirect.data.to, status);
   }
 
-  // Check if first or second path segment is a code (format: [brpt][0-9a-f]{4})
-  const codePattern = /^[bgrpt][0-9a-f]{4}$/i;
+  // Check if first or second path segment is a code (format: [bgrptm][0-9a-f]{4})
+  const codePattern = /^[bgrptm][0-9a-f]{4}$/i;
   const firstSegmentIsCode = pathSegments[0] && codePattern.test(pathSegments[0]);
   const secondSegmentIsCode = pathSegments[1] && codePattern.test(pathSegments[1]);
 
@@ -42,9 +42,17 @@ export const onRequest = defineMiddleware(async (context, next) => {
     const matchingEntry = entries.find((entry) => entry.data.code === code);
 
     if (matchingEntry) {
-      // The manifest ID is the canonical URL path (e.g., "/blog/slug")
+      // The manifest ID is the canonical URL path (e.g., "/blog/slug" or "/micro#123")
+      // Handle hash fragments explicitly — setting URL.pathname encodes '#' as '%23'
+      const targetPath = matchingEntry.id;
       const newUrl = new URL(url);
-      newUrl.pathname = matchingEntry.id;
+      const hashIdx = targetPath.indexOf("#");
+      if (hashIdx !== -1) {
+        newUrl.pathname = targetPath.slice(0, hashIdx);
+        newUrl.hash = targetPath.slice(hashIdx);
+      } else {
+        newUrl.pathname = targetPath;
+      }
       return context.redirect(newUrl.toString(), 301);
     }
   }

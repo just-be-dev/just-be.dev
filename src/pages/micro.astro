@@ -1,0 +1,258 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { microStore, type MicroPost } from "@/lib/micro.ts";
+import {
+  type SyndicationConfig,
+  type SyndicationResult,
+  syndicatePost,
+} from "@/lib/micro-syndicate.ts";
+
+export const prerender = false;
+
+const env = Astro.locals.runtime.env;
+
+function isAuthorized(): boolean {
+  const secret = env.MICRO_SECRET;
+  if (!secret) return false;
+  return Astro.request.headers.get("Authorization") === `Bearer ${secret}`;
+}
+
+// POST /micro — create a post (and optionally syndicate)
+if (Astro.request.method === "POST") {
+  if (!isAuthorized()) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  let body: { content?: string };
+  try {
+    body = await Astro.request.json();
+  } catch {
+    return new Response(JSON.stringify({ error: "Invalid JSON" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const content = body.content?.trim();
+  if (!content) {
+    return new Response(JSON.stringify({ error: "content is required" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  if (content.length > 280) {
+    return new Response(JSON.stringify({ error: "content must be 280 characters or less" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const storage = microStore(env.MICRO_DB);
+  const post = await storage.addPost(content);
+
+  const config: SyndicationConfig = {};
+  if (env.BLUESKY_IDENTIFIER && env.BLUESKY_PASSWORD) {
+    config.bluesky = { identifier: env.BLUESKY_IDENTIFIER, password: env.BLUESKY_PASSWORD };
+  }
+  if (
+    env.TWITTER_APP_KEY &&
+    env.TWITTER_APP_SECRET &&
+    env.TWITTER_ACCESS_TOKEN &&
+    env.TWITTER_ACCESS_SECRET
+  ) {
+    config.twitter = {
+      appKey: env.TWITTER_APP_KEY,
+      appSecret: env.TWITTER_APP_SECRET,
+      accessToken: env.TWITTER_ACCESS_TOKEN,
+      accessSecret: env.TWITTER_ACCESS_SECRET,
+    };
+  }
+
+  let syndication: SyndicationResult[] = [];
+  if (config.bluesky || config.twitter) {
+    try {
+      syndication = await syndicatePost(content, config);
+      const successful = syndication
+        .filter((r) => r.success && r.id && r.url)
+        .map((r) => ({ platform: r.platform, id: r.id!, url: r.url! }));
+      if (successful.length > 0) {
+        await storage.updatePost(post.id, { syndicatedTo: successful });
+        post.syndicatedTo = successful;
+      }
+    } catch {
+      // syndication errors are non-fatal
+    }
+  }
+
+  return new Response(JSON.stringify({ post, syndication }), {
+    status: 201,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+// GET /micro with auth + Accept: application/json — return post list for CLI
+if (
+  Astro.request.method === "GET" &&
+  Astro.request.headers.get("Accept")?.includes("application/json") &&
+  isAuthorized()
+) {
+  const storage = microStore(env.MICRO_DB);
+  const posts = await storage.readPosts();
+  posts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  return new Response(JSON.stringify(posts), {
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+// Cursor-based pagination settings
+const PAGE_SIZE = 20;
+const cursorParam = Astro.url.searchParams.get("cursor");
+const direction = Astro.url.searchParams.get("dir") || "next";
+
+// Validate cursor before using it
+if (cursorParam !== null && !Number.isFinite(Number(cursorParam))) {
+  return Astro.redirect("/micro", 302);
+}
+
+// Read micro posts from D1
+const storage = microStore(env.MICRO_DB);
+const allPosts = (await storage.readPosts()).sort(
+  (a, b) => b.createdAt.valueOf() - a.createdAt.valueOf()
+);
+
+let posts: MicroPost[];
+let hasNext = false;
+let hasPrev = false;
+let nextCursor: number | null = null;
+let prevCursor: number | null = null;
+
+if (!cursorParam) {
+  // First page - get newest posts
+  posts = allPosts.slice(0, PAGE_SIZE);
+  hasNext = allPosts.length > PAGE_SIZE;
+  if (hasNext && posts.length > 0) {
+    nextCursor = posts[posts.length - 1].createdAt.valueOf();
+  }
+} else {
+  const cursor = Number(cursorParam);
+
+  if (direction === "prev") {
+    // Previous page - get posts newer than cursor
+    const newerPosts = allPosts.filter((post) => post.createdAt.valueOf() > cursor);
+    // Take the last PAGE_SIZE posts from newer posts (to maintain chronological order)
+    posts = newerPosts.slice(Math.max(0, newerPosts.length - PAGE_SIZE));
+
+    // Check if there are more newer posts
+    hasPrev = newerPosts.length > PAGE_SIZE;
+    if (hasPrev && posts.length > 0) {
+      prevCursor = posts[0].createdAt.valueOf();
+    }
+
+    // Check if there are older posts
+    const olderPosts = allPosts.filter((post) => post.createdAt.valueOf() < cursor);
+    hasNext = olderPosts.length > 0;
+    if (hasNext && posts.length > 0) {
+      nextCursor = posts[posts.length - 1].createdAt.valueOf();
+    }
+  } else {
+    // Next page - get posts older than cursor
+    const olderPosts = allPosts.filter((post) => post.createdAt.valueOf() < cursor);
+    posts = olderPosts.slice(0, PAGE_SIZE);
+
+    hasNext = olderPosts.length > PAGE_SIZE;
+    if (hasNext && posts.length > 0) {
+      nextCursor = posts[posts.length - 1].createdAt.valueOf();
+    }
+
+    // Check if there are newer posts
+    const newerPosts = allPosts.filter((post) => post.createdAt.valueOf() > cursor);
+    hasPrev = newerPosts.length > 0;
+    if (hasPrev && posts.length > 0) {
+      prevCursor = posts[0].createdAt.valueOf();
+    }
+  }
+}
+
+// Format date helper
+function formatDate(date: Date): string {
+  const now = new Date();
+  const diffMs = now.valueOf() - date.valueOf();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+---
+
+<Layout title="Micro - Just Be" description="Micro blog posts from Just Be">
+  <header class="mb-2">
+    <h1 class="font-bold">~/micro</h1>
+  </header>
+
+  <div class="space-y-2">
+    {
+      posts.map((post) => (
+        <article id={String(post.id)} class="border-fg-2 border p-2">
+          <p class="whitespace-pre-wrap break-words">{post.content}</p>
+          <time class="text-fg-2 mt-1 block text-sm" datetime={post.createdAt.toISOString()}>
+            {formatDate(post.createdAt)}
+          </time>
+          {post.syndicatedTo.length > 0 && (
+            <p class="text-fg-2 mt-1 text-xs">
+              syndicated:{" "}
+              {post.syndicatedTo.map((s, i) => (
+                <>
+                  {i > 0 && ", "}
+                  <a href={s.url} class="underline">
+                    {s.platform}
+                  </a>
+                </>
+              ))}
+            </p>
+          )}
+        </article>
+      ))
+    }
+  </div>
+
+  {
+    (hasPrev || hasNext) && (
+      <nav class="mt-4 flex justify-between">
+        <div>
+          {hasPrev && prevCursor ? (
+            <a
+              href={`/micro?cursor=${prevCursor}&dir=prev`}
+              class="border-fg-2 hover:bg-fg-2 hover:text-bg-0 border px-2 py-1 transition-colors"
+            >
+              Previous
+            </a>
+          ) : (
+            <span class="border-fg-2 text-fg-2 border px-2 py-1 opacity-50">Previous</span>
+          )}
+        </div>
+        <div>
+          {hasNext && nextCursor ? (
+            <a
+              href={`/micro?cursor=${nextCursor}&dir=next`}
+              class="border-fg-2 hover:bg-fg-2 hover:text-bg-0 border px-2 py-1 transition-colors"
+            >
+              Next
+            </a>
+          ) : (
+            <span class="border-fg-2 text-fg-2 border px-2 py-1 opacity-50">Next</span>
+          )}
+        </div>
+      </nav>
+    )
+  }
+</Layout>

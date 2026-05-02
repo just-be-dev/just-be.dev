@@ -8,3 +8,9 @@ enabled = true
 [assets]
 directory = "./dist"
 binding = "ASSETS"
+
+[[d1_databases]]
+binding = "MICRO_DB"
+database_name = "micro-db"
+database_id = "dc1fe5ad-2410-4a3b-bf2d-24262eb56494"
+migrations_dir = "migrations"

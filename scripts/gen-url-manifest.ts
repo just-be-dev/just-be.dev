@@ -3,10 +3,11 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { YAML } from "bun";
+import { Code } from "../src/utils/code";
 
 const CONTENT_DIR = `${import.meta.dir}/../src/content`;
 const MANIFEST_PATH = `${import.meta.dir}/../src/content/url-manifest.yaml`;
-const DEFAULT_COLLECTIONS = ["blog", "games", "research", "projects", "talks"];
+const DEFAULT_COLLECTIONS = ["blog", "games", "research", "projects", "talks", "micro"];
 
 interface UrlManifest {
   version: string;
@@ -30,6 +31,112 @@ function parseFrontmatter(content: string): { data: Record<string, any>; body: s
 }
 
 /**
+ * Process micro posts from D1
+ */
+async function processMicroCollection(
+  manifest: UrlManifest,
+  existingSlugToCode: Map<string, string>,
+  seenSlugsInCurrentRun: Map<string, string>,
+): Promise<{ processed: number; skipped: number; errors: number }> {
+  console.log("Processing collection: micro");
+
+  try {
+    const { getPlatformProxy } = await import("wrangler");
+    const projectRoot = import.meta.dir + "/..";
+    const { env, dispose } = await getPlatformProxy<{ MICRO_DB: D1Database }>({
+      configPath: `${projectRoot}/wrangler.toml`,
+      persist: { path: `${projectRoot}/.wrangler/state/v3` },
+    });
+
+    if (!env.MICRO_DB) {
+      console.log("  [WARN] Skipping micro posts: MICRO_DB not available\n");
+      await dispose();
+      return { processed: 0, skipped: 0, errors: 0 };
+    }
+
+    const { results } = await env.MICRO_DB.prepare("SELECT id, created_at FROM micro_posts").all<{
+      id: number;
+      created_at: string;
+    }>();
+    await dispose();
+
+    const posts = results.map((r) => ({ id: r.id, createdAt: r.created_at }));
+
+    let processedCount = 0;
+    let errorCount = 0;
+
+    for (const post of posts) {
+      const postId = String(post.id);
+      const createdAt = new Date(post.createdAt);
+
+      // Generate code from creation date with 'M' kind
+      const code = Code.fromDate(createdAt, "M").toString().toLowerCase();
+
+      // Micro posts use anchor URLs: /micro#<id>
+      const urlPath = `/micro#${postId}`;
+
+      try {
+        // Check if this slug appears twice in current run
+        if (seenSlugsInCurrentRun.has(urlPath)) {
+          const previousLocation = seenSlugsInCurrentRun.get(urlPath);
+          console.error(
+            `  [ERROR] DUPLICATE: ${urlPath} appears in both ${previousLocation} and micro post ${postId}`,
+          );
+          errorCount++;
+          continue;
+        }
+        seenSlugsInCurrentRun.set(urlPath, `micro-${postId}`);
+
+        // Check if this slug is already assigned to a different code
+        const existingCode = existingSlugToCode.get(urlPath);
+        if (existingCode && existingCode !== code) {
+          console.error(
+            `  [ERROR] CONFLICT: ${urlPath} is already assigned to code ${existingCode}, cannot reassign to ${code}`,
+          );
+          errorCount++;
+          continue;
+        }
+
+        // Skip if already in manifest (idempotent)
+        if (manifest.codes[code]?.includes(urlPath)) {
+          console.log(`  [SKIP] ${code} -> ${urlPath} (already exists)`);
+          processedCount++;
+          continue;
+        }
+
+        // Add new entry
+        if (!manifest.codes[code]) {
+          manifest.codes[code] = [];
+        }
+        manifest.codes[code].push(urlPath);
+        existingSlugToCode.set(urlPath, code);
+
+        console.log(`  [OK] ${code} -> ${urlPath}`);
+        processedCount++;
+      } catch (error) {
+        console.error(
+          `  [ERROR] Error processing micro post ${postId}:`,
+          error instanceof Error ? error.message : error,
+        );
+        errorCount++;
+      }
+    }
+
+    console.log();
+    return {
+      processed: processedCount,
+      skipped: 0,
+      errors: errorCount,
+    };
+  } catch (error) {
+    console.log(
+      `  [WARN] Skipping micro posts: ${error instanceof Error ? error.message : String(error)}\n`,
+    );
+    return { processed: 0, skipped: 0, errors: 0 };
+  }
+}
+
+/**
  * Process files in a single collection directory
  */
 function processCollection(
@@ -42,7 +149,7 @@ function processCollection(
 
   // Check if directory exists
   if (!existsSync(dirPath)) {
-    console.log(`⚠️  Collection ${collection} does not exist, skipping...\n`);
+    console.log(`[WARN] Collection ${collection} does not exist, skipping...\n`);
     return { processed: 0, skipped: 0, errors: 0 };
   }
 
@@ -74,7 +181,7 @@ function processCollection(
 
       // Check if code exists in frontmatter
       if (!data.code) {
-        console.log(`  ⏭  Skipping ${filename} (no code in frontmatter)`);
+        console.log(`  [SKIP] Skipping ${filename} (no code in frontmatter)`);
         skippedCount++;
         continue;
       }
@@ -89,7 +196,9 @@ function processCollection(
         for (const customSlug of data.slugs) {
           // Validate that slug starts with / (full path from origin)
           if (!customSlug.startsWith("/")) {
-            console.error(`  ❌ Invalid slug in ${filename}: "${customSlug}" must start with "/"`);
+            console.error(
+              `  [ERROR] Invalid slug in ${filename}: "${customSlug}" must start with "/"`,
+            );
             errorCount++;
             continue;
           }
@@ -107,7 +216,7 @@ function processCollection(
         if (seenSlugsInCurrentRun.has(urlPath)) {
           const previousLocation = seenSlugsInCurrentRun.get(urlPath);
           console.error(
-            `  ❌ DUPLICATE: ${urlPath} appears in both ${previousLocation} and ${filename}`,
+            `  [ERROR] DUPLICATE: ${urlPath} appears in both ${previousLocation} and ${filename}`,
           );
           errorCount++;
           continue;
@@ -118,7 +227,7 @@ function processCollection(
         const existingCode = existingSlugToCode.get(urlPath);
         if (existingCode && existingCode !== code) {
           console.error(
-            `  ❌ CONFLICT: ${urlPath} is already assigned to code ${existingCode}, cannot reassign to ${code}`,
+            `  [ERROR] CONFLICT: ${urlPath} is already assigned to code ${existingCode}, cannot reassign to ${code}`,
           );
           errorCount++;
           continue;
@@ -126,7 +235,7 @@ function processCollection(
 
         // Skip if already in manifest (idempotent)
         if (manifest.codes[code]?.includes(urlPath)) {
-          console.log(`  ⏭  ${code} -> ${urlPath} (already exists)`);
+          console.log(`  [SKIP] ${code} -> ${urlPath} (already exists)`);
           processedCount++;
           continue;
         }
@@ -138,12 +247,12 @@ function processCollection(
         manifest.codes[code].push(urlPath);
         existingSlugToCode.set(urlPath, code);
 
-        console.log(`  ✅ ${code} -> ${urlPath}`);
+        console.log(`  [OK] ${code} -> ${urlPath}`);
         processedCount++;
       }
     } catch (error) {
       console.error(
-        `  ❌ Error processing ${filename}:`,
+        `  [ERROR] Error processing ${filename}:`,
         error instanceof Error ? error.message : error,
       );
       errorCount++;
@@ -195,10 +304,10 @@ function loadExistingManifest(): UrlManifest {
   try {
     const content = readFileSync(MANIFEST_PATH, "utf-8");
     const parsed = YAML.parse(content) as UrlManifest;
-    console.log(`📂 Loaded existing manifest with ${Object.keys(parsed.codes).length} codes\n`);
+    console.log(`Loaded existing manifest with ${Object.keys(parsed.codes).length} codes\n`);
     return parsed;
   } catch (error) {
-    console.warn(`⚠️  Failed to load existing manifest, starting fresh:`, error);
+    console.warn(`[WARN] Failed to load existing manifest, starting fresh:`, error);
     return {
       version: "1.0",
       codes: {},
@@ -222,7 +331,7 @@ function buildSlugToCodeMap(manifest: UrlManifest): Map<string, string> {
 /**
  * Main function to generate URL manifest
  */
-function genUrlManifest(collections: string[]) {
+async function genUrlManifest(collections: string[]) {
   console.log(`Content directory: ${CONTENT_DIR}`);
   console.log(`Collections to process: ${collections.join(", ")}`);
   console.log(`Output manifest: ${MANIFEST_PATH}\n`);
@@ -240,12 +349,14 @@ function genUrlManifest(collections: string[]) {
   let totalErrors = 0;
 
   for (const collection of collections) {
-    const result = processCollection(
-      collection,
-      manifest,
-      existingSlugToCode,
-      seenSlugsInCurrentRun,
-    );
+    let result;
+    if (collection === "micro") {
+      // Special handling for micro posts from R2
+      result = await processMicroCollection(manifest, existingSlugToCode, seenSlugsInCurrentRun);
+    } else {
+      // File-based collections
+      result = processCollection(collection, manifest, existingSlugToCode, seenSlugsInCurrentRun);
+    }
     totalProcessed += result.processed;
     totalSkipped += result.skipped;
     totalErrors += result.errors;
@@ -253,7 +364,7 @@ function genUrlManifest(collections: string[]) {
 
   // Exit with error if there were conflicts or errors
   if (totalErrors > 0) {
-    console.error("\n❌ Manifest generation failed due to errors");
+    console.error("\nManifest generation failed due to errors");
     console.error(`   ${totalErrors} error(s) occurred`);
     process.exit(1);
   }
@@ -269,9 +380,9 @@ function genUrlManifest(collections: string[]) {
     const yamlContent = formatManifestAsYAML(manifest);
     writeFileSync(MANIFEST_PATH, header + yamlContent + "\n");
     console.log("=".repeat(50));
-    console.log(`\n✅ Manifest written to: ${MANIFEST_PATH}`);
+    console.log(`\nManifest written to: ${MANIFEST_PATH}`);
   } catch (error) {
-    console.error("❌ Failed to write manifest:", error);
+    console.error("Failed to write manifest:", error);
     process.exit(1);
   }
 
@@ -288,7 +399,7 @@ const collections = process.argv.slice(2).length > 0 ? process.argv.slice(2) : D
 
 // Run the script
 try {
-  genUrlManifest(collections);
+  await genUrlManifest(collections);
 } catch (error) {
   console.error("Fatal error:", error);
   process.exit(1);
