@@ -1,6 +1,6 @@
 [tools]
 bun = "1.3.13"
-lefthook = "2.1.4"
+lefthook = "2.1.6"
 python = "3.14.2"
 ffmpeg = "latest"
 uv = "latest"
