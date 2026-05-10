@@ -37,7 +37,7 @@
     "@iconify-json/pixel": "^1.2.1",
     "@types/p5": "^1.7.6",
     "@webtui/css": "^0.1.5",
-    "astro": "6.2.2",
+    "astro": "6.3.0",
     "beautiful-mermaid": "^1.0.0",
     "marked": "^18.0.0",
     "mdast-util-mdx-jsx": "^3.2.0",
