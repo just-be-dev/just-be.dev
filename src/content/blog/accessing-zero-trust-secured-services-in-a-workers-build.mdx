@@ -1,0 +1,77 @@
+---
+title: Reaching Zero Trust from a Workers Build
+description: How I got Cloudflare Workers builds to install from an npm registry that sits behind Cloudflare Access.
+date: 2026-05-20
+tags:
+  - cloudflare
+code: b25a4
+---
+
+# Reaching Zero Trust from a Workers Build
+
+At work I run an internal npm mirror. It sits behind [Cloudflare Zero Trust](https://developers.cloudflare.com/cloudflare-one/), so the only ways in are [WARP](https://developers.cloudflare.com/cloudflare-one/connections/connect-devices/warp/) on a trusted device or a service token attached to the request. Anything with a valid `CF-Access-Client-Id` / `CF-Access-Client-Secret` pair gets through. Everything else is bounced at the edge. So for humans, you just need WARP enabled on your device and you can `npm install` without really being concerned about authentication. For machines though (CI), we need those cf tokens.
+
+Easy you might say. Just have NPM pass the headers along! Yeah, sorry, no dice. The `.npmrc` format only lets you configure an auth token. There's no general "set arbitrary headers on every request" knob, and there's been an open [RFC for custom HTTP headers](https://github.com/npm/rfcs/issues/645) hanging out since 2022. So... how do I install packages from CI?
+
+## The CI story
+
+I hit this wall in GitHub Actions first, and there I could solve it with a small composite action. The shape of the fix:
+
+1. Generate a self-signed cert for the registry hostname.
+2. Start a local HTTPS reverse proxy on `127.0.0.1:443` that terminates TLS with that cert, resolves the real upstream IP via public DNS, and forwards each request to the real host with the two `CF-Access-Client-*` headers injected.
+3. Append `127.0.0.1 registry.example.com` to `/etc/hosts` so anything in the job that resolves the hostname hits the proxy instead.
+4. Export `NODE_EXTRA_CA_CERTS` pointing at the generated cert so Node-based tooling (npm especially) trusts it.
+5. Poll a health-check path until the proxy answers `200`, then let the rest of the workflow run.
+
+The proxy itself is a tiny Bun script. `https.createServer` in front, `https.request` to the resolved upstream IP behind, with `servername` set to the original hostname so SNI still works:
+
+```ts
+const headers = {
+  ...clientReq.headers,
+  host: TARGET_HOST,
+  "cf-access-client-id": CLIENT_ID,
+  "cf-access-client-secret": CLIENT_SECRET,
+};
+
+const upstreamReq = https.request({
+  host: upstreamIp,
+  port: 443,
+  servername: TARGET_HOST,
+  method: clientReq.method,
+  path: clientReq.url,
+  headers,
+});
+```
+
+From the runner's perspective, `https://registry.example.com` _just works_. Nice. NPM has no idea there's a proxy in the middle, and the registry has no idea the request originated from a GitHub-hosted runner.
+
+Unfortunately, that's not really the end of the story. You see, I have Cloudflare Workers I'm building that need to `npm install` too. And this solution doesn't work for them.
+
+## Why this falls apart in a Workers build
+
+Cloudflare Workers builds run in a much more restricted environment, and the Actions trick leans on two things that aren't available there:
+
+- I can't edit `/etc/hosts`. No `sudo` access (which honestly, fair). So the registry hostname can't be rerouted to a local listener.
+- I can't bind to `:443`. Even if the host file were writable, the proxy would be stuck on an unprivileged port.
+
+That kills the "transparent proxy on the real hostname" approach. The Actions proxy doesn't port over.
+
+What I sketched as a workaround was uglier: turn off automatic dependency installation in the Workers build, rewrite the lockfile so every resolved URL points at something like `http://localhost:8443`, and stand up the proxy on that port before running `bun install` / `npm ci` in a manual build step. And you know... it works? It's ugly and feels very cursed, but it works. There's got to be a better way, right?
+
+## The better way
+
+While I was contemplating what I was doing with my life, a Cloudflare employee I'm friendly with pointed me at the [single-header service token authentication](https://developers.cloudflare.com/cloudflare-one/access-controls/service-credentials/service-tokens/#authenticate-with-a-single-header) mode for Access. Instead of two headers (`CF-Access-Client-Id` and `CF-Access-Client-Secret`), you can configure the Access application to accept a single `Authorization: Bearer <token>` where the token is the service token credentials encoded together.
+
+Which is the whole game, because `.npmrc` already supports setting an auth token per registry:
+
+```ini
+//registry.example.com/:_authToken=${NPM_TOKEN}
+```
+
+If `NPM_TOKEN` is the Access service token in single-header form, the request npm makes hits Access with valid credentials and is allowed through. The registry behind Access needs to handle this so it means I can't actually use an auth token for say... publishing, but there are workarounds for that.
+
+So, this mostly works. It's still a hack though. Just a significantly less ugly hack that works in both GitHub Actions and Cloudflare's worker builds.
+
+## What I actually want
+
+All I want is to attach a Workers build to a Zero Trust network the same way I attach a laptop. Ideally I can just use a service token so I can narrowly scope its access, but I may even be fine with generally enabling it to have access via WARP.
