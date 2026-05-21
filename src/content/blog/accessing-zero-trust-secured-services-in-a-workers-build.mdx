@@ -7,8 +7,6 @@ tags:
 code: b25a4
 ---
 
-# Reaching Zero Trust from a Workers Build
-
 At work I run an internal npm mirror. It sits behind [Cloudflare Zero Trust](https://developers.cloudflare.com/cloudflare-one/), so the only ways in are [WARP](https://developers.cloudflare.com/cloudflare-one/connections/connect-devices/warp/) on a trusted device or a service token attached to the request. Anything with a valid `CF-Access-Client-Id` / `CF-Access-Client-Secret` pair gets through. Everything else is bounced at the edge. So for humans, you just need WARP enabled on your device and you can `npm install` without really being concerned about authentication. For machines though (CI), we need those cf tokens.
 
 Easy you might say. Just have NPM pass the headers along! Yeah, sorry, no dice. The `.npmrc` format only lets you configure an auth token. There's no general "set arbitrary headers on every request" knob, and there's been an open [RFC for custom HTTP headers](https://github.com/npm/rfcs/issues/645) hanging out since 2022. So... how do I install packages from CI?
