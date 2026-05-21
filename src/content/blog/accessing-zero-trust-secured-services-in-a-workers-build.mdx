@@ -52,9 +52,7 @@ Cloudflare Workers builds run in a much more restricted environment, and the Act
 - I can't edit `/etc/hosts`. No `sudo` access (which honestly, fair). So the registry hostname can't be rerouted to a local listener.
 - I can't bind to `:443`. Even if the host file were writable, the proxy would be stuck on an unprivileged port.
 
-That kills the "transparent proxy on the real hostname" approach. The Actions proxy doesn't port over.
-
-What I sketched as a workaround was uglier: turn off automatic dependency installation in the Workers build, rewrite the lockfile so every resolved URL points at something like `http://localhost:8443`, and stand up the proxy on that port before running `bun install` / `npm ci` in a manual build step. And you know... it works? It's ugly and feels very cursed, but it works. There's got to be a better way, right?
+That kills the "transparent proxy on the real hostname" approach. Here's the workaround: turn off [automatic dependency installation](https://developers.cloudflare.com/workers/ci-cd/builds/build-image/#skip-dependency-install) in the Workers build, rewrite the lockfile so every resolved URL points at something like `http://localhost:8443`, and stand up the proxy on that port before running `bun install` / `npm ci` in a manual build step. It's ugly and feels very cursed, but it works. There's got to be a better way, right?
 
 ## The better way
 
