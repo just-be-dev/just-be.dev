@@ -56,6 +56,7 @@ const HeadingTag = headingLevel;
         <li class="contents before:content-none">
           <a
             href={item.slug}
+            data-nav-item
             class="bg-0 hocus:invert group col-span-3 md:-mx-[1ch] grid grid-cols-subgrid md:px-[1ch] outline-none"
           >
             {columns.map((col) => {
@@ -122,6 +123,7 @@ const HeadingTag = headingLevel;
           <li>
             <a
               href={item.slug}
+              data-nav-item
               class="group flex items-center gap-[1ch] bg-0 hocus:invert outline-none md:-mx-[1ch] md:px-[1ch]"
             >
               {columns.map((col) => {
