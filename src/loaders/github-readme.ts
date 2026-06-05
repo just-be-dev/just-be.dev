@@ -153,8 +153,10 @@ export function githubReadmeLoader(): LiveLoader<ReadmeData, EntryFilter, Collec
 
         const readmeData = await readmeResponse.json();
 
-        // Decode base64 content
-        const readmeMarkdown = atob(readmeData.content);
+        // Decode base64 content, reinterpreting the raw bytes as UTF-8 so
+        // multibyte characters (em dashes, smart quotes, etc.) render correctly
+        const bytes = Uint8Array.from(atob(readmeData.content), (c) => c.charCodeAt(0));
+        const readmeMarkdown = new TextDecoder("utf-8").decode(bytes);
 
         // Strip the first H1 heading
         const markdownWithoutH1 = stripFirstH1(readmeMarkdown);
