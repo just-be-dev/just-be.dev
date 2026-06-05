@@ -165,9 +165,11 @@ export function githubReadmeLoader(): LiveLoader<ReadmeData, EntryFilter, Collec
         const renderer = createRenderer(owner, repo, branch);
 
         // Parse markdown to HTML using marked
+        // Match GitHub's README rendering: single newlines within a paragraph
+        // collapse to spaces rather than becoming hard <br> breaks
         marked.setOptions({
           gfm: true,
-          breaks: true,
+          breaks: false,
           renderer: renderer,
         });
         const renderedHtml = await marked.parse(markdownWithoutH1);
