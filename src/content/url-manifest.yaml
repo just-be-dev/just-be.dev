@@ -27,6 +27,8 @@ codes:
   p2530:
     - /projects/pex
     - /pex
+  p25b4:
+    - /projects/webview-cli
   p3a89:
     - /projects/webview
     - /webview
