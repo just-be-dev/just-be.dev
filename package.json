@@ -31,7 +31,7 @@
     "@ascorbic/feed-loader": "^2.0.1",
     "@astrojs/check": "^0.9.8",
     "@astrojs/cloudflare": "^13.1.1",
-    "@astrojs/mdx": "5.0.6",
+    "@astrojs/mdx": "6.0.3",
     "@astrojs/rss": "4.0.18",
     "@astrojs/sitemap": "3.7.3",
     "@iconify-json/pixel": "^1.2.1",
