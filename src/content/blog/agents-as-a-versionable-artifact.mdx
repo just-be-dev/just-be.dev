@@ -1,0 +1,118 @@
+---
+title: Agents as a Versionable Artifact
+description: An agent is really just a model, instructions, tools, and skills. Make all four data instead of code and you can version and improve an agent without redeploying the harness that runs it.
+date: 2026-05-27
+tags:
+draft: true
+code: b25ab
+---
+
+Build a few agents and you start to notice they're mostly the same machine. The loop that talks to the model, runs its tools, handles errors and retries — that part barely changes between a support bot and a code reviewer. What changes is everything that gives each agent its character: which model it thinks with, what it's told to do, what it can reach for. Pull on that thread and a clean line appears between an agent's machinery and an agent's meaning. That line turns out to be the whole story.
+
+## Anatomy of an agent
+
+An agent is two layers. There's the **harness** — the program that actually runs: it sends messages to the model, parses the tool calls that come back, executes them, manages memory and compaction, handles errors. This is code, and it has to be; it's a running process. It's also strikingly generic. The same harness can run a support bot, a code reviewer, and a research assistant without changing a line, because the harness doesn't know or care what kind of agent it's running.
+
+Then there's everything that _makes_ it a support bot rather than a code reviewer — the parts that give the agent meaning. Strip an agent down and there are only four of them:
+
+- **model** — which model does the thinking.
+- **instructions** — the system prompt: the persona, the rules, the examples.
+- **tools** — the functions the agent can actually call.
+- **skills** — packaged know-how it can pull in when a task calls for it.
+
+Frameworks keep converging on roughly this shape. The [flue framework's](https://flueframework.com/docs/guide/building-agents/#agent-configuration) `createAgent`, for instance, takes a `model`, `instructions`, `tools`, and `skills` — plus a `cwd` and a `sandbox`, which are really about _where_ the agent runs rather than what it is (the working directory is just filesystem access, another tool; the sandbox is execution environment the harness owns). Set those aside and you're back to the same four.
+
+And every agent reduces to them. MCP servers are a source of tools. Memory is a tool. Retrieval is a tool. Whatever capability you bolt on lands in one of these buckets. The model thinks, the instructions shape how it thinks, and tools and skills are everything it can reach for. The harness _runs_ the four; it isn't one of them.
+
+## To change an agent, you change one of four things
+
+Here's why the decomposition is worth the trouble. Anything you'd want an agent to do differently lands in exactly one of those four buckets. Too chatty? Instructions. Misusing a function? Tool description. A whole class of tasks keeps failing? A skill. A cheaper model now keeps up on the evals? Model. There is no fifth place for a behavior change to live.
+
+So "can I iterate on this agent" collapses into a question about those four fields: are they code, or are they data?
+
+If any of them is hard-coded into the harness — the prompt as a string literal, the tools as imported functions — then changing it means editing the harness and cutting a new build. Your improvement loop now runs at the speed of your slowest deploy. And an agent can't redeploy its own service, so self-improvement is off the table before you've even started.
+
+## Code or data
+
+Two of the four are trivially data. `model` is a string. `instructions` is a string. Nobody blinks at storing those in a database and reading them at the start of a session.
+
+Tools and skills are the hard part, because they're code and files, not strings. This is exactly where it usually breaks down: people move the prompt into a DB, feel good about it, and leave the tools wired into the harness — which quietly puts the redeploy right back in the loop.
+
+But "code as data" is a solved problem on the right runtime. Cloudflare's [Dynamic Workers](https://developers.cloudflare.com/dynamic-workers/) load hosted Worker code at runtime, and the [Think SDK](https://developers.cloudflare.com/agents/harnesses/think/tools/#code-execution-tool) builds a tool story directly on top of them. Its **extensions** are "dynamically loaded sandboxed Workers that add tools at runtime" — you hand the harness a manifest and a string of source, and the tools show up, namespaced, on the next turn:
+
+```js
+{
+  manifest: { name: "math", version: "1.0.0", permissions: { network: false } },
+  source: `({
+    tools: {
+      add: {
+        description: "Add two numbers",
+        parameters: { a: { type: "number" }, b: { type: "number" } },
+        execute: async ({ a, b }) => ({ result: a + b })
+      }
+    }
+  })`,
+}
+```
+
+The harness ships once with the ability to _load_ tools. Which tools it loads is data passed in, not code compiled in. Skills are easier still — they're markdown plus tool sequences, files by nature.
+
+So all four fields can be data. Put the model id, the prompt, the tool sources, and the skill files in an R2 bucket under a name. To "update" the agent, you change the files in the bucket. The harness never moves.
+
+## That's a versionable artifact
+
+Once the whole agent is a set of files, it's a thing you can name, version, diff, and pin — the same as any other artifact you ship. The shape I want is a manifest that reads a lot like a `package.json`, but for an agent:
+
+```json
+{
+  "name": "support-bot",
+  "version": "1.2.0",
+  "model": "claude-sonnet-4-6",
+  "instructions": "support-bot-prompt@2.1.0",
+  "tools": {
+    "search-kb": "registry://tools/search-kb@1.4.0",
+    "create-ticket": "registry://tools/create-ticket@2.0.1"
+  },
+  "skills": {
+    "ticket-triage": "^1.0.0",
+    "kb-lookup": "~0.4.2"
+  },
+  "evals": "support-bot-evals@1.2.0"
+}
+```
+
+Each field is a versioned reference, not an inline blob. The instructions point at a versioned prompt artifact — so you can review prompt diffs the way you review code diffs, and two agents can share one prompt without copy-paste drift. Tools and skills are pinned to specific versions of dynamically loaded code, the way npm packages are. The harness resolves each reference, fetches the bytes, and assembles the agent at session start.
+
+The agent's identity becomes the tuple `name@version`. `support-bot@1.2.0` is a genuinely different thing from `support-bot@1.1.0`, and you can run both at once against the same harness.
+
+## Self-improvement falls out
+
+Now the loop people actually want is almost boring. Once the agent is data, improving it never touches the harness — it edits the manifest.
+
+1. Run `agent@version` against its evals.
+2. A failure pattern emerges (it keeps escalating tickets that should auto-resolve).
+3. Propose a change to one of the four fields — tighten the prompt, add a skill, reword a tool description, swap the model.
+4. Run the evals on the candidate.
+5. If it improves, bump the version and publish the new manifest.
+
+A human can drive that loop. So can a meta-agent — propose manifest changes, run evals, promote the winners — without ever touching production code. The blast radius of a self-improvement step is bounded by what's in the manifest, which is exactly the property that makes it safe to automate. "Self-improving" was never a special capability you build into the agent. It's this loop, running without you in it.
+
+## Session-scoped, not mid-session
+
+One constraint worth being explicit about: the manifest is resolved once, at the start of a session, and frozen for that session's life. You don't hot-swap the model or rewrite the instructions while the agent is mid-task.
+
+The reason is that a session's behavior — its message history, its tool calls, its decisions — is conditioned on the manifest it started with. Change the manifest mid-flight and the agent's past and future are running against different rules; the history stops being a coherent record of anything. Debugging gets impossible, caching breaks, evals stop being reproducible.
+
+So sessions pin a version at the start. One user's session runs `support-bot@1.2.0`. Another, opened ten seconds later, runs `triage-bot@0.2.0`. The same harness serves both. Rollouts and rollbacks happen at the session boundary, which is precisely the granularity you want.
+
+## What you get
+
+Once the four fields are data and the harness is just the thing that runs them:
+
+- **Reviewable changes.** Prompt and tool edits show up as diffs in versioned artifacts, not as strings buried in source.
+- **Independent cadence.** Improving the agent's behavior never waits on the harness's release cycle.
+- **Multi-tenancy by default.** One harness serves many agents. `support-bot`, `triage-bot`, and `onboarding-bot` are manifests, not codebases.
+- **Honest rollbacks.** Reverting an agent is reverting a version pin, not a `git revert` on application code.
+- **A real improvement loop.** The thing your evals improve and the thing you ship are the same artifact.
+
+The agent isn't the model, and it isn't the harness. It's those four fields — model, instructions, tools, skills — captured as data and versioned together. Get them out of code, and the unit worth naming, pinning, and improving finally exists.
