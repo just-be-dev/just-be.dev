@@ -1,0 +1,31 @@
+src/content/blog/agents-as-a-versionable-artifact.mdx
+  s_42cb1bf7fc1f97::t_3c5bb9aa148e6f 3,18-21,27,29,31,33,35-39,43-57,60-64,71-75,84,86,88,90,92-96,98,102,104,106,110,112-116,118
+  s_42cb1bf7fc1f97::t_3cdbbcb87549b4 41
+  s_98fedf2acac84b::t_8555ed2f7191ca 2
+  s_42cb1bf7fc1f97::t_a35aa92182d90d 10,14
+  s_42cb1bf7fc1f97::t_d686013608474e 16,23,25,58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.8",
+  "base_commit_sha": "89c340e8aa492e1377b059f424972eaa607efc1d",
+  "prompts": {},
+  "sessions": {
+    "s_42cb1bf7fc1f97": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "df4af57e-57ac-41cb-9a9d-0a235116a763",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Justin Bennett <git@just-be.dev>"
+    },
+    "s_98fedf2acac84b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "15c44896-1043-4575-806a-ed32233eefae",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Justin Bennett <git@just-be.dev>"
+    }
+  }
+}
