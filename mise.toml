@@ -11,7 +11,7 @@ experimental = true
 pin = true
 
 [hooks]
-postinstall = ["bun install", "lefthook install"]
+postinstall = ["bun install", "lefthook check-install || lefthook install"]
 
 [env]
 _.path = "node_modules/.bin"
