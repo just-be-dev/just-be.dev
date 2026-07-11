@@ -1,6 +1,5 @@
 ---
 import { getCollection } from "astro:content";
-import Button from "@/components/Button.astro";
 import Tag from "@/components/Tag.astro";
 import LinkList from "@/components/LinkList.astro";
 import type { LinkListItem } from "@/components/LinkList.astro";
@@ -55,38 +54,54 @@ const linkListItems: LinkListItem[] = posts.map((post) => {
 ---
 
 <Layout title="Blog - Just Be">
-  <header class="mb-2 flex justify-between">
+  <header class="relative mb-2 flex flex-wrap items-start gap-[1ch]">
     <h1 class="font-bold">~/blog</h1>
-    <div class="flex flex-wrap items-center gap-2">
-      {
-        selectedTag ? (
-          <>
-            <Tag
-              tag={selectedTag}
-              count={tagCounts.get(selectedTag)}
-              url="/blog"
-              class="invert"
-              id="selected-tag"
-              description={tagDescriptions.get(selectedTag)}
-            />
-            <Button shortcut="c" label="clear" href="/blog" />
-          </>
-        ) : (
-          sortedTags.map(({ tag, count }) => (
-            <Tag tag={tag} count={count} url="/blog" description={tagDescriptions.get(tag)} />
-          ))
-        )
-      }
+    <div class="tag-filter flex">
+      <button
+        type="button"
+        class="text-fg-2 flex cursor-pointer items-center gap-[0.5ch] border-none bg-transparent p-0 text-sm"
+        aria-label={selectedTag ? `Filter by tag: ${selectedTag}` : "Filter by tag"}
+        title="Filter by tag"
+      >
+        <div class="i-pixel-tag" aria-hidden="true"></div>
+        <span>{selectedTag ?? sortedTags.length}</span>
+      </button>
+      <div class="tag-list absolute left-0 top-full z-10 hidden pt-1">
+        <div class="bg-1 flex max-w-full flex-wrap gap-0 p-1">
+          {
+            selectedTag && (
+              <a
+                href="/blog"
+                class="text-accent hocus:bg-0 hocus:invert flex items-center border-2 border-fg-0 px-[1ch] font-medium outline-none"
+              >
+                clear
+              </a>
+            )
+          }
+          {
+            sortedTags.map(({ tag, count }) => (
+              <Tag
+                tag={tag}
+                count={count}
+                url="/blog"
+                class={selectedTag === tag ? "invert" : undefined}
+                id={selectedTag === tag ? "selected-tag" : undefined}
+                description={tagDescriptions.get(tag)}
+              />
+            ))
+          }
+        </div>
+      </div>
     </div>
   </header>
 
   <LinkList items={linkListItems} columns={["code", "date", "title"]} variant="grid" gap="normal" />
 </Layout>
 
-<script>
-  // Focus selected tag on page load
-  const selectedTag = document.getElementById("selected-tag");
-  if (selectedTag) {
-    selectedTag.focus();
+<style>
+  .tag-filter:hover .tag-list,
+  .tag-filter:focus-within .tag-list,
+  .tag-list:hover {
+    display: block;
   }
-</script>
+</style>
