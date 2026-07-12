@@ -41,14 +41,14 @@ Anthropic has the [marketplace schema](https://code.claude.com/docs/en/plugin-ma
 
 One other odd thing I'll note is that marketplaces have an _optional_ version field, but so far as I can tell it's not used anywhere. Anthropic themselves never increment the version field in their marketplace.json, so I assume it's unlikely to ever be used.
 
-::callout{type="tip"}
+:::callout{type="tip"}
 Use the claude cli to validate the marketplace and plugin json configs
 
 ```
 claude plugin validate <path>
 ```
 
-::
+:::
 
 ### Plugin Structure
 

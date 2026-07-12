@@ -3,12 +3,12 @@
 import { rm } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import mdx from "@astrojs/mdx";
+import { satteri } from "@astrojs/markdown-satteri";
 import sitemap from "@astrojs/sitemap";
 import { defineConfig } from "astro/config";
 import UnoCSS from "@unocss/astro";
-import remarkMdc from "remark-mdc";
-import { remarkMdcToMdx } from "./src/plugins/remark-mdc-to-mdx.ts";
-import { remarkMermaidAscii } from "./src/plugins/remark-mermaid-ascii.ts";
+import { satteriMdcToMdx } from "./src/plugins/remark-mdc-to-mdx.ts";
+import { satteriMermaidAscii } from "./src/plugins/remark-mermaid-ascii.ts";
 import cloudflare from "@astrojs/cloudflare";
 /**
  * Vite plugin that removes public/assets from the build output. These files
@@ -39,8 +39,6 @@ export default defineConfig({
       shikiConfig: {
         theme: "github-light",
       },
-      gfm: true,
-      remarkPlugins: [remarkMdc, remarkMermaidAscii, remarkMdcToMdx],
     }),
     sitemap(),
     UnoCSS(),
@@ -54,6 +52,10 @@ export default defineConfig({
     },
   },
   markdown: {
+    processor: satteri({
+      mdastPlugins: [satteriMermaidAscii(), satteriMdcToMdx()],
+      features: { directive: true, gfm: true },
+    }),
     shikiConfig: {
       theme: "github-dark",
     },
