@@ -18,9 +18,9 @@ There's an Electron alternative called [Tauri](https://tauri.app/)[^1] that focu
 
 The first deliverable is being able to render UI in an OS-specific Webview from Deno. I'll note that [@webview/webview](https://jsr.io/@webview/webview) exists and is likely a viable option for simple setups. I'd like to build my own version though because I want to have deeper control over the shell of the application which that library doesn't allow. The plan is to use [Wry](https://github.com/tauri-apps/wry) to interact with the OS's native webview and [Tao](https://github.com/tauri-apps/tao) to manage the OS window.
 
-::callout{info}
+:::callout{info}
 The complete code for this section is available [here](https://github.com/zephraph/webview/blob/20643ba6c0b28d6be1170165fd7c496423a2e7d9/src/main.rs).
-::
+:::
 
 ### Integrating Deno and Wry
 

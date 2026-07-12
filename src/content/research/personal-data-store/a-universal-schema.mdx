@@ -25,10 +25,10 @@ Broadly the idea is that data can be stored without having to adhere to a schema
 
 [Datomic](https://docs.datomic.com/datomic-overview.html) is a database written in closure that operates on triples. Their documentation covers the notion of a [universal schema](https://docs.datomic.com/whatis/data-model.html#universal), a snippet I've included below.
 
-::blockquote{cite="https://docs.datomic.com/whatis/data-model.html#universal" attribution="Datomic Documentation"}
+:::blockquote{cite="https://docs.datomic.com/whatis/data-model.html#universal" attribution="Datomic Documentation"}
 In a relational database, you must specify a table schema that enumerates in advance the attributes (columns) an entity can have. By contrast, Datomic requires only that you specify the properties of individual attributes. Any entity can then have any attribute. Because all datoms are part of a single relation, this is called a universal schema.
 
 For example, consider storing an inventory database in Datomic. All inventory items have a unique string identifier, so you create an :inv/id attribute. In addition, you create other named attributes, specifying the types and cardinalities of each.
-::
+:::
 
 _This exploration is part of the [Personal Data Store](/research/personal-data-store) research project._

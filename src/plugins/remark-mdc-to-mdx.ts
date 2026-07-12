@@ -1,409 +1,216 @@
 /**
- * Remark plugin that transforms MDC (Markdown Components) AST nodes
- * into MDX-compatible JSX AST nodes.
+ * Satteri plugin that transforms MDC-style directives into MDX JSX nodes.
  *
- * This allows you to use Nuxt Content's MDC syntax in Astro with MDX.
- *
- * MDC syntax examples:
- *   ::card           → <Card>
- *   :icon            → <Icon />
- *   [text]{.class}   → <span class="class">text</span>
- *   #slot-name       → slot="slot-name"
+ * Supported syntax examples:
+ * - :::callout{type="tip"} -> <Callout type="tip">
+ * - ::date[Aug '25] -> <Date>Aug '25</Date>
+ * - :def[legal]{:title=defs.legal_engineer} -> <Def title={frontmatter.defs.legal_engineer}>legal</Def>
  */
 
 import { readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Parent, Root, RootContent } from "mdast";
-import type { MdxJsxAttribute, MdxJsxFlowElement, MdxJsxTextElement } from "mdast-util-mdx-jsx";
-import type { MdxjsEsm } from "mdast-util-mdxjs-esm";
+import {
+  defineMdastPlugin,
+  type ContainerDirective,
+  type DirectiveAttributes,
+  type LeafDirective,
+  type MdastNode,
+  type MdastVisitorContext,
+  type MdxJsxAttributeNode,
+  type MdxJsxAttributeUnion,
+  type MdxJsxFlowElement,
+  type MdxJsxTextElement,
+  type MdxjsEsm,
+  type TextDirective,
+} from "satteri";
+import type { Parents, Root } from "mdast";
 
-// Get the components directory path
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const componentsDir = join(__dirname, "../components");
 
-// Read available components from the filesystem
 function getAvailableComponents(): Set<string> {
   const components = new Set<string>();
+
   try {
     const files = readdirSync(componentsDir);
     for (const file of files) {
-      // Extract component name from filename (e.g., "Date.astro" -> "Date")
-      const match = file.match(/^([A-Z][^.]+)\.astro$/);
-      if (match) {
-        components.add(match[1]);
+      if (file.endsWith(".astro")) {
+        components.add(file.replace(/\.astro$/, ""));
       }
     }
   } catch (error) {
-    console.warn("[MDC] Could not read components directory:", error);
+    console.warn("[satteri-mdc-to-mdx] Could not read components directory:", error);
   }
+
   return components;
 }
 
 const AVAILABLE_COMPONENTS = getAvailableComponents();
 
-// MDC node types produced by remark-mdc
-interface MdcAttributes {
-  class?: string;
-  id?: string;
-  [key: string]: string | number | boolean | object | undefined;
-}
+type DirectiveNode = ContainerDirective | LeafDirective | TextDirective;
 
-interface MdcComponentNode extends Parent {
-  type: "containerComponent" | "leafComponent" | "textComponent";
-  name: string;
-  attributes?: MdcAttributes;
-  fmAttributes?: Record<string, unknown>;
-  children: RootContent[];
-}
+type PluginState = {
+  importedComponentsByRoot: WeakMap<Readonly<Root>, Set<string>>;
+};
 
-interface ComponentContainerSection extends Parent {
-  type: "componentContainerSection";
-  name: string;
-  children: RootContent[];
-}
-
-/**
- * Convert kebab-case or snake_case to PascalCase
- */
 function toPascalCase(str: string): string {
   return str
     .split(/[-_]/)
+    .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join("");
 }
 
-/**
- * Convert MDC attributes to MDX JSX attributes
- */
-function convertAttributes(
-  attrs: MdcAttributes | undefined,
-  fmAttrs: Record<string, unknown> | undefined,
-): MdxJsxAttribute[] {
-  const result: MdxJsxAttribute[] = [];
+function getRoot(node: Readonly<MdastNode>, ctx: MdastVisitorContext): Readonly<Root> | undefined {
+  let current: Readonly<MdastNode> = node;
+  let parent: Readonly<Parents> | undefined = ctx.parent(current);
 
-  // Handle inline attributes like {key="value" .class #id}
-  if (attrs) {
-    for (const [key, value] of Object.entries(attrs)) {
-      if (value === undefined) continue;
+  while (parent) {
+    current = parent;
+    parent = ctx.parent(current);
+  }
 
-      // Check if this is a bound attribute (starts with :)
-      const isBound = key.startsWith(":");
-      const attrName = isBound ? key.slice(1) : key;
+  return current.type === "root" ? (current as Readonly<Root>) : undefined;
+}
 
-      // Handle boolean attributes (no value)
-      if (value === true) {
-        result.push({
-          type: "mdxJsxAttribute",
-          name: attrName,
-          value: null,
-        });
-        continue;
-      }
+function existingComponentImports(root: Readonly<Root>): Set<string> {
+  const imports = new Set<string>();
 
-      // Handle string values
-      if (typeof value === "string") {
-        // If attribute name starts with :, treat value as expression
-        if (isBound) {
-          // Build ESTree expression for member access (e.g., frontmatter.defs.legal_engineer)
-          // Prepend "frontmatter." to the value
-          const fullPath = `frontmatter.${value}`;
-          const parts = fullPath.split(".");
-          let expression: any;
+  for (const child of root.children as readonly MdastNode[]) {
+    if (child.type !== "mdxjsEsm") continue;
 
-          // Start with frontmatter as the root
-          expression = {
-            type: "Identifier",
-            name: parts[0],
-          };
-
-          // Build the member expression chain
-          for (let i = 1; i < parts.length; i++) {
-            expression = {
-              type: "MemberExpression",
-              object: expression,
-              property: {
-                type: "Identifier",
-                name: parts[i],
-              },
-              computed: false,
-              optional: false,
-            };
-          }
-
-          const attrValue = {
-            type: "mdxJsxAttributeValueExpression",
-            value: fullPath,
-            data: {
-              estree: {
-                type: "Program",
-                body: [
-                  {
-                    type: "ExpressionStatement",
-                    expression: expression,
-                  },
-                ],
-                sourceType: "module",
-              },
-            },
-          };
-          result.push({
-            type: "mdxJsxAttribute",
-            name: attrName,
-            value: attrValue,
-          } as MdxJsxAttribute);
-        } else {
-          result.push({
-            type: "mdxJsxAttribute",
-            name: attrName,
-            value: value,
-          });
-        }
-        continue;
-      }
-
-      // Handle bound attributes (objects/arrays as JSON)
-      if (typeof value === "object") {
-        result.push({
-          type: "mdxJsxAttribute",
-          name: key,
-          value: {
-            type: "mdxJsxAttributeValueExpression",
-            value: JSON.stringify(value),
-          },
-        } as MdxJsxAttribute);
-        continue;
-      }
-
-      // Handle numbers
-      if (typeof value === "number") {
-        result.push({
-          type: "mdxJsxAttribute",
-          name: key,
-          value: {
-            type: "mdxJsxAttributeValueExpression",
-            value: String(value),
-          },
-        } as MdxJsxAttribute);
+    const value = child.value;
+    for (const component of AVAILABLE_COMPONENTS) {
+      const importPattern = new RegExp(
+        `import\\s+${component}\\s+from\\s+["']@/components/${component}\\.astro["']`,
+      );
+      if (importPattern.test(value)) {
+        imports.add(component);
       }
     }
   }
 
-  // Handle YAML frontmatter attributes (from --- block inside component)
-  if (fmAttrs) {
-    for (const [key, value] of Object.entries(fmAttrs)) {
-      if (value === undefined) continue;
+  return imports;
+}
 
-      if (typeof value === "string") {
-        result.push({
-          type: "mdxJsxAttribute",
-          name: key,
-          value: value,
-        });
-      } else if (typeof value === "boolean" && value === true) {
-        result.push({
-          type: "mdxJsxAttribute",
-          name: key,
-          value: null,
-        });
-      } else {
-        result.push({
-          type: "mdxJsxAttribute",
-          name: key,
-          value: {
-            type: "mdxJsxAttributeValueExpression",
-            value: JSON.stringify(value),
-          },
-        } as MdxJsxAttribute);
-      }
+function createImportNode(componentName: string): MdxjsEsm {
+  return {
+    type: "mdxjsEsm",
+    value: `import ${componentName} from "@/components/${componentName}.astro";`,
+  };
+}
+
+function ensureComponentImport(
+  componentName: string,
+  node: Readonly<MdastNode>,
+  ctx: MdastVisitorContext,
+  state: PluginState,
+): void {
+  const root = getRoot(node, ctx);
+  if (!root) return;
+
+  let importedComponents = state.importedComponentsByRoot.get(root);
+  if (!importedComponents) {
+    importedComponents = existingComponentImports(root);
+    state.importedComponentsByRoot.set(root, importedComponents);
+  }
+
+  if (importedComponents.has(componentName)) return;
+
+  ctx.prependChild(root, createImportNode(componentName));
+  importedComponents.add(componentName);
+}
+
+function convertAttributes(attrs?: DirectiveAttributes): MdxJsxAttributeUnion[] {
+  if (!attrs) return [];
+
+  const result: MdxJsxAttributeUnion[] = [];
+
+  for (const [key, rawValue] of Object.entries(attrs)) {
+    const isExpression = key.startsWith(":");
+    const name = isExpression ? key.slice(1) : key;
+
+    if (!name) continue;
+
+    if (isExpression) {
+      if (rawValue == null || rawValue === "") continue;
+
+      result.push({
+        type: "mdxJsxAttribute",
+        name,
+        value: {
+          type: "mdxJsxAttributeValueExpression",
+          value: `frontmatter.${rawValue}`,
+        },
+      } as MdxJsxAttributeNode);
+      continue;
     }
+
+    result.push({
+      type: "mdxJsxAttribute",
+      name,
+      value: rawValue ?? null,
+    });
   }
 
   return result;
 }
 
-/**
- * Check if a node is an MDC component node
- */
-function isMdcComponentNode(node: any): node is MdcComponentNode {
-  return (
-    node.type === "containerComponent" ||
-    node.type === "leafComponent" ||
-    node.type === "textComponent"
-  );
+function componentNameFor(node: Readonly<DirectiveNode>): string {
+  const pascalCaseName = toPascalCase(node.name);
+  return AVAILABLE_COMPONENTS.has(pascalCaseName) ? pascalCaseName : node.name;
 }
 
-/**
- * Check if a node is a slot section
- */
-function isSlotSection(node: any): node is ComponentContainerSection {
-  return node.type === "componentContainerSection";
-}
+function transformFlowDirective(
+  node: Readonly<ContainerDirective | LeafDirective>,
+  ctx: MdastVisitorContext,
+  state: PluginState,
+): MdxJsxFlowElement {
+  const componentName = componentNameFor(node);
 
-/**
- * Recursively transform an MDC node to MDX JSX
- */
-function transformNode(node: any, components: Set<string>): any {
-  // First, recursively transform all children
-  if (node.children && Array.isArray(node.children)) {
-    node.children = node.children.map((child) => transformNode(child, components));
+  if (AVAILABLE_COMPONENTS.has(componentName)) {
+    ensureComponentImport(componentName, node, ctx, state);
   }
 
-  // Handle slot sections - wrap in a div with slot attribute
-  if (isSlotSection(node)) {
-    const slotElement: MdxJsxFlowElement = {
-      type: "mdxJsxFlowElement",
-      name: "div",
-      attributes: [
-        {
-          type: "mdxJsxAttribute",
-          name: "slot",
-          value: node.name,
-        },
-      ],
-      children: node.children as any,
-    };
-    return slotElement;
-  }
-
-  // Handle MDC components
-  if (isMdcComponentNode(node)) {
-    // Convert to PascalCase to check against available components
-    const pascalCaseName = toPascalCase(node.name);
-
-    // Check if this component exists in the components directory
-    const isCustomComponent = AVAILABLE_COMPONENTS.has(pascalCaseName);
-    const componentName = isCustomComponent ? pascalCaseName : node.name.toLowerCase();
-    const attributes = convertAttributes(node.attributes, node.fmAttributes);
-
-    // Track component for import generation (only custom components)
-    if (isCustomComponent) {
-      components.add(componentName);
-    }
-
-    // Determine if block or inline
-    const isBlock = node.type === "containerComponent" || node.type === "leafComponent";
-
-    if (isBlock) {
-      const flowElement: MdxJsxFlowElement = {
-        type: "mdxJsxFlowElement",
-        name: componentName,
-        attributes,
-        children: node.children as any,
-      };
-      return flowElement;
-    } else {
-      const textElement: MdxJsxTextElement = {
-        type: "mdxJsxTextElement",
-        name: componentName,
-        attributes,
-        children: node.children as any,
-      };
-      return textElement;
-    }
-  }
-
-  return node;
-}
-
-/**
- * Extract component names from existing import statements
- */
-function getExistingImports(tree: Root): Set<string> {
-  const existingImports = new Set<string>();
-
-  for (const child of tree.children) {
-    if (child.type === "mdxjsEsm") {
-      const node = child as MdxjsEsm;
-      // Match default imports: import ComponentName from '...'
-      const defaultImportMatch = node.value.match(/import\s+(\w+)\s+from\s+['"].*['"]/g);
-      if (defaultImportMatch) {
-        for (const match of defaultImportMatch) {
-          const componentName = match.match(/import\s+(\w+)/)?.[1];
-          if (componentName) {
-            existingImports.add(componentName);
-          }
-        }
-      }
-    }
-  }
-
-  return existingImports;
-}
-
-/**
- * Generate import nodes for components
- */
-function generateImportNodes(components: Set<string>): MdxjsEsm[] {
-  return Array.from(components)
-    .sort() // Sort alphabetically for consistent output
-    .map((componentName) => ({
-      type: "mdxjsEsm" as const,
-      value: `import ${componentName} from '@/components/${componentName}.astro'`,
-      data: {
-        estree: {
-          type: "Program",
-          body: [
-            {
-              type: "ImportDeclaration",
-              specifiers: [
-                {
-                  type: "ImportDefaultSpecifier",
-                  local: { type: "Identifier", name: componentName },
-                },
-              ],
-              source: {
-                type: "Literal",
-                value: `@/components/${componentName}.astro`,
-                raw: `'@/components/${componentName}.astro'`,
-              },
-            },
-          ],
-          sourceType: "module",
-        },
-      },
-    }));
-}
-
-/**
- * The main remark plugin
- */
-export function remarkMdcToMdx() {
-  return (tree: Root, _file: any) => {
-    // Track components used in the document
-    const components = new Set<string>();
-
-    // Use a simpler approach: recursively transform the entire tree
-    if (tree.children) {
-      tree.children = tree.children.map((child) => transformNode(child, components)) as any;
-    }
-
-    // Check for existing imports
-    const existingImports = getExistingImports(tree);
-
-    // Filter out components that are already imported
-    const componentsToImport = new Set(
-      Array.from(components).filter((comp) => !existingImports.has(comp)),
-    );
-
-    // Generate and insert import nodes at the beginning of the tree
-    if (componentsToImport.size > 0) {
-      const importNodes = generateImportNodes(componentsToImport);
-
-      // Find the position after existing imports
-      let insertIndex = 0;
-      for (let i = 0; i < tree.children.length; i++) {
-        if (tree.children[i].type === "mdxjsEsm") {
-          insertIndex = i + 1;
-        } else {
-          break;
-        }
-      }
-
-      // Insert the new import nodes
-      tree.children.splice(insertIndex, 0, ...(importNodes as any));
-    }
+  return {
+    type: "mdxJsxFlowElement",
+    name: componentName,
+    attributes: convertAttributes(node.attributes),
+    children: [...(node.children ?? [])] as MdxJsxFlowElement["children"],
   };
 }
 
-export default remarkMdcToMdx;
+function transformTextDirective(
+  node: Readonly<TextDirective>,
+  ctx: MdastVisitorContext,
+  state: PluginState,
+): MdxJsxTextElement {
+  const componentName = componentNameFor(node);
+
+  if (AVAILABLE_COMPONENTS.has(componentName)) {
+    ensureComponentImport(componentName, node, ctx, state);
+  }
+
+  return {
+    type: "mdxJsxTextElement",
+    name: componentName,
+    attributes: convertAttributes(node.attributes),
+    children: [...(node.children ?? [])] as MdxJsxTextElement["children"],
+  };
+}
+
+export function satteriMdcToMdx() {
+  const state: PluginState = {
+    importedComponentsByRoot: new WeakMap(),
+  };
+
+  return defineMdastPlugin({
+    name: "satteri-mdc-to-mdx",
+    containerDirective: (node, ctx) => transformFlowDirective(node, ctx, state),
+    leafDirective: (node, ctx) => transformFlowDirective(node, ctx, state),
+    textDirective: (node, ctx) => transformTextDirective(node, ctx, state),
+  });
+}
+
+export default satteriMdcToMdx;
