@@ -1,8 +1,6 @@
 [tools]
 bun = "1.3.14"
 lefthook = "2.1.6"
-python = "3.14.2"
-ffmpeg = "latest"
 uv = "latest"
 node = "24.15.0"
 
@@ -80,6 +78,7 @@ description = "Deploy wildcard subdomain service"
 [tasks.transcribe]
 run = "uv run --with openai-whisper python scripts/transcribe.py"
 description = "Generate word-level transcript from audio/video"
+tools = { python = "3.14.2", ffmpeg = "latest" }
 
 [tasks."changelog:entry"]
 run = "bun scripts/changelog-entry.ts"
