@@ -46,19 +46,6 @@ export default Alchemy.Stack(
       name: "retro",
     }).pipe(adopt(true));
 
-    // Ingress rules. This REPLACES the entire ordered list — anything
-    // already routed through `retro` must be listed here or it stops
-    // working. Rules match top-down, first match wins.
-    //
-    // The catch-all rule is appended automatically (Cloudflare rejects
-    // a config whose last rule has a hostname).
-    yield* Cloudflare.Tunnel.Configuration("RetroIngress", {
-      tunnelId: tunnel.tunnelId,
-      ingress: [
-        { hostname: "shell.just-be.dev", service: "ssh://localhost:22" },
-      ],
-    });
-
     // ---- DNS --------------------------------------------------------
     // Output.interpolate, not a plain template literal: tunnelId isn't
     // known until deploy time and won't coerce to a string before then.
@@ -71,6 +58,15 @@ export default Alchemy.Stack(
       type: "CNAME",
       content: Output.interpolate`${tunnel.tunnelId}.cfargotunnel.com`,
       proxied: true,
+    });
+    // ---- Worker route bypass ---------------------------------------
+    // The site wildcard Worker owns `*.just-be.dev/*`. It was catching
+    // the browser-SSH WebSocket after Access authentication and sending
+    // a 302 to `https://just-be.dev/`, so the request never reached the
+    // tunnel. A more-specific no-script route opts this hostname out.
+    yield* Cloudflare.Workers.WorkerRoute("ShellWorkerBypass", {
+      zoneId: zone.zoneId,
+      pattern: "shell.just-be.dev/*",
     });
 
     // ---- Identity ---------------------------------------------------
@@ -110,6 +106,36 @@ export default Alchemy.Stack(
       allowedIdps: [otp.identityProviderId],
       autoRedirectToIdentity: true,
       policies: [allowMe.policyId],
+    });
+
+    // ---- Ingress ----------------------------------------------------
+    // Ingress rules. This REPLACES the entire ordered list — anything
+    // already routed through `retro` must be listed here or it stops
+    // working. Rules match top-down, first match wins.
+    //
+    // Browser-rendered SSH is mediated by Access before it reaches the
+    // connector. Binding the route to the Access aud/team makes this a
+    // dashboard-style "Published application" route instead of a naked
+    // SSH public hostname; otherwise Access can authenticate and still
+    // fail before any request reaches cloudflared.
+    //
+    // The catch-all rule is appended automatically (Cloudflare rejects
+    // a config whose last rule has a hostname).
+    yield* Cloudflare.Tunnel.Configuration("RetroIngress", {
+      tunnelId: tunnel.tunnelId,
+      ingress: [
+        {
+          hostname: "shell.just-be.dev",
+          service: "ssh://localhost:22",
+          originRequest: {
+            access: {
+              audTag: [app.aud],
+              teamName: "round-bush-6519",
+              required: true,
+            },
+          },
+        },
+      ],
     });
 
     return {
