@@ -55,7 +55,7 @@
     "@unocss/reset": "66.7.5",
     "oxfmt": "^0.63.0",
     "oxlint": "^1.41.0",
-    "prettier": "3.8.4",
+    "prettier": "3.9.6",
     "prettier-plugin-astro": "0.14.1",
     "unocss": "66.7.5",
     "vite": "^8.1.3",
