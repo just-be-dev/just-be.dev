@@ -71,7 +71,7 @@
         "@types/bun": "latest",
       },
       "peerDependencies": {
-        "typescript": "^5",
+        "typescript": "^7.0.0",
       },
     },
     "services/wildcard": {
