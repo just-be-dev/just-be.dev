@@ -78,7 +78,7 @@ description = "Deploy wildcard subdomain service"
 [tasks.transcribe]
 run = "uv run --with openai-whisper python scripts/transcribe.py"
 description = "Generate word-level transcript from audio/video"
-tools = { python = "3.14.2", ffmpeg = "latest" }
+tools = { python = "3.14.7", ffmpeg = "latest" }
 
 [tasks."changelog:entry"]
 run = "bun scripts/changelog-entry.ts"
