@@ -1,0 +1,159 @@
+---
+title: Building an npm Mirror on Cloudflare
+description: The shape of a private npm registry and public mirror that runs entirely on Workers, R2, D1, and KV, and the worker caps that shaped it.
+date: 2026-06-04
+tags:
+  - cloudflare
+draft: true
+code: b25b3
+---
+
+In [a previous post](/blog/accessing-zero-trust-secured-services-in-a-workers-build) I mentioned I was building an NPM registry mirror at work. Wanted to share a high level overview of what that process was like.
+
+## Why build your own registry at all
+
+Building a custom NPM registry wasn't really something I'd initially set out to do. I wanted to find a self-hostable npm mirror where we could enforce [minimum-release-age](TODO: fill out) at the registry level to reduce the overall risk of supply chain attacks.
+Ideally it'd be a service we could run behind our firewall, still support OIDC publishing from GitHub actions, and hook up to a vulnerability database to give us alerts when a malicious package was detected to be installed by one of our employees.
+
+I didn't find a solution that solved those problems. That, and the need to publish a few internal packages, sent me down the road of investigating how difficult it'd be to build it myself.
+
+The npm registry "protocol" turns out to relatively straight forward:
+
+- `GET /:name` returns a **packument**: a JSON blob describing every version of a package.
+- `GET /:name/-/:file.tgz` returns a **tarball**.
+- `PUT /:name` publishes a new version.
+- A few `/-/` endpoints handle search, whoami, and config.
+
+That's most of it. Given our VPN is handled by Cloudflare I figured I could probably whip something together on Cloudflare Workers pretty fast.
+
+## The general shape
+
+The whole thing is a single Worker fronting four Cloudflare primitives:
+
+- **Workers**: HTTP routing and the registry API. The same Worker also serves a small React SPA for browsing packages.
+- **D1**: package metadata like versions, dist-tags, ownership, and a lightweight search index.
+- **R2**: tarball storage.
+- **KV**: the mirror cache (packuments and tarball-URL maps).
+
+Publishing is the easy direction. A `PUT /:name` updates the version's manifest in D1 and its tarball in R2 under a key like `@scope/pkg/-/pkg-1.0.0.tgz`, and updates the `latest` dist-tag. I handled publishing auth via GitHub Actions OIDC rather than `npm adduser` accounts / auth tokens. Gemerally this was simpler because it removes a human from the publishing flow and it locks down where we can publish from (only allows our company's org as an originator).
+I added some other minor restrictions like only allowing publishing to scopes our company owns.
+
+Mirroring is the interesting direction, and it's lazy. When someone asks for a package we don't host:
+
+1. Fetch the [abbreviated packument](TODO: Add link) from `registry.npmjs.org`.
+2. Filter out versions younger than the minimum release age.
+3. Rewrite every tarball URL so it points back at us instead of npm.
+4. Cache the result in KV and serve it.
+
+Then, the first time anyone actually downloads one of those rewritten tarball URLs, we fetch the tarball from npm, stream it to the client, and persist it to R2 in the background. Nothing gets mirrored until someone asks for it, and once asked, it's served from our own storage forever after.
+
+Ideally it'd be as simple as that. There are some gotchas though.
+
+## The caps that shaped everything
+
+Workers are not a general-purpose server. An isolate gets ~128 MB of memory, a bounded number of subrequests per invocation, real CPU-time limits, and KV values top out at 25 MiB. None of that matters for a hello-world. All of it matters the moment you try to proxy `wrangler`.
+
+### Big packuments don't fit in memory
+
+Here's the thing nobody tells you about packuments: for old, popular packages they are _enormous_. `tailwindcss` is around 10 MiB of JSON across 2,500+ versions. `wrangler` is closer to 28 MiB across nearly 5,000. Each version carries its full manifest, and it all comes down the wire in one document.
+
+My first cut did the obvious, readable thing: fetch the packument, parse it, filter versions, rewrite URLs, abbreviate, serialize, cache. Every one of those verbs allocated another copy. Stack three or four shallow copies of a 28 MiB object in a 128 MiB isolate and you OOM the Worker on a single `npm install`.
+
+The fix came in two parts. First, stop copying. The filter/rewrite steps now mutate the packument in place and hand the same object down the pipeline instead of returning fresh ones:
+
+```ts
+// before: a new object at every stage
+const filtered = filterVersionsByAge(packument, minAge);
+const visible = filterBlockedVersions(filtered, blocked);
+const rewritten = rewriteTarballUrls(visible, registryUrl);
+
+// after: one object, mutated through
+filterVersionsByAge(packument, minAge); // returns boolean
+if (!filterBlockedVersions(packument, blocked)) return null;
+rewriteTarballUrls(packument, registryUrl);
+```
+
+Second, for the _full_ (non-abbreviated) packument reads, never materialize the document at all. The Worker streams npm's response through a transform that rewrites tarball URLs on the fly and pipes it straight to the client. The 28 MiB never exists as a single string in our heap. It flows through in chunks.
+
+### KV won't hold the big ones
+
+Even abbreviated, some packuments brush up against KV's 25 MiB per-value limit. Caching `wrangler`'s metadata threw a `413` from the `put`, which surfaced to the installer as a `500`. A failed cache write took down an otherwise successful request.
+
+The fix is to treat the cache as genuinely optional. Check the size before writing, and if it's too big, log it and move on, serving the packument uncached and re-deriving it next time:
+
+```ts
+const bytes = new TextEncoder().encode(body).byteLength;
+if (bytes > KV_VALUE_LIMIT) {
+  console.warn(`mirror: ${name} is ${bytes}B, skipping KV cache`);
+  return; // non-fatal — the response still goes out
+}
+await env.CACHE.put(key, body, { expirationTtl: 3600 });
+```
+
+A cache miss on the handful of giant packages is a fine price. A 500 is not.
+
+### Thousands of versions, thousands of subrequests
+
+The original tarball-URL design stored one KV entry per tarball: `tarball:tailwindcss/tailwindcss-1.0.0.tgz` → upstream URL, and so on for every version. Cute, until you mirror a package with 2,500 versions and try to issue 2,500 KV writes inside one request. Workers cap the subrequests a single invocation can make, and KV writes count against that budget. The mirror flow would blow the cap and die partway through.
+
+So I coalesced the lot into one KV entry per package: a single JSON map from filename to upstream URL:
+
+```ts
+// one write, not 2,500
+await env.CACHE.put(
+  `tarballs:${name}`,
+  JSON.stringify(buildTarballMap(packument)), // { "tw-1.0.0.tgz": "https://...", ... }
+  { expirationTtl: 86400 },
+);
+```
+
+A tarball download now costs a single KV read and a property lookup, instead of a subrequest per file. The data's the same; the access pattern is what the platform can afford.
+
+### Filtering by age without reading the whole thing
+
+The release-age policy needs each version's publish time. Annoyingly, npm's _abbreviated_ packument (the lean one you're supposed to fetch for installs) drops the per-version `time` map. The full one has it, but the full one is the 28 MiB monster I just spent two sections avoiding.
+
+The trick is that I don't need the versions, I only need the `time` object, and it sits near the _end_ of the document. So before reaching for the whole thing: if the abbreviated packument's top-level `modified` timestamp is already older than the minimum age, every version is old enough and no `time` map is needed at all. Only when a package has _recent_ activity do I go get times, and even then I stream the full packument through a JSON parser that grabs just the `time` object and cancels the stream before the giant `versions` blob. The bytes I care about are kilobytes; I stop reading before the megabytes arrive.
+
+### Tarballs: stream, don't buffer
+
+The last one bit in production. The tarball handler buffered each file fully into memory before sending the first byte, so time-to-first-byte scaled with file size. A chunky native-binding tarball would stall long enough that npm and pnpm's socket timeouts fired mid-request (`ERR_SOCKET_TIMEOUT`), and the install failed even though the bytes were on their way.
+
+Both serving paths now stream. An R2 hit pipes the object body straight through:
+
+```ts
+const object = await env.TARBALLS.get(key);
+if (object) {
+  return new Response(object.body, {
+    headers: { "content-length": String(object.size) },
+  });
+}
+```
+
+A miss is the fun one. I `tee()` the upstream stream into two branches: one goes to the client immediately, the other gets persisted to R2 in the background via `waitUntil`, so caching never blocks the download:
+
+```ts
+const [toClient, toR2] = upstream.body.tee();
+ctx.waitUntil(persistTarballToR2(env.TARBALLS, key, toR2, upstream.contentLength));
+return new Response(toClient, { headers });
+```
+
+There's a wrinkle: R2 wants a known length to accept a streamed body. When upstream gives a `Content-Length`, I pipe the cache branch through a [`FixedLengthStream`](https://developers.cloudflare.com/workers/runtime-apis/streams/) so R2 is happy; on the rare occasion it doesn't, I fall back to buffering that background branch only. Either way the client's bytes start flowing on the first chunk, and TTFB is flat regardless of tarball size.
+
+::callout{type="note"}
+There was an earlier architecture here too: the first version kept per-package mirror state in Durable Objects. It worked, but popular packages made hot partitions and the DO routing added latency to every read. Moving the cache to KV, which is globally distributed with no partition to get hot, made the whole thing simpler and faster. Sometimes the fix for a platform limit is using a different part of the platform.
+::
+
+## Why this turned out to be interesting
+
+I expected building a registry to be a slog of implementing a finicky protocol. It wasn't. The protocol is small and stable, and most of npm's surface area is stuff I get to _not_ support.
+
+What it actually was: a sustained exercise in serving data that's bigger than the box you're serving it from. Every fix above is the same move in a different costume: _don't hold the whole thing._ Mutate in place instead of copying. Stream the packument instead of parsing it. Coalesce thousands of writes into one. Read the kilobytes you need and cancel before the megabytes. `tee` the tarball so the client and the cache share one pass.
+
+That constraint made the design better than an unconstrained one would have been. On a real server I'd have happily loaded 28 MiB into RAM, parsed it, and never thought about it again. And it'd have fallen over the first time something got popular. The Workers caps forced a streaming, lazy, copy-averse architecture that, as a bonus, is cheap and runs at the edge.
+
+And then there's the original itch: I got my supply-chain knob. Versions don't appear until they've aged. Private and public packages live behind one URL. The whole registry is a single Worker and three storage bindings, with no server to patch. For a "weekend project" that took rather more than a weekend, that's a pretty good place to land.
+
+## Fin
+
+If you've got questions or want to swap Workers war stories, find me on Twitter [@just_be_dev](https://twitter.com/just_be_dev) or BlueSky [@just-be.dev](https://bsky.app/profile/just-be.dev).
