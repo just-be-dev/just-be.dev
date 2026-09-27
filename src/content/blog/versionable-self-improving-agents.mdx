@@ -1,0 +1,96 @@
+---
+title: Versionable, Self-Improving Agents
+description: Separating the agent harness from its configuration so agents can evolve through evals without redeploying code.
+date: 2026-05-27
+tags:
+draft: true
+code: b25ab
+---
+
+When we say an agent is "self-improving," what is actually improving? It's tempting to wave at the whole thing — the model, the prompt, the tools, the loop wrapping all of it — and call that the agent. But if you want an agent to get better over time, that lump has to come apart. The parts that learn from evals aren't the same parts you deploy.
+
+## Anatomy of an agent
+
+A working agent is the composition of a few distinct pieces:
+
+- **The harness.** The code that runs the loop: sends messages to the model, parses tool calls, executes them, manages memory and compaction, handles errors and retries.
+- **The model.** Which model is doing the thinking, at what temperature, with what sampling parameters.
+- **The context.** The system prompt and any other instructions baked in at session start. The persona, the rules, the examples.
+- **The tools.** What the agent can actually do. Functions it can call, with their schemas and descriptions.
+- **Skills.** Higher-level capabilities composed from prompts and tool sequences — packaged know-how the agent can pull in when relevant.
+- **MCP servers.** External capability bundles the agent connects to at runtime.
+- **Evals.** The test suite. What "better" means for this agent, made concrete.
+
+The harness is code. Everything else is configuration.
+
+## The line that matters
+
+The interesting line to draw isn't between "AI stuff" and "regular code." It's between what changes when you ship a new harness vs. what changes when you improve the agent.
+
+The harness changes rarely. It's infrastructure: tool execution, message handling, observability, the bits you write tests for and worry about correctness in. You deploy it the way you deploy any service.
+
+Everything else changes constantly. The system prompt gets tightened after an eval shows the agent is too chatty. A skill gets added because a class of tasks keeps failing. A tool description gets reworded because the model keeps misusing it. The model gets swapped because a cheaper one now passes the evals. None of this should require a redeploy of the harness.
+
+If those two cadences are tangled together — if improving the prompt means cutting a new build of the service — your improvement loop runs at the speed of your slowest deploy.
+
+## A package.json for agents
+
+The shape I want is a configuration file that looks a lot like `package.json`, but for an agent:
+
+```json
+{
+  "name": "support-bot",
+  "version": "1.2.0",
+  "model": "claude-sonnet-4-6",
+  "systemContext": "support-bot-prompt@2.1.0",
+  "skills": {
+    "ticket-triage": "^1.0.0",
+    "kb-lookup": "~0.4.2"
+  },
+  "tools": ["search-kb", "create-ticket", "escalate"],
+  "mcp": {
+    "zendesk": "registry://mcp/zendesk@3.1.0"
+  },
+  "evals": "support-bot-evals@1.2.0"
+}
+```
+
+Each field is versioned. The system prompt is a reference to a versioned artifact, not an inline blob — so you can review prompt diffs the same way you review code diffs, and so two agents can share the same prompt without copy-paste drift. Skills are pinned by version, the way npm packages are. Tools are listed by name, with their schemas resolved from the harness's registry.
+
+The agent's identity is the tuple of `name@version`. `support-bot@1.2.0` is a different thing from `support-bot@1.1.0`, and you can run both at once.
+
+## The eval loop edits the config
+
+This is the whole point. When you discover — through evals — that a different prompt, or a different model, or a new skill, makes the agent better, you don't touch the harness. You edit the config, bump the version, and that's the change.
+
+The improvement loop has a tidy shape:
+
+1. Run the current `agent@version` against evals.
+2. A failure pattern emerges (the agent keeps escalating tickets that should auto-resolve).
+3. Propose a change to the config — tighten the prompt, add a skill, swap a tool description.
+4. Run evals on the candidate.
+5. If it improves, bump the version and ship the new config.
+
+The harness never moved. The "deploy" is publishing a new version of a JSON file.
+
+This also makes "self-improving" tractable. An agent (or a meta-agent) can propose config changes, run evals, and promote winning configs — all without touching production code. The blast radius of a self-improvement step is bounded by what's in the config.
+
+## Session-scoped, not mid-session
+
+One constraint worth being explicit about: the config is resolved once, at the start of a session, and frozen for the life of that session. You don't hot-swap the model or rewrite the system prompt while the agent is mid-task.
+
+Why: a session's behavior — its message history, its tool calls, its decisions — is conditioned on the config it started with. Changing the config mid-flight means the agent's past and future are running against different rules, and the history stops being a coherent record of anything. Debugging becomes impossible. Caching breaks. Evals stop being reproducible.
+
+So sessions pin a version at start. One user's session runs `support-bot@1.2.0`. Another, started ten seconds later, runs `triage-bot@0.2.0`. The same harness serves both. Rollouts and rollbacks happen at the session boundary, which is exactly the granularity you want.
+
+## What you get
+
+Once the harness and the config are separated:
+
+- **Reviewable changes.** Prompt edits show up as diffs in a versioned artifact, not as embedded strings buried in source.
+- **Independent cadence.** Improvements to the agent's behavior don't wait on the harness's release cycle.
+- **Multi-tenancy by default.** One harness serves many agents. `support-bot`, `triage-bot`, and `onboarding-bot` are configs, not codebases.
+- **Honest rollbacks.** Reverting an agent's behavior is reverting a version pin, not a `git revert` on application code.
+- **A real improvement loop.** The thing that evals improve and the thing you ship are the same artifact.
+
+The agent isn't the model, and it isn't the harness. It's the versioned config that ties them together. That's the unit worth naming, worth pinning, and worth improving.
