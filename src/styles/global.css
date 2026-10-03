@@ -72,6 +72,10 @@ table td::after {
   line-height: 1.5;
 }
 
+body {
+  word-break: normal;
+}
+
 code,
 pre {
   font-size: 1rem !important;
