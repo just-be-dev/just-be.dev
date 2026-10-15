@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import router, { type Env } from "./index";
 import { matchRoute, parseRouterConfig, stripMount } from "./config";
-import { rewriteCss, rewriteLocation, rewriteSetCookie } from "./rewrite";
+import { bodyKind, rewriteCss, rewriteLocation, rewriteSetCookie } from "./rewrite";
 
 const ROUTES = JSON.stringify({
   routes: [
@@ -123,6 +123,18 @@ describe("config", () => {
 });
 
 describe("rewriting", () => {
+  it("classifies bodies by media type, ignoring parameters and case", () => {
+    const kind = (contentType?: string) =>
+      bodyKind(new Response("", contentType ? { headers: { "content-type": contentType } } : {}));
+    expect(kind("text/html")).toBe("html");
+    expect(kind("Text/HTML; charset=utf-8")).toBe("html");
+    expect(kind(" text/css ;charset=utf-8")).toBe("css");
+    expect(kind("application/xhtml+xml")).toBe("other");
+    expect(kind("text/markdown; charset=utf-8")).toBe("other");
+    expect(kind("text/plain; note=text/html")).toBe("other");
+    expect(kind()).toBe("other");
+  });
+
   it("prefixes root-relative CSS urls only", () => {
     expect(
       rewriteCss("/t", "a{b:url(/x.png)} c{d:url('/y.svg')} e{f:url(//cdn/z)} g{h:url(rel.png)}"),

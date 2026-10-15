@@ -4,6 +4,17 @@
  * (`/assets/app.js`) get the mount prefixed (`/traces/assets/app.js`).
  */
 
+/** What the router rewrites in a response body. */
+export type BodyKind = "html" | "css" | "other";
+
+/** Classifies a response by its media type, the `Content-Type` value before any parameters. */
+export function bodyKind(response: Response): BodyKind {
+  const mediaType = response.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase();
+  if (mediaType === "text/html") return "html";
+  if (mediaType === "text/css") return "css";
+  return "other";
+}
+
 /** Attributes whose value is a single URL. */
 const URL_ATTRIBUTES = ["href", "src", "action", "formaction", "poster"] as const;
 /** Attributes whose value is a list of `url descriptor` candidates. */

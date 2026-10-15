@@ -10,7 +10,7 @@
  * See https://developers.cloudflare.com/workers/framework-guides/web-apps/microfrontends/
  */
 import { matchRoute, parseRouterConfig, stripMount, type RouterConfig } from "./config";
-import { rewriteCss, rewriteHtml, rewriteLocation, rewriteSetCookie } from "./rewrite";
+import { bodyKind, rewriteCss, rewriteHtml, rewriteLocation, rewriteSetCookie } from "./rewrite";
 
 export interface Env {
   /** JSON {@link RouterConfig}. */
@@ -32,14 +32,6 @@ function service(env: Env, name: string): Fetcher {
     throw new Error(`ROUTES names a missing service binding: ${name}`);
   }
   return binding;
-}
-
-function isHtml(response: Response) {
-  return response.headers.get("content-type")?.toLowerCase().includes("text/html") ?? false;
-}
-
-function isCss(response: Response) {
-  return response.headers.get("content-type")?.toLowerCase().includes("text/css") ?? false;
 }
 
 /** The header fragment, or `undefined` if it can't be loaded; the page is served without it. */
@@ -97,25 +89,25 @@ async function serveMount(
   const init = { status: upstream.status, statusText: upstream.statusText, headers };
   if (!upstream.body || request.method === "HEAD") return new Response(null, init);
 
-  if (isCss(upstream)) {
-    headers.delete("content-length");
-    return new Response(rewriteCss(mount, await upstream.text()), init);
-  }
-
-  if (isHtml(upstream)) {
-    headers.delete("content-length");
-    const header =
-      route.header && settings.header ? await loadHeader(env, settings.header, url) : undefined;
-    if (header !== undefined) {
-      // The page now also depends on the header's version, so validators from the
-      // mounted app alone would let browsers keep a stale header.
-      headers.delete("etag");
-      headers.delete("last-modified");
+  switch (bodyKind(upstream)) {
+    case "css":
+      headers.delete("content-length");
+      return new Response(rewriteCss(mount, await upstream.text()), init);
+    case "html": {
+      headers.delete("content-length");
+      const header =
+        route.header && settings.header ? await loadHeader(env, settings.header, url) : undefined;
+      if (header !== undefined) {
+        // The page now also depends on the header's version, so validators from the
+        // mounted app alone would let browsers keep a stale header.
+        headers.delete("etag");
+        headers.delete("last-modified");
+      }
+      return rewriteHtml(mount, new Response(upstream.body, init), header);
     }
-    return rewriteHtml(mount, new Response(upstream.body, init), header);
+    case "other":
+      return new Response(upstream.body, init);
   }
-
-  return new Response(upstream.body, init);
 }
 
 export default {
