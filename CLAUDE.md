@@ -158,6 +158,10 @@ The site includes a client-side keyboard shortcut system (`src/client/keyboard-s
 - Ignores shortcuts when typing in inputs or when meta key is pressed
 - Can be refreshed via `window.refreshKeyboardShortcuts()`
 
+### Site Header and Microfrontends
+
+`src/components/Nav.astro` renders the header (tabs, branding, social links; tabs move to a bottom bar below `lg`) into a declarative shadow root. The same component is published as an HTML fragment at `/fragments/header/`, which the router (`services/router`) injects into microfrontends mounted under `just-be.dev`, currently Traces at `/traces`. Keep the header self-contained: styles inside its `<template>`, no UnoCSS utilities or inline scripts, and tab data in `src/utils/nav.ts`. Keyboard shortcuts look inside the header's shadow root. See `services/router/README.md`.
+
 ### Deployment
 
 The site is deployed to Cloudflare Workers with configuration in `wrangler.toml`:

@@ -55,5 +55,4 @@ const { title, description, image } = Astro.props;
 <meta property="twitter:description" content={description} />
 <meta property="twitter:image" content={image && new URL(image.src, Astro.url)} />
 
-<script src="@/client/keyboard-shortcuts.ts"></script>
 <script type="module" is:inline src="/data-star.mjs"></script>

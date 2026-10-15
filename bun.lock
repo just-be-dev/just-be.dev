@@ -59,6 +59,14 @@
         "zod": "^4.0.0",
       },
     },
+    "services/router": {
+      "name": "@just-be/router-service",
+      "version": "1.0.0",
+      "devDependencies": {
+        "@cloudflare/workers-types": "^4.20241127.0",
+        "@types/bun": "catalog:",
+      },
+    },
     "services/shell": {
       "name": "shell",
       "dependencies": {
@@ -416,6 +424,8 @@
     "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
 
     "@just-be/deploy": ["@just-be/deploy@workspace:packages/deploy"],
+
+    "@just-be/router-service": ["@just-be/router-service@workspace:services/router"],
 
     "@just-be/wildcard": ["@just-be/wildcard@workspace:packages/wildcard"],
 

@@ -1,0 +1,35 @@
+name = "just-be-dev-router"
+main = "src/index.ts"
+compatibility_date = "2026-03-13"
+compatibility_flags = ["nodejs_compat"]
+
+# The router owns the apex. Routes take precedence over the custom domain that
+# still points just-be.dev at the site Worker, so this takes over on deploy.
+[[routes]]
+pattern = "just-be.dev/*"
+zone_name = "just-be.dev"
+
+[observability]
+enabled = true
+
+# The personal site (Astro, repo root).
+[[services]]
+binding = "SITE"
+service = "just-be-dev"
+
+# The Traces Website Worker (prod stage of github.com/just-be-dev/traces). Alchemy
+# generates the name; read it from the stack's state if the Website is replaced.
+[[services]]
+binding = "TRACES"
+service = "traces-app-prod-cznv77in7hscgbw7"
+
+[vars]
+ROUTES = '''
+{
+  "routes": [
+    { "path": "/traces", "binding": "TRACES", "header": true },
+    { "path": "/", "binding": "SITE" }
+  ],
+  "header": { "binding": "SITE", "path": "/fragments/header/" }
+}
+'''

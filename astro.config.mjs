@@ -20,9 +20,7 @@ function excludePublicAssets() {
     name: "exclude-public-assets",
     enforce: "post",
     async closeBundle() {
-      const assetsDir = fileURLToPath(
-        new URL("./dist/client/assets", import.meta.url),
-      );
+      const assetsDir = fileURLToPath(new URL("./dist/client/assets", import.meta.url));
       await rm(assetsDir, { recursive: true, force: true });
     },
   };
@@ -40,11 +38,16 @@ export default defineConfig({
         theme: "github-light",
       },
     }),
-    sitemap(),
+    sitemap({ filter: (page) => !new URL(page).pathname.startsWith("/fragments/") }),
     UnoCSS(),
   ],
   vite: {
     plugins: [excludePublicAssets()],
+    build: {
+      // Keep scripts as external files. The header fragment carries its script
+      // into microfrontends whose Content-Security-Policy forbids inline scripts.
+      assetsInlineLimit: (file) => (file.endsWith(".js") ? false : undefined),
+    },
     resolve: {
       alias: {
         "@": fileURLToPath(new URL("./src", import.meta.url)),
