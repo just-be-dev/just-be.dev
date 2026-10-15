@@ -1,0 +1,13 @@
+---
+/**
+ * The site header as an HTML fragment. The router (`services/router`) injects it
+ * at the top of `<body>` for mounted microfrontends such as `/traces`, so they
+ * share the exact header the rest of the site renders. The active tab is marked
+ * in the browser, since the fragment is the same for every page.
+ */
+import Nav from "@/components/Nav.astro";
+
+export const partial = true;
+---
+
+<Nav currentPath={null} />

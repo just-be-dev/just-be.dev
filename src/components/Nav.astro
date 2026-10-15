@@ -1,238 +1,350 @@
 ---
-const currentPath = Astro.url.pathname;
+/**
+ * Site header: nav tabs, branding, and social links. Below the `lg` breakpoint the
+ * tabs move to a bar fixed to the bottom of the page.
+ *
+ * The header renders into a declarative shadow root so it looks and behaves the
+ * same on any page, including other microfrontends that the router injects it
+ * into from `/fragments/header`. Keep it self-contained: no UnoCSS utilities or
+ * global classes inside the template, and no inline scripts (mounted apps may
+ * forbid them with a Content-Security-Policy).
+ */
+import pixel from "@iconify-json/pixel/icons.json";
+import { SITE_HEADER_TAG, highlightLabel, isActive, isCurrent, tabs } from "@/utils/nav";
 
-interface Tab {
-  href: string;
-  keyChar: string;
-  label: string;
+interface Props {
+  /**
+   * Path used to mark the active tab. `null` leaves that to the browser, for the
+   * fragment served to other microfrontends. Defaults to the page's own path.
+   */
+  currentPath?: string | null;
 }
 
-const tabs: Tab[] = [
-  { href: "/", keyChar: "o", label: "home" },
-  { href: "/blog", keyChar: "b", label: "blog" },
-  { href: "/projects", keyChar: "p", label: "projects" },
-  { href: "/research", keyChar: "r", label: "research" },
-  { href: "/talks", keyChar: "t", label: "talks" },
-  { href: "/games", keyChar: "g", label: "games" },
-  { href: "/work", keyChar: "w", label: "work" },
+const { currentPath = Astro.url.pathname } = Astro.props;
+const Host = SITE_HEADER_TAG;
+
+function icon(name: keyof typeof pixel.icons) {
+  const {
+    body,
+    width = pixel.width,
+    height = pixel.height,
+  } = pixel.icons[name] as {
+    body: string;
+    width?: number;
+    height?: number;
+  };
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="1em" height="1em" aria-hidden="true">${body}</svg>`;
+}
+
+const socials = [
+  {
+    href: "mailto:contact@just-be.dev",
+    label: "Email",
+    icon: icon("envelope-solid"),
+    external: false,
+  },
+  { href: "https://github.com/just-be-dev", label: "GitHub", icon: icon("github"), external: true },
+  {
+    href: "https://bsky.app/profile/just-be.dev",
+    label: "Bluesky",
+    icon: icon("bluesky"),
+    external: true,
+  },
+  {
+    href: "https://twitter.com/just_be_dev",
+    label: "Twitter",
+    icon: icon("twitter"),
+    external: true,
+  },
+  {
+    href: "https://linkedin.com/in/jtbnnt",
+    label: "LinkedIn",
+    icon: icon("linkedin"),
+    external: true,
+  },
 ];
 
-function isActive(href: string, path: string) {
-  return href === "/" ? path === "/" : path.startsWith(href);
-}
-
-function isCurrent(href: string, path: string) {
-  // Normalize paths by removing trailing slashes for comparison
-  const normalizedHref = href.replace(/\/$/, "") || "/";
-  const normalizedPath = path.replace(/\/$/, "") || "/";
-  return normalizedHref === normalizedPath;
-}
-
-function highlightLabel(label: string, keyChar: string) {
-  const index = label.toLowerCase().indexOf(keyChar.toLowerCase());
-  if (index === -1) return { before: label, key: "", after: "" };
-  return {
-    before: label.slice(0, index),
-    key: label.slice(index, index + 1),
-    after: label.slice(index + 1),
-  };
-}
+const links = tabs.map((tab) => ({
+  ...tab,
+  active: currentPath !== null && isActive(tab.href, currentPath),
+  current: currentPath !== null && isCurrent(tab.href, currentPath),
+  highlighted: highlightLabel(tab.label, tab.keyChar),
+}));
 ---
 
-<a
-  href="#main-content"
-  class="skip-link top-lh bg-1 transition-filter absolute left-[-9999px] z-50 px-2 focus:left-0"
->
-  Skip to main content
-</a>
-
-<!-- Top bar: Nav tabs (desktop), Branding + Social icons -->
-<nav
-  class="bg-1 fixed top-0 right-0 left-0 z-10 flex h-lh items-center justify-between lg:justify-start"
-  aria-label="Main navigation"
->
-  <!-- Desktop only: Nav tabs on left -->
-  <div class="nav-tabs flex max-lg:hidden">
-    {
-      tabs.map((tab) => {
-        const active = isActive(tab.href, currentPath);
-        const current = isCurrent(tab.href, currentPath);
-        const highlighted = highlightLabel(tab.label, tab.keyChar);
-        return (
-          <a
-            href={tab.href}
-            data-key={tab.keyChar}
-            class:list={[
-              "nav-link bg-1 transition-filter flex shrink-0 items-center px-1",
-              { active, current },
-            ]}
-            tabindex={current ? -1 : undefined}
-          >
-            {highlighted.before}
-            <span class="font-bold underline">{highlighted.key}</span>
-            {highlighted.after}
-          </a>
-        );
-      })
+<!-- Reserves room for the fixed bars. It sits outside the shadow root because it styles the page. -->
+<style is:inline>
+  body {
+    padding-top: 1.5rem;
+  }
+  @media (max-width: 1023.9px) {
+    body {
+      padding-bottom: 1.5rem;
     }
-  </div>
-
-  <!-- Branding: Left on mobile, centered on desktop -->
-  <div class="flex h-lh items-center max-lg:ml-2 lg:fixed lg:left-1/2 lg:z-20 lg:-translate-x-1/2">
-    <span class="text-fg-0 flex gap-1 font-normal">
-      <span>
-        <span class="font-bold">just</span><span class="font-normal">in</span>
-      </span>
-      <span>
-        <span class="font-bold">be</span><span class="font-normal">nnett</span>
-      </span>
-    </span>
-  </div>
-
-  <!-- Social icons: Always visible, right-aligned -->
-  <div class="flex h-lh pr-1 max-lg:ml-auto lg:ml-auto">
-    <a href="mailto:contact@just-be.dev" class="icon-link" title="Email" aria-label="Email">
-      <div class="i-pixel-envelope-solid"></div>
-    </a>
-    <a
-      href="https://github.com/just-be-dev"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="icon-link"
-      title="GitHub"
-      aria-label="GitHub"
-    >
-      <div class="i-pixel-github"></div>
-    </a>
-    <a
-      href="https://bsky.app/profile/just-be.dev"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="icon-link"
-      title="Bluesky"
-      aria-label="Bluesky"
-    >
-      <div class="i-pixel-bluesky"></div>
-    </a>
-    <a
-      href="https://twitter.com/just_be_dev"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="icon-link"
-      title="Twitter"
-      aria-label="Twitter"
-    >
-      <div class="i-pixel-twitter"></div>
-    </a>
-    <a
-      href="https://linkedin.com/in/jtbnnt"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="icon-link"
-      title="LinkedIn"
-      aria-label="LinkedIn"
-    >
-      <div class="i-pixel-linkedin"></div>
-    </a>
-  </div>
-</nav>
-
-<!-- Bottom bar: Nav tabs (mobile only) -->
-<nav
-  class="lg:hidden bg-1 fixed bottom-0 right-0 left-0 z-10 flex h-lh items-center"
-  aria-label="Main navigation"
->
-  <div class="nav-tabs flex w-full overflow-x-auto">
-    {
-      tabs.map((tab) => {
-        const active = isActive(tab.href, currentPath);
-        const current = isCurrent(tab.href, currentPath);
-        const highlighted = highlightLabel(tab.label, tab.keyChar);
-        return (
-          <a
-            href={tab.href}
-            data-key={tab.keyChar}
-            class:list={[
-              "nav-link bg-1 transition-filter flex shrink-0 items-center px-1",
-              { active, current },
-            ]}
-            tabindex={current ? -1 : undefined}
-          >
-            {highlighted.before}
-            <span class="font-bold underline">{highlighted.key}</span>
-            {highlighted.after}
-          </a>
-        );
-      })
-    }
-  </div>
-</nav>
-
-<style>
-  .nav-tabs {
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE/Edge */
-  }
-
-  .nav-tabs::-webkit-scrollbar {
-    display: none; /* Chrome/Safari/Opera */
-  }
-
-  .nav-link {
-    display: flex;
-    align-items: center;
-    transition: filter 0.2s;
-  }
-
-  .nav-link:hover,
-  .nav-link:focus-visible {
-    filter: invert(1);
-    outline: none;
-  }
-
-  .nav-link.active {
-    background-color: var(--background0);
-    color: var(--foreground0);
-  }
-
-  .nav-link.current,
-  .nav-link.current:hover,
-  .nav-link.current:focus-visible {
-    filter: invert(0);
-    outline: none;
-    pointer-events: none;
-    cursor: default;
-  }
-
-  .icon-link {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: var(--background1);
-    height: 100%;
-    padding: 0.5rem;
-    transition: filter 0.2s;
-  }
-
-  .icon-link:hover,
-  .icon-link:focus-visible {
-    filter: invert(1);
-    outline: none;
-  }
-
-  .skip-link {
-    transition: filter 0.2s;
-  }
-
-  .skip-link:focus {
-    filter: invert(1);
-    outline: none;
   }
 </style>
 
+<Host data-resolve-active={currentPath === null ? "" : undefined}>
+  <template shadowrootmode="open">
+    <style is:inline>
+      :host {
+        display: contents;
+        --header-bg: var(--background1, #ddd);
+        --header-active-bg: var(--background0, #fff);
+        --header-fg: var(--foreground0, #000);
+      }
+
+      *,
+      ::before,
+      ::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      nav,
+      .skip-link {
+        font-family:
+          "IBM Plex Mono", "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas", "Monaco",
+          "Courier New", monospace;
+        font-size: 1rem;
+        font-weight: 400;
+        font-style: normal;
+        line-height: 1.5;
+        letter-spacing: normal;
+        text-align: left;
+        color: var(--header-fg);
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      nav {
+        position: fixed;
+        right: 0;
+        left: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        height: 1lh;
+        background-color: var(--header-bg);
+      }
+
+      .top-bar {
+        top: 0;
+        justify-content: space-between;
+      }
+
+      .bottom-bar {
+        bottom: 0;
+      }
+
+      .nav-tabs {
+        display: flex;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+
+      .nav-tabs::-webkit-scrollbar {
+        display: none;
+      }
+
+      .bottom-bar .nav-tabs {
+        width: 100%;
+        overflow-x: auto;
+      }
+
+      .nav-link {
+        display: flex;
+        flex-shrink: 0;
+        align-items: center;
+        padding: 0 1ch;
+        background-color: var(--header-bg);
+        transition: filter 0.2s;
+      }
+
+      .nav-link .key {
+        font-weight: 700;
+        text-decoration-line: underline;
+      }
+
+      .nav-link:hover,
+      .nav-link:focus-visible {
+        filter: invert(1);
+        outline: none;
+      }
+
+      .nav-link.active {
+        background-color: var(--header-active-bg);
+        color: var(--header-fg);
+      }
+
+      .nav-link.current,
+      .nav-link.current:hover,
+      .nav-link.current:focus-visible {
+        filter: invert(0);
+        outline: none;
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .branding {
+        display: flex;
+        align-items: center;
+        height: 1lh;
+        margin-left: 2ch;
+      }
+
+      .branding .name {
+        display: flex;
+        gap: 1ch;
+      }
+
+      .branding b {
+        font-weight: 700;
+      }
+
+      .socials {
+        display: flex;
+        height: 1lh;
+        margin-left: auto;
+        padding-right: 1ch;
+      }
+
+      .icon-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        padding: 0.5rem;
+        background-color: var(--header-bg);
+        transition: filter 0.2s;
+      }
+
+      .icon-link svg {
+        display: inline-block;
+        vertical-align: middle;
+      }
+
+      .icon-link:hover,
+      .icon-link:focus-visible {
+        filter: invert(1);
+        outline: none;
+      }
+
+      .skip-link {
+        position: absolute;
+        top: 1lh;
+        left: -9999px;
+        z-index: 50;
+        padding: 0 2ch;
+        background-color: var(--header-bg);
+        transition: filter 0.2s;
+      }
+
+      .skip-link:focus {
+        left: 0;
+        filter: invert(1);
+        outline: none;
+      }
+
+      @media (max-width: 1023.9px) {
+        .top-bar .nav-tabs {
+          display: none;
+        }
+      }
+
+      @media (min-width: 1024px) {
+        .top-bar {
+          justify-content: flex-start;
+        }
+
+        .bottom-bar {
+          display: none;
+        }
+
+        .branding {
+          position: fixed;
+          top: 0;
+          left: 50%;
+          z-index: 20;
+          margin-left: 0;
+          transform: translateX(-50%);
+        }
+      }
+    </style>
+
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <!-- Top bar: nav tabs (desktop), branding, and social icons -->
+    <nav class="top-bar" aria-label="Main navigation">
+      <div class="nav-tabs">
+        {
+          links.map((tab) => (
+            <a
+              href={tab.href}
+              data-key={tab.keyChar}
+              class:list={["nav-link", { active: tab.active, current: tab.current }]}
+              tabindex={tab.current ? -1 : undefined}
+            >
+              {tab.highlighted.before}
+              <span class="key">{tab.highlighted.key}</span>
+              {tab.highlighted.after}
+            </a>
+          ))
+        }
+      </div>
+
+      <!-- Branding: left on mobile, centered on desktop -->
+      <div class="branding">
+        <span class="name">
+          <span><b>just</b>in</span>
+          <span><b>be</b>nnett</span>
+        </span>
+      </div>
+
+      <div class="socials">
+        {
+          socials.map((social) => (
+            <a
+              href={social.href}
+              class="icon-link"
+              title={social.label}
+              aria-label={social.label}
+              target={social.external ? "_blank" : undefined}
+              rel={social.external ? "noopener noreferrer" : undefined}
+              set:html={social.icon}
+            />
+          ))
+        }
+      </div>
+    </nav>
+
+    <!-- Bottom bar: nav tabs (mobile only) -->
+    <nav class="bottom-bar" aria-label="Main navigation">
+      <div class="nav-tabs">
+        {
+          links.map((tab) => (
+            <a
+              href={tab.href}
+              data-key={tab.keyChar}
+              class:list={["nav-link", { active: tab.active, current: tab.current }]}
+              tabindex={tab.current ? -1 : undefined}
+            >
+              {tab.highlighted.before}
+              <span class="key">{tab.highlighted.key}</span>
+              {tab.highlighted.after}
+            </a>
+          ))
+        }
+      </div>
+    </nav>
+  </template>
+</Host>
+
 <script>
-  // Scroll active tabs into view on page load (both top and bottom nav)
-  document.querySelectorAll(".nav-tabs .nav-link.active").forEach((tab) => {
-    tab.scrollIntoView({ inline: "center", block: "nearest" });
-  });
+  import "@/client/keyboard-shortcuts";
+  import "@/client/site-header";
 </script>

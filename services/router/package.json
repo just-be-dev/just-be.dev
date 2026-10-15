@@ -1,0 +1,15 @@
+{
+  "name": "@just-be/router-service",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy -c wrangler.toml",
+    "dev": "wrangler dev -c wrangler.toml",
+    "tail": "wrangler tail"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241127.0",
+    "@types/bun": "catalog:"
+  }
+}

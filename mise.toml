@@ -66,8 +66,14 @@ run = "bun packages/deploy/index.ts"
 description = "Deploy subdomains (assets, redirects, etc.)"
 
 [tasks.deploy]
-depends = ["deploy:subdomains"]
+depends = ["deploy:subdomains", "deploy:router"]
 description = "Deploy main site and all subdomains"
+
+[tasks."deploy:router"]
+dir = "services/router"
+run = "bun run deploy"
+raw = true
+description = "Deploy the just-be.dev microfrontend router (mounts Traces at /traces)"
 
 [tasks."deploy:wildcard"]
 dir = "services/wildcard"

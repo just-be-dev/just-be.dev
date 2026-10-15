@@ -8,6 +8,8 @@
  *   j / ArrowDown  - next list entry (from a tab, jumps to the first entry)
  *   k / ArrowUp    - previous list entry (from the first entry, back to the tab)
  */
+import { SITE_HEADER_TAG } from "@/utils/nav";
+
 declare global {
   interface Window {
     refreshKeyboardShortcuts: () => void;
@@ -21,12 +23,28 @@ const VERTICAL_PREV = ["arrowup", "k"];
 const HORIZONTAL_NEXT = ["arrowright", "l"];
 const HORIZONTAL_PREV = ["arrowleft", "h"];
 
+// The site header renders its tabs inside a shadow root, so queries look there too.
+function queryAll<E extends Element = Element>(selector: string): E[] {
+  const roots: ParentNode[] = [document];
+  document.querySelectorAll(SITE_HEADER_TAG).forEach((header) => {
+    if (header.shadowRoot) roots.push(header.shadowRoot);
+  });
+  return roots.flatMap((root) => Array.from(root.querySelectorAll<E>(selector)));
+}
+
+// document.activeElement stops at a shadow host; follow it to the focused element.
+function deepActiveElement() {
+  let active = document.activeElement;
+  while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
+  return active as HTMLElement | null;
+}
+
 function initKeyboardShortcuts() {
   // Clear existing mappings
   keyMap.clear();
 
   // Find all elements with data-key attribute
-  const elements = document.querySelectorAll("[data-key]");
+  const elements = queryAll("[data-key]");
 
   elements.forEach((element) => {
     const key = element.getAttribute("data-key").toLowerCase();
@@ -47,17 +65,17 @@ function isVisible(element: Element) {
 }
 
 function getTabs() {
-  return Array.from(document.querySelectorAll<HTMLElement>(".nav-link")).filter(isVisible);
+  return queryAll<HTMLElement>(".nav-link").filter(isVisible);
 }
 
 function getEntries() {
-  return Array.from(document.querySelectorAll<HTMLElement>("[data-nav-item]")).filter(isVisible);
+  return queryAll<HTMLElement>("[data-nav-item]").filter(isVisible);
 }
 
 // Returns true when the event was handled as a movement key.
 function handleMovement(event: KeyboardEvent) {
   const key = event.key.toLowerCase();
-  const active = document.activeElement as HTMLElement | null;
+  const active = deepActiveElement();
 
   const isEntry = !!active && active.hasAttribute("data-nav-item");
   const isTab = !!active && active.classList.contains("nav-link");
@@ -140,15 +158,18 @@ function handleKeyPress(event: KeyboardEvent) {
   }
 }
 
-// Initialize on DOM ready
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initKeyboardShortcuts);
-} else {
-  initKeyboardShortcuts();
+// Bind once, even if a page loads this module from more than one bundle.
+if (!window.refreshKeyboardShortcuts) {
+  // Initialize on DOM ready
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initKeyboardShortcuts);
+  } else {
+    initKeyboardShortcuts();
+  }
+
+  // Set up global keyboard listener
+  document.addEventListener("keydown", handleKeyPress);
+
+  // Expose a method to re-initialize if DOM changes
+  window.refreshKeyboardShortcuts = initKeyboardShortcuts;
 }
-
-// Set up global keyboard listener
-document.addEventListener("keydown", handleKeyPress);
-
-// Expose a method to re-initialize if DOM changes
-window.refreshKeyboardShortcuts = initKeyboardShortcuts;
