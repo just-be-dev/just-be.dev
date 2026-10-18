@@ -43,6 +43,20 @@ export default defineConfig({
   ],
   vite: {
     plugins: [excludePublicAssets()],
+    // Pre-bundle deps that are otherwise discovered at request time. Late
+    // discovery triggers a re-optimize that deletes chunks the Cloudflare
+    // worker runner is still importing, crashing `astro dev` on a cold cache.
+    ssr: {
+      optimizeDeps: {
+        include: [
+          "astro/app/manifest",
+          "astro/logger/console",
+          "astro/zod",
+          "astro/virtual-modules/live-config",
+          "marked",
+        ],
+      },
+    },
     build: {
       // Keep scripts as external files. The header fragment carries its script
       // into microfrontends whose Content-Security-Policy forbids inline scripts.

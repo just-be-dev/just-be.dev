@@ -12,8 +12,10 @@ function transformMermaidCode(node: Readonly<Code>): Code {
       ...node,
       lang: "text",
       meta: null,
+      // Force plain text. The default ("auto") emits ANSI color codes when
+      // the build runs in a color-capable terminal, which leak into the HTML.
       value: renderMermaidAscii(node.value, {
-        spacing: "normal",
+        colorMode: "none",
       }),
     };
   } catch (error) {

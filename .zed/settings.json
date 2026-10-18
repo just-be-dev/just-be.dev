@@ -1,0 +1,10 @@
+{
+  "languages": {
+    "Markdown": {
+      "soft_wrap": "editor_width"
+    },
+    "MDX": {
+      "soft_wrap": "editor_width"
+    }
+  }
+}
