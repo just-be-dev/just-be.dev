@@ -1,0 +1,95 @@
+---
+title: Code Review Sucks Now, but It Doesn't Have To
+description: Agents sit between implementers and reviewers now, and code review has gotten lonelier because of it. Sharing agent sessions can bring the humans back.
+date: 2026-10-18
+tags:
+  - ai
+draft: true
+code: b263b
+---
+
+Reviewing code has felt bad to me lately. It's not because I don't _want_ to review code or that I think it's not valuable. It just used to be an (imperfect) tool for both increasing the quality of a codebase and learning. Lately though... I don't feel like I'm learning and it just feels lonely.
+
+I think it's because we're not really working together anymore. Our process is built for human interactions, not human-agent-agent-human interactions.
+
+Let me explain it from different perspectives.
+
+## The Implementer
+
+Let's assume the implementer is using agents to write most or all of the code. Maybe they spent hours going back and forth, rejecting approaches and steering. Maybe they one-shotted it and yeeted a PR over the wall. From the outside it's kinda hard to tell the difference.
+
+Unless the implementer writes some of their own thoughts in the PR body, the reviewer has no idea how much effort went into it. The implementer can help here by writing the description by hand, or by doing a clear self-review that calls out the parts they thought hard about (and the parts they didn't). That at least signals a human was involved and shows some effort. Still, the reviewer can't really see the artifacts of the implementer's work. They only see the generated output of it, separated from the implementer's creation process.
+
+This is new. Code used to _be_ someone's thoughts. A good description always mattered, but even without one you could read how someone approached the problem. What they named things, what they pulled out into an abstraction, where they cut corners. You'd get a pretty good sense of what they were thinking. Generated code doesn't carry that signal in the same way. You can see what was done, and maybe even why it matters, but not how the person behind it was thinking.
+
+## The Reviewer
+
+Anecdotally, a lot of reviewers I see now have an agent do a first pass. Then (hopefully) they read through it themselves. But they're reading generated code, and they're probably generating most of their own code too. The learning we used to get from review, like seeing how a coworker solves a problem or picking up a pattern you hadn't seen before, happens a lot less.
+
+Then there's the question of how the feedback gets back to the implementer. If the reviewer has their agent post its comments directly to the thread, the implementer is likely going to feel alienated. Did the reviewer even look at the PR? Is anyone on the other end?
+
+Having the reviewer rewrite the agent's feedback in their own words isn't great either. It may read more human, but it's extra work on both sides and it just feels... gross. Reviews have always been tricky because an implementer only knows what you did in your review if you tell them. It's the same situation today, just worse.
+
+## Sessions Are the Medium Now
+
+Code used to be the medium we learned from. I think soon it will be shared agent sessions. The session is where the real work is happening. It's where we're making decisions about what's in scope or out of scope. It's a log of how much or little effort we put into a particular change. It's the artifact we should be learning from each other on.
+
+Right now we underutilize sessions. The implementer's session lives on the implementer's machine and the reviewer's session lives on the reviewer's. What ends up in the PR is two agents talking past each other with a couple of humans relaying messages between them. We're doing more than ever and just feeling more tired and lonely because of it. We need to change how we do this.
+
+## What I Think We Should Do Instead
+
+### Plan Together
+
+A long gripe about PRs is that they come too late in the process. You're reviewing the final artifact of someone's work after they've spent their time, attention, and now tokens on it. I think now more than ever, it's worth starting the review with a shared planning session between you, your coworker, and an agent. Just jam on something together. It doesn't have to be some big thing, just outline what you want to do and why and get a good enough rough sketch of the approach to have a general direction to agree on.
+
+You can skip this step if it's a super small task, but I think it's a good general practice.
+
+### Share the Implementation Sessions
+
+The agent sessions the implementer is driving to do the work should be visible alongside the plan and the change. As a reviewer, you shouldn't even need to wait until the end of the process. You could always hop in and do some pairing (if the implementer was comfortable with that). Regardless, once the implementation is done, the session should be reviewable.
+
+It's easy to see how much effort someone put into something when you have direct access to their instructions, how many turns the conversation took, etc. In my mind, it's _the_ reviewable artifact.
+
+### Summarize Deviations to the Plan
+
+This is an optional step too, but undoubtedly helpful for a reviewer. Given the initial plan y'all agreed on, the working session, and the work outcome it'd be pretty easy to generate a summary of what changed from the initial plan. That's a great place to point out what was learned along the way and get in front of any potential surprises for the reviewer. It also doubles as a map of the session. A reviewer doesn't need to read hours of back-and-forth; they can jump straight to the places where things changed.
+
+### Spot Check
+
+By this point the reviewer should have a relatively good idea of what's being built and why. They have a document describing any deviations to the initial plan and they have the generated code.
+
+They can fire off their agent to do a review, as they would today, while they spot check things in the other traces and code. The trace for the reviewing agent should _also_ be visible to the implementer. That way, the trace itself can be shared as findings from an agent and any context of how the reviewer drove the review agent is captured too. The implementer can tell how much work the reviewer put in.
+
+Meanwhile the reviewer can look at the code, as before, but hopefully focus on high level, load-bearing areas. Interfaces, dependencies, and infrastructure are my general spot checks, but it varies based on task.
+
+## Tools in the Space
+
+There are plenty of tools out there that can help you and your team work this way.
+
+### Shared Workspaces
+
+[Amp](https://ampcode.com/) makes [threads visible to your team](https://ampcode.com/docs/threads) by default, lets teammates [prompt the same thread](https://ampcode.com/docs/collaborate/multiplayer), and shows a linked PR right on the thread when you paste the thread URL into the PR description. [HumanLayer](https://www.humanlayer.dev/) groups the research, planning, implementation, and review sessions for a piece of work into a single [task](https://docs.humanlayer.com/explanation/tasks) that the team can see and comment on. Zed's [Delta](https://delta.dev/) lets teammates [join the same agent thread](https://delta.dev/docs/collaboration/collaborate-thread) and steer it together in real time, and Warp has [agent session sharing](https://docs.warp.dev/agents/local-agents/session-sharing/) that works for third-party agents too.
+
+### Sessions Tied to Commits
+
+GitHub's Copilot cloud agent [links every commit to its session logs](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/coding-agent/track-copilot-sessions) so reviewers can trace why a change was made. [Entire](https://github.com/entireio/cli) does something similar for any agent, storing transcripts in git and adding a checkpoint trailer to each commit.
+
+### Sessions Linked From a PR
+
+If you just want to attach a session to a PR, [claudereview](https://claudereview.com/) and Simon Willison's [claude-code-transcripts](https://github.com/simonw/claude-code-transcripts) turn a session into a page you can link from the description.
+
+## Outcomes and Acknowledgements
+
+Taking this approach, we get full transparency. The implementer can see how the reviewer arrived at their feedback, and the reviewer can see how the code came to be.
+
+Review also gets pulled forward. The important disagreements come up during planning, before anyone spends tokens building the wrong thing. By the time the PR is up, the reviewer isn't evaluating the approach for the first time. They're checking that what got built is what everyone agreed on.
+
+And the humans working together get a chance to learn from each other again. Not so much from each other's code anymore, but from how each other thinks, which is what we were really getting from code all along.
+
+### The Awkwardness of Sharing One's Thoughts
+
+Agent sessions can feel oddly intimate. You ask questions that you wouldn't ask a person. You don't feel bad about looking stupid. Sharing that with other people will definitely feel vulnerable. The thing is though... wasn't sharing our code with other people a vulnerable feeling? It's not completely the same, but there are echoes there.
+
+## P.S. But What About Software Factories?
+
+There are going to be a lot of people who read this and immediately go "nope, that's a waste of time." I know there's a broad desire to pump tokens into the magic machine and have it spit out products on the other side. If you can build enough guardrails where you don't need to look at your code, then good on you. For some products it may not matter if a bug gets shipped to prod if it can be fixed fast enough. For other products, someone's livelihood may be on the line. Judge your risks accordingly. I just urge you to keep in mind who you're building with and who you're building for.
