@@ -53,6 +53,17 @@ describe("joinProjects", () => {
     expect(bySlug("ccpm")).toMatchObject({ title: "CCPM", entry: undefined });
   });
 
+  it("drops a url link that duplicates the github link", () => {
+    const [ccpm] = deskFixture.filter((p) => p.slug === "ccpm");
+    const withUrl = {
+      ...ccpm,
+      links: [...ccpm.links, { kind: "url" as const, ref: "https://github.com/just-be-dev/ccpm/" }],
+    };
+    const [project] = joinProjects(desk([withUrl]), []).projects;
+    expect(project.url).toBeUndefined();
+    expect(project.github).toBe("https://github.com/just-be-dev/ccpm");
+  });
+
   it("hides MDX whose project isn't public in Desk", () => {
     expect(bySlug("private-thing")).toBeUndefined();
   });

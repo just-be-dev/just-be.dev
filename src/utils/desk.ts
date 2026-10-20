@@ -1,6 +1,7 @@
 /**
- * Client for Desk's `DeskPlatform` RPC entrypoint, reached through the `DESK`
- * service binding. Desk (desk.just-be.dev) is the system of record for
+ * Client for Desk's `DeskPlatform` RPC surface, reached through the `DESK`
+ * service binding. The methods live on the default entrypoint of Desk's
+ * private API Worker, so the binding has no named entrypoint. Desk (desk.just-be.dev) is the system of record for
  * projects: their state, visibility, description and links. This site only
  * calls `listPublicProjects()`.
  *
@@ -36,11 +37,12 @@ export const platformProjectSchema = z.object({
   createdAt: z.number(),
   stateAt: z.number(),
   lastEntryAt: z.number().nullable(),
+  /** Always https://desk.just-be.dev/projects/<slug> (private; not shown on the site). */
   url: z.string(),
 });
 export type PlatformProject = z.infer<typeof platformProjectSchema>;
 
-/** The slice of Desk's `DeskPlatform` entrypoint this site uses. */
+/** The slice of Desk's `DeskPlatform` surface this site uses. */
 export interface DeskPlatformBinding {
   listPublicProjects(): Promise<unknown>;
 }

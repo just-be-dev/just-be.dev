@@ -147,7 +147,7 @@ This ensures permanent short URLs never break, while keeping canonical URLs clea
 
 Desk (desk.just-be.dev, `~/Code/thoughtflow`) is the system of record for projects: name, description, state (`idea | active | maintenance | done | archived`), the `experimental` flag, visibility and links. The site keeps only the long-form MDX prose.
 
-- `/projects` and `/projects/[slug]` render on demand. `src/utils/site-projects.ts` calls `listPublicProjects()` on Desk's `DeskPlatform` entrypoint through the `DESK` service binding in `wrangler.toml`, and joins the result with the MDX by each Desk project's `site` link (`src/utils/projects.ts`).
+- `/projects` and `/projects/[slug]` render on demand. `src/utils/site-projects.ts` calls `listPublicProjects()` on Desk's private API Worker (its default entrypoint) through the `DESK` service binding in `wrangler.toml`, and joins the result with the MDX by each Desk project's `site` link (`src/utils/projects.ts`).
 - MDX frontmatter has only optional overrides (`title`, `description`, `date`, `code`, `slugs`). Don't add `status`, `url` or `repository`; the schema rejects them, and they belong in Desk.
 - Public Desk projects without MDX get a minimal page. MDX whose project isn't public in Desk is hidden. `idea` projects aren't listed.
 - Desk answers are cached per isolate (`src/utils/desk.ts`). If Desk is down, pages render MDX only, without state, and never fail.
@@ -182,7 +182,7 @@ The site includes a client-side keyboard shortcut system (`src/client/keyboard-s
 The site is deployed to Cloudflare Workers with configuration in `wrangler.toml`:
 
 - Static assets in `./dist`
-- `DESK` service binding to Desk's private API Worker (`DeskPlatform` entrypoint)
+- `DESK` service binding to Desk's private API Worker (default entrypoint)
 - Custom domain: `just-be.dev`
 - Observability enabled
 

@@ -10,13 +10,13 @@ directory = "./dist"
 binding = "ASSETS"
 
 # Desk (desk.just-be.dev) is the system of record for projects. The site calls
-# `listPublicProjects()` on its `DeskPlatform` entrypoint at request time; see
-# src/utils/site-projects.ts. Desk's private API Worker publishes the prod
-# script name; update `service` here if Desk's stack replaces the Worker.
+# `listPublicProjects()` on the default entrypoint of Desk's private API Worker
+# (an Alchemy Effect-native Worker, so there is no named entrypoint) at request
+# time; see src/utils/site-projects.ts. Update `service` in both blocks if
+# Desk's stack replaces the Worker.
 [[services]]
 binding = "DESK"
 service = "desk-api-prod-52zp2vud3ktnsddd"
-entrypoint = "DeskPlatform"
 
 # `mise run dev:desk` (CLOUDFLARE_ENV=desk-remote) talks to prod Desk through a
 # remote binding instead of the dev fixture. Local dev only; never deployed.
@@ -26,5 +26,4 @@ vars = { DESK_DEV = "remote" }
 [[env.desk-remote.services]]
 binding = "DESK"
 service = "desk-api-prod-52zp2vud3ktnsddd"
-entrypoint = "DeskPlatform"
 remote = true

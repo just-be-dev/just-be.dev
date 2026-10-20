@@ -54,12 +54,17 @@ function linkRef(project: PlatformProject, kind: string): string | undefined {
   return project.links.find((link) => link.kind === kind)?.ref;
 }
 
+const sameUrl = (a: string, b: string) =>
+  a.replace(/\/+$/, "").toLowerCase() === b.replace(/\/+$/, "").toLowerCase();
+
 function fromDesk<Entry extends MdxProject>(
   project: PlatformProject,
   slug: string,
   entry: Entry | undefined,
 ): SiteProject<Entry> {
-  const github = linkRef(project, "github");
+  const githubRef = linkRef(project, "github");
+  const github = githubRef ? `https://github.com/${githubRef}` : undefined;
+  const url = linkRef(project, "url");
   return {
     slug,
     title: entry?.data.title ?? project.name,
@@ -68,8 +73,9 @@ function fromDesk<Entry extends MdxProject>(
     code: entry?.data.code?.toUpperCase(),
     state: project.state,
     experimental: project.experimental,
-    url: linkRef(project, "url"),
-    github: github ? `https://github.com/${github}` : undefined,
+    // A `url` link that is just the GitHub page adds nothing to the github link.
+    url: url && !(github && sameUrl(url, github)) ? url : undefined,
+    github,
     entry,
     desk: project,
   };

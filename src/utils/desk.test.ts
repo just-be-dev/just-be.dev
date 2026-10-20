@@ -105,6 +105,28 @@ describe("createDeskClient", () => {
     });
   });
 
+  it("treats a returned error value like a failed call", async () => {
+    const down = createDeskClient({
+      binding: () => fakeDesk(async () => ({ _tag: "Unavailable", message: "x" })).binding,
+      warn: quiet,
+    });
+    expect(await down.listPublicProjects()).toMatchObject({
+      ok: false,
+      error: "Desk returned Unavailable: x",
+    });
+
+    let now = 0;
+    let fail = false;
+    const desk = fakeDesk(async () =>
+      fail ? { _tag: "Unavailable", message: "D1 is down" } : deskFixture,
+    );
+    const client = createDeskClient({ binding: () => desk.binding, now: () => now, warn: quiet });
+    await client.listPublicProjects();
+    fail = true;
+    now = 120_000;
+    expect(await client.listPublicProjects()).toMatchObject({ ok: true, stale: true });
+  });
+
   it("never throws when the binding throws synchronously", async () => {
     const client = createDeskClient({
       binding: () => ({
