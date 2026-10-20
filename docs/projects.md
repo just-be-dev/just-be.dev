@@ -2,7 +2,7 @@
 
 Projects on this site come from two places:
 
-- **Desk** ([desk.just-be.dev](https://desk.just-be.dev), repo `~/Code/thoughtflow`) is the system of record. It owns each project's name, one-line description, lifecycle state, `experimental` flag, visibility and links.
+- **Desk** ([desk.just-be.dev](https://desk.just-be.dev), repo `~/Code/thoughtflow`) is the system of record. It owns each project's short code, name, one-line description, lifecycle state, `experimental` flag, visibility and links.
 - **MDX** in `src/content/projects/<slug>.mdx` holds the long-form prose for a project, and nothing else of substance.
 
 The contract between Desk, projects.just-be.dev and this site lives with the Desk work; the parts this site depends on are summarized here.
@@ -19,7 +19,8 @@ The contract between Desk, projects.just-be.dev and this site lives with the Des
 | Title               | MDX `title` if set, else Desk `name`                       |
 | Description         | MDX `description` if set, else Desk `description`          |
 | Date                | MDX `date` if set, else Desk `createdAt`                   |
-| Code, `slugs`       | MDX only (short URLs, see below)                           |
+| Code                | Desk `code` (see Short codes)                              |
+| `slugs` aliases     | MDX only                                                   |
 | State, experimental | Desk                                                       |
 | Title link          | Desk `url` link, else its `github` link                    |
 | GitHub link         | Desk `github` link, unless it's the same as the `url` link |
@@ -28,9 +29,19 @@ The contract between Desk, projects.just-be.dev and this site lives with the Des
 Rules:
 
 - A public Desk project without MDX still gets a row and a minimal page, at `/projects/<site link>` or, with no `site` link, `/projects/<desk slug>`. A Desk slug can't take a slug that an MDX file owns.
-- An MDX file with no public Desk project is not listed, and its page redirects to `/projects`. Making a project private in Desk takes it off the site. Its short code and `slugs` aliases redirect to that page, so they land on `/projects` too.
+- An MDX file with no public Desk project is not listed, and its page redirects to `/projects`. Making a project private in Desk takes it off the site. Its short code then 404s, and its `slugs` aliases redirect to that page, so they land on `/projects`.
 - `/projects` lists projects by state, `active`, `maintenance`, `done`, then `archived`, newest first within a state. `idea` projects aren't listed, but a public idea's page still renders if you link to it.
 - `experimental` shows as a badge next to the title.
+
+## Short codes
+
+Desk owns project short codes: `code` on each Desk project, `p` plus 4 lowercase hex digits (`p2530`), unique across Desk and never reused. The site shows it upper-case on `/projects` and on the project page, for Desk-only projects too.
+
+`/p2530` (any case) resolves at request time in `src/middleware.ts`: it loads the joined projects and redirects (302, since the target slug can change) to `/projects/<slug>` of the project with that code, using the slug the join picked (`projectCodePath`). A code with no public project 404s. Project codes are not in `url-manifest.yaml`; other kinds still are.
+
+`slugs` aliases (`/pex`) come from the MDX frontmatter and redirect (301) to `/projects/<file name>` without asking Desk (`projectAliasPath`).
+
+Rollout fallback: Desk may not send `code` yet, so `desk.ts` parses it as optional (lowercased; a malformed code is dropped with a warning). When a project has no Desk code, the join falls back to `FALLBACK_PROJECT_CODES` in `src/utils/projects.ts`, the 7 codes that used to be in MDX frontmatter and that Desk backfilled, keyed by page slug. The same map gives MDX projects their codes, and keeps their short URLs working, when Desk is unavailable and nothing is cached. Remove the map once Desk returns codes; after that, an outage with an empty cache leaves project short codes unresolved.
 
 ## States
 
@@ -38,12 +49,11 @@ Desk's vocabulary: `idea | active | maintenance | done | archived`, plus the `ex
 
 ## MDX frontmatter
 
-All fields are optional overrides. The schema (`src/content/schemas.ts`) is strict, so the retired `status`, `url` and `repository` fields fail the build; set those in Desk instead.
+All fields are optional. The schema (`src/content/schemas.ts`) is strict, so the retired `code`, `status`, `url` and `repository` fields fail the build; set those in Desk instead.
 
 ```yaml
 ---
-date: 2026-01-24 # shown on the page; also used by gen-codes
-code: p2530 # short code, /p2530
+date: 2026-01-24 # shown on the page
 slugs: # extra paths that redirect here
   - /pex
 title: PEX Lang # only to override Desk's name
@@ -52,7 +62,7 @@ description: ... # only to override Desk's description
 ::readme{repo="just-be-dev/pex"}
 ```
 
-To add a project page: create the project in Desk (public, with a `site` link to the new slug), add `src/content/projects/<slug>.mdx`, and run `mise run gen-codes` and `mise run gen-url-manifest`.
+To add a project page: create the project in Desk (public, with a `site` link to the new slug; Desk assigns its code) and add `src/content/projects/<slug>.mdx`. No code generation is needed.
 
 ## Caching and failure
 
@@ -64,7 +74,7 @@ If Desk is unreachable and nothing is cached, the pages never fail: `/projects` 
 
 | Command                                                    | Desk data                                                                                                                                          |
 | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mise run dev`                                             | Fixture data from `src/utils/desk-fixture.ts`, including Desk-only, archived and idea projects                                                     |
+| `mise run dev`                                             | Fixture data from `src/utils/desk-fixture.ts`, including Desk-only (`/p24dd`), archived and idea projects                                          |
 | `mise run dev:desk`                                        | Prod Desk, through a remote binding (`CLOUDFLARE_ENV=desk-remote`, see `[env.desk-remote]` in `wrangler.toml`). Needs `wrangler login`. Read-only. |
 | `DESK_DEV=unavailable` in `.dev.vars`, then `mise run dev` | Simulates Desk being down                                                                                                                          |
 

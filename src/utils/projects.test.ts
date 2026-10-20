@@ -1,7 +1,13 @@
 import { describe, expect, it } from "bun:test";
 import type { DeskResult } from "./desk";
 import { deskFixture } from "./desk-fixture";
-import { joinProjects, listProjects, type MdxProject } from "./projects";
+import {
+  joinProjects,
+  listProjects,
+  projectAliasPath,
+  projectCodePath,
+  type MdxProject,
+} from "./projects";
 
 const mdx = (id: string, data: MdxProject["data"] = {}): MdxProject => ({ id, data });
 
@@ -13,11 +19,14 @@ const desk = (projects = deskFixture): DeskResult => ({
 });
 
 const entries = [
-  mdx("pex", { date: new Date("2026-01-24"), code: "p2530" }),
-  mdx("jexl", { title: "JEXL!", description: "Override", code: "p2424" }),
-  mdx("webview", { date: new Date("2024-09-16"), code: "p3a89" }),
-  mdx("private-thing", { code: "p1111" }),
+  mdx("pex", { date: new Date("2026-01-24"), slugs: ["/pex"] }),
+  mdx("jexl", { title: "JEXL!", description: "Override", slugs: ["/jexl"] }),
+  mdx("webview", { date: new Date("2024-09-16") }),
+  mdx("private-thing"),
 ];
+
+/** Desk as it answered before it shipped `code`. */
+const withoutCodes = deskFixture.map(({ code: _code, ...project }) => project);
 
 describe("joinProjects", () => {
   const { deskAvailable, projects } = joinProjects(desk(), entries);
@@ -77,12 +86,82 @@ describe("joinProjects", () => {
     expect(warnings).toHaveLength(1);
   });
 
+  it("takes codes from Desk, including Desk-only projects", () => {
+    expect(bySlug("fixture-desk-only")?.code).toBe("P24DD");
+    expect(bySlug("ccpm")?.code).toBe("P252B");
+  });
+
+  it("prefers Desk's code over the fallback", () => {
+    const [pex] = deskFixture.filter((p) => p.slug === "pex");
+    const [project] = joinProjects(desk([{ ...pex, code: "p0001" }]), entries).projects;
+    expect(project.code).toBe("P0001");
+  });
+
+  it("falls back to the MDX projects' codes while Desk doesn't send them", () => {
+    const { projects } = joinProjects(desk(withoutCodes), entries);
+    const code = (slug: string) => projects.find((p) => p.slug === slug)?.code;
+    expect(code("pex")).toBe("P2530");
+    expect(code("webview")).toBe("P3A89");
+    // Keyed by page slug, so a site-linked project without MDX still gets it.
+    expect(code("ccpm")).toBe("P252B");
+    expect(code("fixture-desk-only")).toBeUndefined();
+  });
+
   it("degrades to MDX only when Desk is unavailable", () => {
     const result = joinProjects({ ok: false, error: "down" }, entries);
     expect(result.deskAvailable).toBe(false);
     expect(result.projects.map((p) => p.slug)).toEqual(entries.map((e) => e.id));
     expect(result.projects[0]).toMatchObject({ title: "pex", code: "P2530" });
     expect(result.projects[0].state).toBeUndefined();
+  });
+});
+
+describe("projectCodePath", () => {
+  const { projects } = joinProjects(desk(), entries);
+
+  it("redirects a code to the slug the join picked, in any case", () => {
+    expect(projectCodePath("p2530", projects)).toBe("/projects/pex");
+    expect(projectCodePath("P2530", projects)).toBe("/projects/pex");
+    expect(projectCodePath("p24dd", projects)).toBe("/projects/fixture-desk-only");
+  });
+
+  it("uses the site link, not the Desk slug", () => {
+    const [pex] = deskFixture.filter((p) => p.slug === "pex");
+    const renamed = { ...pex, slug: "pex-lang" };
+    const joined = joinProjects(desk([renamed]), entries).projects;
+    expect(projectCodePath("p2530", joined)).toBe("/projects/pex");
+  });
+
+  it("returns undefined for codes without a public project", () => {
+    expect(projectCodePath("p0000", projects)).toBeUndefined();
+    const onlyPex = deskFixture.filter((p) => p.slug === "pex");
+    const joined = joinProjects(desk(onlyPex), entries).projects;
+    expect(projectCodePath("p2424", joined)).toBeUndefined();
+  });
+
+  it("resolves through the fallback while Desk doesn't send codes", () => {
+    const joined = joinProjects(desk(withoutCodes), entries).projects;
+    expect(projectCodePath("p2424", joined)).toBe("/projects/jexl");
+  });
+
+  it("resolves the MDX projects when Desk is unavailable", () => {
+    const joined = joinProjects({ ok: false, error: "down" }, entries).projects;
+    expect(projectCodePath("p2530", joined)).toBe("/projects/pex");
+    expect(projectCodePath("p3a89", joined)).toBe("/projects/webview");
+    expect(projectCodePath("p24dd", joined)).toBeUndefined();
+  });
+});
+
+describe("projectAliasPath", () => {
+  it("redirects MDX slugs aliases to the project's page", () => {
+    expect(projectAliasPath("/pex", entries)).toBe("/projects/pex");
+    expect(projectAliasPath("/jexl/", entries)).toBe("/projects/jexl");
+  });
+
+  it("leaves other paths alone", () => {
+    expect(projectAliasPath("/projects/pex", entries)).toBeUndefined();
+    expect(projectAliasPath("/webview", entries)).toBeUndefined();
+    expect(projectAliasPath("/", entries)).toBeUndefined();
   });
 });
 

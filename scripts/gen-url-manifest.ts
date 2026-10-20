@@ -6,7 +6,10 @@ import { YAML } from "bun";
 
 const CONTENT_DIR = `${import.meta.dir}/../src/content`;
 const MANIFEST_PATH = `${import.meta.dir}/../src/content/url-manifest.yaml`;
-const DEFAULT_COLLECTIONS = ["blog", "games", "research", "projects", "talks"];
+// Projects are not here: Desk owns project codes, and `src/middleware.ts`
+// resolves project short codes and `slugs` aliases at request time.
+const DEFAULT_COLLECTIONS = ["blog", "games", "research", "talks"];
+const isProjectCode = (code: string) => code.toLowerCase().startsWith("p");
 
 interface UrlManifest {
   version: string;
@@ -228,8 +231,18 @@ function genUrlManifest(collections: string[]) {
   console.log(`Output manifest: ${MANIFEST_PATH}\n`);
   console.log("=".repeat(50) + "\n");
 
-  // Load existing manifest to preserve all entries
+  if (collections.includes("projects")) {
+    console.error("❌ Project codes are owned by Desk and aren't part of the URL manifest");
+    process.exit(1);
+  }
+
+  // Load existing manifest to preserve all entries, except project codes,
+  // which now resolve through Desk.
   const manifest = loadExistingManifest();
+  for (const code of Object.keys(manifest.codes).filter(isProjectCode)) {
+    console.log(`🗑  ${code} (project codes resolve through Desk)`);
+    delete manifest.codes[code];
+  }
   const existingSlugToCode = buildSlugToCodeMap(manifest);
 
   // Track slugs seen in the current run to detect duplicates

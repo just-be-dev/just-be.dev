@@ -5,7 +5,9 @@ import { join } from "node:path";
 import { Code, type Kind } from "../src/utils/code";
 
 const CONTENT_DIR = `${import.meta.dir}/../src/content`;
-const DEFAULT_DIRS = ["blog", "games", "research", "projects", "talks"];
+// Projects are not here: Desk (desk.just-be.dev) owns project codes, and the
+// projects schema rejects a `code` in their frontmatter.
+const DEFAULT_DIRS = ["blog", "games", "research", "talks"];
 
 /**
  * Infer kind prefix from directory name
@@ -19,7 +21,7 @@ function inferKind(dir: string): Kind {
     case "research":
       return "R";
     case "projects":
-      return "P";
+      throw new Error("Project codes are owned by Desk; don't add them to MDX");
     case "talks":
       return "T";
     default:

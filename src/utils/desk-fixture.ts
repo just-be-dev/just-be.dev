@@ -1,7 +1,8 @@
 /**
  * Stand-in for Desk's `listPublicProjects()` in local dev (`mise run dev`).
- * It mirrors the projects backfilled into Desk, plus a few Desk-only projects
- * to exercise the paths without MDX. Never used in production.
+ * It mirrors the projects backfilled into Desk, with the codes Desk backfilled
+ * from MDX, plus a few Desk-only projects (with their own codes, e.g.
+ * /p24dd) to exercise the paths without MDX. Never used in production.
  */
 import type { PlatformProject } from "./desk";
 
@@ -28,6 +29,7 @@ function project(
 
 export const deskFixture: PlatformProject[] = [
   project("ccpm", {
+    code: "p252b",
     name: "CCPM",
     description: "My personal Claude Code Plugin Marketplace",
     createdAt: day("2026-01-19"),
@@ -37,6 +39,7 @@ export const deskFixture: PlatformProject[] = [
     ],
   }),
   project("devtools-fm", {
+    code: "p1e73",
     name: "DevTools FM",
     description: "A podcast about developer tools and the people who make them",
     createdAt: day("2021-05-05"),
@@ -46,6 +49,7 @@ export const deskFixture: PlatformProject[] = [
     ],
   }),
   project("jexl", {
+    code: "p2424",
     name: "JEXL",
     description: "A programming language where the entire syntax is written in pure JSON",
     experimental: true,
@@ -58,6 +62,7 @@ export const deskFixture: PlatformProject[] = [
     ],
   }),
   project("pex", {
+    code: "p2530",
     name: "PEX Lang",
     description:
       "A compact, Lisp-like programming language for data manipulation and transformation",
@@ -70,6 +75,7 @@ export const deskFixture: PlatformProject[] = [
     ],
   }),
   project("side-project-saturday", {
+    code: "p2323",
     name: "Side Project Saturday",
     description: "A weekly meetup for working on side projects",
     createdAt: day("2024-08-17"),
@@ -79,6 +85,7 @@ export const deskFixture: PlatformProject[] = [
     ],
   }),
   project("webview-cli", {
+    code: "p25b4",
     name: "webview-cli",
     description: "A webview CLI: render HTML, get back JSON",
     createdAt: day("2026-06-05"),
@@ -88,6 +95,7 @@ export const deskFixture: PlatformProject[] = [
     ],
   }),
   project("webview", {
+    code: "p3a89",
     name: "webview",
     description: "A scriptable webview framework",
     state: "maintenance",
@@ -99,6 +107,7 @@ export const deskFixture: PlatformProject[] = [
   }),
   // Desk-only projects (no MDX), to exercise the minimal page and other states.
   project("fixture-desk-only", {
+    code: "p24dd",
     name: "Fixture: Desk-only",
     description: "A public Desk project with no MDX file (fixture data)",
     state: "done",
@@ -106,6 +115,7 @@ export const deskFixture: PlatformProject[] = [
     links: [{ kind: "url", ref: "https://example.com" }],
   }),
   project("fixture-archived", {
+    code: "p2119",
     name: "Fixture: Archived",
     description: "An archived Desk project (fixture data)",
     state: "archived",
@@ -113,6 +123,7 @@ export const deskFixture: PlatformProject[] = [
     links: [{ kind: "github", ref: "just-be-dev/just-be.dev" }],
   }),
   project("fixture-idea", {
+    code: "p2538",
     name: "Fixture: Idea",
     description: "A public idea; not listed on /projects (fixture data)",
     state: "idea",

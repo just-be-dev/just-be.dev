@@ -36,6 +36,22 @@ describe("parsePublicProjects", () => {
     expect(warnings).toHaveLength(1);
   });
 
+  it("treats code as optional, lowercases it and ignores malformed codes", () => {
+    const warnings: string[] = [];
+    const [valid] = deskFixture;
+    const { code: _code, ...noCode } = valid;
+    const result = parsePublicProjects(
+      [noCode, { ...valid, id: "upper", code: "P252B" }, { ...valid, id: "bad", code: "x1234" }],
+      (message) => warnings.push(message),
+    );
+    expect(result.map((p) => [p.id, p.code])).toEqual([
+      [valid.id, undefined],
+      ["upper", "p252b"],
+      ["bad", undefined],
+    ]);
+    expect(warnings).toHaveLength(1);
+  });
+
   it("recognizes tagged errors structurally", () => {
     expect(() => parsePublicProjects({ _tag: "DeskUnavailable", message: "db down" })).toThrow(
       "Desk returned DeskUnavailable: db down",
