@@ -152,6 +152,7 @@ Desk (desk.just-be.dev, `~/Code/thoughtflow`) is the system of record for projec
 - Public Desk projects without MDX get a minimal page. MDX whose project isn't public in Desk is hidden. `idea` projects aren't listed.
 - Desk answers are cached per isolate (`src/utils/desk.ts`). If Desk is down, pages render MDX only, without state, and never fail.
 - `mise run dev` uses fixture data (`src/utils/desk-fixture.ts`); `DESK_DEV=unavailable` in `.dev.vars` simulates an outage.
+- `::readme{repo=...}` embeds a GitHub README fetched from raw.githubusercontent.com (never the rate-limited REST API) and cached with stale-on-error (`src/utils/github-readme.ts`).
 
 See `docs/projects.md` for the full rules.
 

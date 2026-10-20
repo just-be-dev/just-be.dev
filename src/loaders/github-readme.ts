@@ -1,54 +1,18 @@
 import type { LiveLoader } from "astro:content";
-import { marked } from "marked";
+import {
+  cacheApiStore,
+  createReadmeFetcher,
+  DEFAULT_REF,
+  USER_AGENT,
+} from "../utils/github-readme";
 
 const DEFAULT_OWNER = "just-be-dev";
-const USER_AGENT = "just-be-dev-website";
 
-/**
- * Creates a custom renderer that handles both external and relative links
- */
-function createRenderer(owner: string, repo: string, branch: string) {
-  const renderer = new marked.Renderer();
-  const originalLinkRenderer = renderer.link.bind(renderer);
-
-  renderer.link = function (token) {
-    const html = originalLinkRenderer(token);
-    let href = token.href;
-
-    if (!href) {
-      return html;
-    }
-
-    // Handle absolute external links
-    if (href.startsWith("http://") || href.startsWith("https://")) {
-      return html.replace(/<a /, '<a target="_blank" rel="noopener noreferrer" ');
-    }
-
-    // Handle anchor links (keep as is)
-    if (href.startsWith("#")) {
-      return html;
-    }
-
-    // Convert relative links to absolute GitHub URLs
-    // Remove leading ./ if present
-    const cleanPath = href.replace(/^\.\//, "");
-    const absoluteUrl = `https://github.com/${owner}/${repo}/blob/${branch}/${cleanPath}`;
-
-    return html.replace(
-      /href="[^"]*"/,
-      `href="${absoluteUrl}" target="_blank" rel="noopener noreferrer"`,
-    );
-  };
-
-  return renderer;
-}
-
-/**
- * Strips the first H1 heading from markdown content
- */
-function stripFirstH1(markdown: string): string {
-  // Match the first H1 (# heading) and remove it along with trailing newlines
-  return markdown.replace(/^#\s+.*?(\r?\n)+/, "");
+// One fetcher per isolate, so its in-memory cache is shared by requests.
+let readmes: ReturnType<typeof createReadmeFetcher> | undefined;
+function getReadmes() {
+  readmes ??= createReadmeFetcher({ store: cacheApiStore() });
+  return readmes;
 }
 
 interface ReadmeData {
@@ -119,84 +83,19 @@ export function githubReadmeLoader(): LiveLoader<ReadmeData, EntryFilter, Collec
     async loadEntry({ filter }) {
       const owner = filter.owner || DEFAULT_OWNER;
       const repo = filter.repo;
+      const id = `${owner}/${repo}`;
+      const result = await getReadmes().get(owner, repo);
 
-      try {
-        // Get the default branch from the API response first
-        const repoResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
-          headers: { "User-Agent": USER_AGENT },
-        });
-        const repoInfo = repoResponse.ok ? await repoResponse.json() : { default_branch: "main" };
-        const branch = repoInfo.default_branch || "main";
-
-        // Fetch README from GitHub API
-        const readmeResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/readme`, {
-          headers: {
-            Accept: "application/vnd.github.v3+json",
-            "User-Agent": USER_AGENT,
-          },
-        });
-
-        if (!readmeResponse.ok) {
-          if (readmeResponse.status === 404) {
-            return {
-              id: `${owner}/${repo}`,
-              data: null,
-              error: new Error(`README not found for ${owner}/${repo}`),
-            };
-          }
-          return {
-            id: `${owner}/${repo}`,
-            data: null,
-            error: new Error(`Failed to fetch README: ${readmeResponse.status}`),
-          };
-        }
-
-        const readmeData = await readmeResponse.json();
-
-        // Decode base64 content, reinterpreting the raw bytes as UTF-8 so
-        // multibyte characters (em dashes, smart quotes, etc.) render correctly
-        const bytes = Uint8Array.from(atob(readmeData.content), (c) => c.charCodeAt(0));
-        const readmeMarkdown = new TextDecoder("utf-8").decode(bytes);
-
-        // Strip the first H1 heading
-        const markdownWithoutH1 = stripFirstH1(readmeMarkdown);
-
-        // Create renderer with repo context for relative links
-        const renderer = createRenderer(owner, repo, branch);
-
-        // Parse markdown to HTML using marked
-        // Match GitHub's README rendering: single newlines within a paragraph
-        // collapse to spaces rather than becoming hard <br> breaks
-        marked.setOptions({
-          gfm: true,
-          breaks: false,
-          renderer: renderer,
-        });
-        const renderedHtml = await marked.parse(markdownWithoutH1);
-
-        return {
-          id: `${owner}/${repo}`,
-          data: {
-            repo,
-            url: `https://github.com/${owner}/${repo}`,
-            branch,
-            owner,
-          },
-          rendered: {
-            html: renderedHtml,
-          },
-          cacheHint: {
-            tags: [`github:${owner}/${repo}`],
-            lastModified: new Date(),
-          },
-        };
-      } catch (error) {
-        return {
-          id: `${owner}/${repo}`,
-          data: null,
-          error: error instanceof Error ? error : new Error(String(error)),
-        };
+      if (!result.ok) {
+        return { id, data: null, error: new Error(result.error) };
       }
+
+      return {
+        id,
+        data: { repo, url: `https://github.com/${owner}/${repo}`, branch: DEFAULT_REF, owner },
+        rendered: { html: result.html },
+        cacheHint: { tags: [`github:${owner}/${repo}`] },
+      };
     },
   };
 }
