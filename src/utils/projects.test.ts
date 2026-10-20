@@ -25,9 +25,6 @@ const entries = [
   mdx("private-thing"),
 ];
 
-/** Desk as it answered before it shipped `code`. */
-const withoutCodes = deskFixture.map(({ code: _code, ...project }) => project);
-
 describe("joinProjects", () => {
   const { deskAvailable, projects } = joinProjects(desk(), entries);
   const bySlug = (slug: string) => projects.find((p) => p.slug === slug);
@@ -91,28 +88,13 @@ describe("joinProjects", () => {
     expect(bySlug("ccpm")?.code).toBe("P252B");
   });
 
-  it("prefers Desk's code over the fallback", () => {
-    const [pex] = deskFixture.filter((p) => p.slug === "pex");
-    const [project] = joinProjects(desk([{ ...pex, code: "p0001" }]), entries).projects;
-    expect(project.code).toBe("P0001");
-  });
-
-  it("falls back to the MDX projects' codes while Desk doesn't send them", () => {
-    const { projects } = joinProjects(desk(withoutCodes), entries);
-    const code = (slug: string) => projects.find((p) => p.slug === slug)?.code;
-    expect(code("pex")).toBe("P2530");
-    expect(code("webview")).toBe("P3A89");
-    // Keyed by page slug, so a site-linked project without MDX still gets it.
-    expect(code("ccpm")).toBe("P252B");
-    expect(code("fixture-desk-only")).toBeUndefined();
-  });
-
   it("degrades to MDX only when Desk is unavailable", () => {
     const result = joinProjects({ ok: false, error: "down" }, entries);
     expect(result.deskAvailable).toBe(false);
     expect(result.projects.map((p) => p.slug)).toEqual(entries.map((e) => e.id));
-    expect(result.projects[0]).toMatchObject({ title: "pex", code: "P2530" });
+    expect(result.projects[0]).toMatchObject({ title: "pex" });
     expect(result.projects[0].state).toBeUndefined();
+    expect(result.projects.every((p) => p.code === undefined)).toBe(true);
   });
 });
 
@@ -139,15 +121,9 @@ describe("projectCodePath", () => {
     expect(projectCodePath("p2424", joined)).toBeUndefined();
   });
 
-  it("resolves through the fallback while Desk doesn't send codes", () => {
-    const joined = joinProjects(desk(withoutCodes), entries).projects;
-    expect(projectCodePath("p2424", joined)).toBe("/projects/jexl");
-  });
-
-  it("resolves the MDX projects when Desk is unavailable", () => {
+  it("resolves nothing when Desk is unavailable", () => {
     const joined = joinProjects({ ok: false, error: "down" }, entries).projects;
-    expect(projectCodePath("p2530", joined)).toBe("/projects/pex");
-    expect(projectCodePath("p3a89", joined)).toBe("/projects/webview");
+    expect(projectCodePath("p2530", joined)).toBeUndefined();
     expect(projectCodePath("p24dd", joined)).toBeUndefined();
   });
 });

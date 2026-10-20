@@ -19,17 +19,17 @@ export const projectLinkSchema = z.object({
 });
 export type ProjectLinkRef = z.infer<typeof projectLinkSchema>;
 
-/** A project short code as Desk stores it: `p` + 4 lowercase hex digits. */
-export const PROJECT_CODE_PATTERN = /^p[0-9a-f]{4}$/;
+/** A project short code: `p` + 4 hex digits. Desk sends it lowercase; case is normalized on parse. */
+const PROJECT_CODE_PATTERN_ANY_CASE = /^p[0-9a-f]{4}$/i;
 
 export const platformProjectSchema = z.object({
   id: z.string(),
   slug: z.string(),
-  /**
-   * Permanent short code (`p2530`), unique across Desk and never reused.
-   * Optional until Desk ships the field; see `parsePublicProjects`.
-   */
-  code: z.string().optional(),
+  /** Permanent short code (`p2530`), unique across Desk and never reused. Lowercased here. */
+  code: z
+    .string()
+    .regex(PROJECT_CODE_PATTERN_ANY_CASE, "code must match p + 4 hex digits")
+    .transform((code) => code.toLowerCase()),
   name: z.string(),
   description: z.string().nullable(),
   state: z.enum(PROJECT_STATES),
@@ -89,22 +89,8 @@ export function parsePublicProjects(
       return [];
     }
     // Defence in depth: never show a project Desk says is private.
-    if (parsed.data.visibility !== "public") return [];
-    return [withValidCode(parsed.data, warn)];
+    return parsed.data.visibility === "public" ? [parsed.data] : [];
   });
-}
-
-/**
- * Normalize a project's code to lowercase. A malformed code is dropped (the
- * project keeps its page, without a code) rather than dropping the project.
- */
-function withValidCode(project: PlatformProject, warn: (message: string) => void): PlatformProject {
-  if (project.code === undefined) return project;
-  const code = project.code.toLowerCase();
-  if (PROJECT_CODE_PATTERN.test(code)) return { ...project, code };
-  warn(`Ignoring malformed code "${project.code}" on Desk project ${project.id}`);
-  const { code: _ignored, ...rest } = project;
-  return rest;
 }
 
 export interface DeskClientOptions {

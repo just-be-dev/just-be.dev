@@ -22,39 +22,13 @@ export interface MdxProject {
   };
 }
 
-/**
- * ROLLOUT FALLBACK: remove once Desk's `listPublicProjects()` returns `code`.
- *
- * Project codes used to live in MDX frontmatter. Desk now owns them and has
- * backfilled these same values, but this site may deploy before Desk sends the
- * field. Until then, a project's code falls back to this map, keyed by page
- * slug (the MDX file name). It also gives the MDX projects their codes, and
- * keeps their short URLs working, when Desk is unavailable and nothing is
- * cached. Once Desk returns codes, deleting the map only loses that outage
- * case, which the client's day-long stale cache mostly covers.
- */
-export const FALLBACK_PROJECT_CODES: Readonly<Record<string, string>> = {
-  ccpm: "p252b",
-  "devtools-fm": "p1e73",
-  jexl: "p2424",
-  pex: "p2530",
-  "side-project-saturday": "p2323",
-  "webview-cli": "p25b4",
-  webview: "p3a89",
-};
-
-/** Desk's code if it sent one, else the rollout fallback for the slug. Upper-case for display. */
-function projectCode(slug: string, desk?: PlatformProject): string | undefined {
-  return (desk?.code ?? FALLBACK_PROJECT_CODES[slug])?.toUpperCase();
-}
-
 export interface SiteProject<Entry extends MdxProject = MdxProject> {
   /** Page path segment: /projects/<slug>. */
   slug: string;
   title: string;
   description?: string;
   date?: Date;
-  /** Upper-case short code, from Desk (or the rollout fallback). */
+  /** Upper-case short code from Desk. Undefined when Desk is unavailable. */
   code?: string;
   /** Undefined when Desk is unavailable. */
   state?: ProjectState;
@@ -97,7 +71,7 @@ function fromDesk<Entry extends MdxProject>(
     title: entry?.data.title ?? project.name,
     description: entry?.data.description ?? project.description ?? undefined,
     date: entry?.data.date ?? new Date(project.createdAt),
-    code: projectCode(slug, project),
+    code: project.code.toUpperCase(),
     state: project.state,
     experimental: project.experimental,
     // A `url` link that is just the GitHub page adds nothing to the github link.
@@ -115,7 +89,6 @@ function fromMdxOnly<Entry extends MdxProject>(entry: Entry): SiteProject<Entry>
     title: entry.data.title ?? entry.id,
     description: entry.data.description,
     date: entry.data.date,
-    code: projectCode(entry.id),
     experimental: false,
     entry,
   };
@@ -184,7 +157,8 @@ export function listProjects<Entry extends MdxProject>(
 /**
  * Where a project short code (`/p2530`, any case) redirects: the page of the
  * project with that code, using the slug the join picked. Undefined when no
- * project with a page has the code (unknown, or not public in Desk).
+ * project with a page has the code (unknown, not public in Desk, or Desk is
+ * unavailable and projects have no codes).
  */
 export function projectCodePath(
   code: string,

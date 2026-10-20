@@ -122,7 +122,7 @@ Every piece of content has a short code, a unique identifier:
 
 Blog posts, games, research and talks keep their code in a `code` field in frontmatter, derived from the `date` field; `mise run gen-codes` adds any that are missing. Example: `building-a-deno-desktop-framework.mdx` with `code: b232e`.
 
-Project codes are owned by Desk, not MDX: each Desk project has a permanent `code` (`^p[0-9a-f]{4}$`) that is never reused. The projects schema rejects `code` in frontmatter, and gen-codes skips projects. Until Desk's `listPublicProjects()` returns `code`, the 7 projects that used to have MDX codes fall back to `FALLBACK_PROJECT_CODES` in `src/utils/projects.ts` (remove it once Desk ships the field).
+Project codes are owned by Desk, not MDX: each Desk project has a permanent `code` (`^p[0-9a-f]{4}$`) that is never reused. The projects schema rejects `code` in frontmatter, and gen-codes skips projects. A Desk project with a missing or malformed code is dropped from the site with a warning.
 
 ### URL Routing & Manifest
 
@@ -134,7 +134,7 @@ The site implements permanent short code URLs. For each content item:
 - **Short code URL**: `/{code}` (e.g., `/b2405`, case-insensitive) → redirects to canonical
   - Provides short, permanent URLs based on content codes
   - Blog, research, talk and game codes are looked up in the URL manifest (301)
-  - Project codes (`/p2530`) resolve at request time through Desk: the public Desk project with that code redirects (302) to `/projects/<slug>`, the slug the projects join picks (`projectCodePath` in `src/utils/projects.ts`). If Desk is unavailable, the fallback codes still resolve for the MDX projects.
+  - Project codes (`/p2530`) resolve at request time through Desk: the public Desk project with that code redirects (302) to `/projects/<slug>`, the slug the projects join picks (`projectCodePath` in `src/utils/projects.ts`). If Desk is unavailable and nothing is cached, project codes don't resolve (404) and MDX-only pages show no code.
 
 The URL manifest (`src/content/url-manifest.yaml`) maps non-project content codes to their slug-based URLs and is:
 

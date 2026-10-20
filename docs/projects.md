@@ -41,7 +41,7 @@ Desk owns project short codes: `code` on each Desk project, `p` plus 4 lowercase
 
 `slugs` aliases (`/pex`) come from the MDX frontmatter and redirect (301) to `/projects/<file name>` without asking Desk (`projectAliasPath`).
 
-Rollout fallback: Desk may not send `code` yet, so `desk.ts` parses it as optional (lowercased; a malformed code is dropped with a warning). When a project has no Desk code, the join falls back to `FALLBACK_PROJECT_CODES` in `src/utils/projects.ts`, the 7 codes that used to be in MDX frontmatter and that Desk backfilled, keyed by page slug. The same map gives MDX projects their codes, and keeps their short URLs working, when Desk is unavailable and nothing is cached. Remove the map once Desk returns codes; after that, an outage with an empty cache leaves project short codes unresolved.
+`desk.ts` requires `code` and lowercases it. A project whose code is missing or malformed is dropped with a warning, like any other project that doesn't match the contract. When Desk is unavailable and nothing is cached, MDX-only pages have no code, and `/pXXXX` doesn't resolve (404) until Desk is back; `slugs` aliases still work.
 
 ## States
 
@@ -68,7 +68,7 @@ To add a project page: create the project in Desk (public, with a `site` link to
 
 `src/utils/desk.ts` caches Desk's answer per Worker isolate: a good answer is reused for 60 seconds, concurrent requests share one call, a call is abandoned after 2.5 seconds, and after a failure Desk isn't asked again for 15 seconds. While Desk fails, the last good answer is served for up to a day. Responses carry `Cache-Control: public, max-age=60, stale-while-revalidate=600`.
 
-If Desk is unreachable and nothing is cached, the pages never fail: `/projects` lists every MDX file by date without state, titled by slug unless the MDX sets a `title`, and every MDX page renders without state. Desk-only projects are missing until Desk is back. Responses then carry `Cache-Control: no-store`. Failures are logged with a `[desk]` prefix (Workers observability).
+If Desk is unreachable and nothing is cached, the pages never fail: `/projects` lists every MDX file by date without state or code, titled by slug unless the MDX sets a `title`, and every MDX page renders without state or code. Desk-only projects are missing until Desk is back. Responses then carry `Cache-Control: no-store`. Failures are logged with a `[desk]` prefix (Workers observability).
 
 ## Local development
 

@@ -36,20 +36,25 @@ describe("parsePublicProjects", () => {
     expect(warnings).toHaveLength(1);
   });
 
-  it("treats code as optional, lowercases it and ignores malformed codes", () => {
+  it("requires a well-formed code, lowercasing it, and drops projects without one", () => {
     const warnings: string[] = [];
     const [valid] = deskFixture;
     const { code: _code, ...noCode } = valid;
     const result = parsePublicProjects(
-      [noCode, { ...valid, id: "upper", code: "P252B" }, { ...valid, id: "bad", code: "x1234" }],
+      [
+        { ...valid, id: "upper", code: "P252B" },
+        { ...noCode, id: "missing" },
+        { ...valid, id: "bad", code: "x1234" },
+        { ...valid, id: "short", code: "p12" },
+        valid,
+      ],
       (message) => warnings.push(message),
     );
     expect(result.map((p) => [p.id, p.code])).toEqual([
-      [valid.id, undefined],
       ["upper", "p252b"],
-      ["bad", undefined],
+      [valid.id, valid.code],
     ]);
-    expect(warnings).toHaveLength(1);
+    expect(warnings).toHaveLength(3);
   });
 
   it("recognizes tagged errors structurally", () => {
