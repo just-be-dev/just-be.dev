@@ -1,5 +1,6 @@
 import { defineMiddleware } from "astro:middleware";
 import { getCollection } from "astro:content";
+import { aliasTarget, canonicalPath } from "@/utils/url-manifest";
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const url = new URL(context.request.url);
@@ -34,19 +35,26 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const firstSegmentIsCode = pathSegments[0] && codePattern.test(pathSegments[0]);
   const secondSegmentIsCode = pathSegments[1] && codePattern.test(pathSegments[1]);
 
+  // Short codes (e.g. /p2530) and frontmatter `slugs` aliases (e.g. /pex)
+  // redirect to the content's canonical page, via the URL manifest.
+  const manifest = await getCollection("urls");
+
   if (firstSegmentIsCode || secondSegmentIsCode) {
     const code = (firstSegmentIsCode ? pathSegments[0] : pathSegments[1]).toLowerCase();
+    const target = canonicalPath(code, manifest);
 
-    // Load the URL manifest to find the canonical page
-    const entries = await getCollection("urls");
-    const matchingEntry = entries.find((entry) => entry.data.code === code);
-
-    if (matchingEntry) {
-      // The manifest ID is the canonical URL path (e.g., "/blog/slug")
+    if (target) {
       const newUrl = new URL(url);
-      newUrl.pathname = matchingEntry.id;
+      newUrl.pathname = target;
       return context.redirect(newUrl.toString(), 301);
     }
+  }
+
+  const alias = aliasTarget(url.pathname, manifest);
+  if (alias) {
+    const newUrl = new URL(url);
+    newUrl.pathname = alias;
+    return context.redirect(newUrl.toString(), 301);
   }
 
   // All other URLs pass through

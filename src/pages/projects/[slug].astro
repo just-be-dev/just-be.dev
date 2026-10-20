@@ -1,58 +1,74 @@
 ---
-import { getCollection, getEntry, render } from "astro:content";
+import { render } from "astro:content";
 import FormattedDate from "@/components/FormattedDate.astro";
 import ProjectStatus from "@/components/ProjectStatus.astro";
 import Link from "@/components/Link.astro";
 import BackLink from "@/components/BackLink.astro";
 import MDContent from "@/components/MDContent.astro";
 import Layout from "@/layouts/Layout.astro";
-import { Code } from "@/utils/code";
+import { loadProjects } from "@/utils/site-projects";
 
 export const prerender = false;
 
 const { slug } = Astro.params;
-const project = await getEntry("projects", slug!);
+const { deskAvailable, projects } = await loadProjects();
+const project = projects.find((p) => p.slug === slug);
 
+// Unknown slug, or an MDX file whose project isn't public in Desk.
 if (!project) {
   return Astro.redirect("/projects");
 }
 
-const { Content } = await render(project);
+const Content = project.entry ? (await render(project.entry)).Content : undefined;
+const homepage = project.url ?? project.github;
 
-// Get code from frontmatter
-const code = project.data.code?.toUpperCase();
+Astro.response.headers.set(
+  "Cache-Control",
+  deskAvailable ? "public, max-age=60, stale-while-revalidate=600" : "no-store"
+);
 ---
 
-<Layout title={`${project.data.title} - Just Be`} description={project.data.description}>
+<Layout title={`${project.title} - Just Be`} description={project.description}>
   <article class="px-2 md:px-4 max-w-article mx-auto">
     <header class="mb-2lh grid grid-cols-[1fr_auto] gap-x-2 not-prose">
       <h1 class="mb-0 font-bold">
-        {
-          project.data.url ? (
-            <Link href={project.data.url}>{project.data.title}</Link>
-          ) : (
-            project.data.title
-          )
-        }
+        {homepage ? <Link href={homepage}>{project.title}</Link> : project.title}
       </h1>
 
-      {
-        project.data.status && (
-          <div class="flex gap-[1ch] justify-end">
-            <ProjectStatus status={project.data.status} />
-          </div>
-        )
-      }
+      <div class="flex gap-[1ch] justify-end">
+        {project.experimental && <ProjectStatus status="experimental" />}
+        {project.state && <ProjectStatus status={project.state} />}
+      </div>
 
-      <div class="flex gap-[1ch]">
-        <span class="text-fg-2">{code}</span>
-        <span class="opacity-25">|</span>
-        <FormattedDate date={project.data.date} />
+      <div class="flex gap-[1ch] flex-wrap col-span-2">
+        {
+          project.code && (
+            <>
+              <span class="text-fg-2">{project.code}</span>
+              <span class="opacity-25">|</span>
+            </>
+          )
+        }
+        {project.date && <FormattedDate date={project.date} />}
+        {
+          project.github && project.github !== homepage && (
+            <>
+              <span class="opacity-25">|</span>
+              <Link href={project.github}>github</Link>
+            </>
+          )
+        }
       </div>
     </header>
 
     <div class="max-w-none">
-      <MDContent Content={Content} components={{ a: Link }} />
+      {
+        Content ? (
+          <MDContent Content={Content} components={{ a: Link }} />
+        ) : (
+          project.description && <p>{project.description}</p>
+        )
+      }
     </div>
 
     <BackLink href="/projects" label="Back to projects" />

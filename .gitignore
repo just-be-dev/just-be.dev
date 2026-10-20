@@ -30,3 +30,6 @@ public/assets/*
 # wrangler temporary files
 .wrangler/
 *.png
+
+# local Worker vars (e.g. DESK_DEV=unavailable)
+.dev.vars*

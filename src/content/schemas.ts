@@ -21,18 +21,19 @@ export const gamesSchema = z.object({
   slugs: z.array(z.string()).optional(),
 });
 
-export const projectsSchema = z.object({
-  title: z.string(),
-  description: z.string().optional(),
-  url: z.string().url().optional(),
-  repository: z.string().url().optional(),
-  status: z
-    .enum(["experimental", "active", "completed", "archived", "maintenance"])
-    .default("active"),
-  date: z.coerce.date(),
-  code: z.string().optional(),
-  slugs: z.array(z.string()).optional(),
-});
+// Long-form prose for a project. Desk (desk.just-be.dev) owns the project's
+// name, description, state, experimental flag and links; a Desk project's
+// `site` link names this file. The fields here are optional presentation
+// overrides. `.strict()` rejects the retired `status`, `url` and `repository`.
+export const projectsSchema = z
+  .object({
+    title: z.string().optional(),
+    description: z.string().optional(),
+    date: z.coerce.date().optional(),
+    code: z.string().optional(),
+    slugs: z.array(z.string()).optional(),
+  })
+  .strict();
 
 export const researchSchema = z.object({
   title: z.string(),

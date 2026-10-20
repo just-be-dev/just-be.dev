@@ -1,6 +1,9 @@
 ---
 import ProjectStatus from "@/components/ProjectStatus.astro";
 import ResearchStatus from "@/components/ResearchStatus.astro";
+import type { ProjectState } from "@/utils/desk";
+
+type ResearchStatusValue = "draft" | "working" | "final" | "archived";
 
 export type ColumnType = "code" | "date" | "status" | "title" | "tree";
 
@@ -9,15 +12,9 @@ export interface LinkListItem {
   slug: string;
   title: string;
   date?: string;
-  status?:
-    | "experimental"
-    | "active"
-    | "completed"
-    | "archived"
-    | "maintenance"
-    | "draft"
-    | "working"
-    | "final";
+  status?: ProjectState | ResearchStatusValue;
+  /** Projects only: show an "experimental" badge after the title. */
+  experimental?: boolean;
   description?: string;
   treeChar?: string;
   isLast?: boolean;
@@ -80,37 +77,28 @@ const HeadingTag = headingLevel;
               }
               if (col === "status" && item.status) {
                 if (statusType === "project") {
-                  return (
-                    <ProjectStatus
-                      status={
-                        item.status as
-                          | "experimental"
-                          | "active"
-                          | "completed"
-                          | "archived"
-                          | "maintenance"
-                      }
-                    />
-                  );
+                  return <ProjectStatus status={item.status as ProjectState} />;
                 } else if (statusType === "research") {
-                  return (
-                    <ResearchStatus
-                      status={item.status as "draft" | "working" | "final" | "archived"}
-                    />
-                  );
+                  return <ResearchStatus status={item.status as ResearchStatusValue} />;
                 }
               }
               if (col === "title") {
                 return (
                   <HeadingTag class="truncate font-bold">
                     {item.title}
+                    {item.experimental && (
+                      <span class="font-normal pl-1">
+                        <ProjectStatus status="experimental" />
+                      </span>
+                    )}
                     {item.description && (
                       <span class="text-fg-2 font-normal pl-1">{item.description}</span>
                     )}
                   </HeadingTag>
                 );
               }
-              return null;
+              // Keep the subgrid aligned when a row has no value for this column.
+              return col === "code" || col === "status" ? <span /> : null;
             })}
           </a>
         </li>
@@ -136,24 +124,9 @@ const HeadingTag = headingLevel;
                 }
                 if (col === "status" && item.status) {
                   if (statusType === "project") {
-                    return (
-                      <ProjectStatus
-                        status={
-                          item.status as
-                            | "experimental"
-                            | "active"
-                            | "completed"
-                            | "archived"
-                            | "maintenance"
-                        }
-                      />
-                    );
+                    return <ProjectStatus status={item.status as ProjectState} />;
                   } else if (statusType === "research") {
-                    return (
-                      <ResearchStatus
-                        status={item.status as "draft" | "working" | "final" | "archived"}
-                      />
-                    );
+                    return <ResearchStatus status={item.status as ResearchStatusValue} />;
                   }
                 }
                 if (col === "title") {

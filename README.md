@@ -24,6 +24,10 @@ mise run dev
 
 The site will be available at `localhost:4321`.
 
+## Projects
+
+Project data (name, description, state, links, visibility) lives in [Desk](https://desk.just-be.dev), which the site reads at request time through a Cloudflare service binding. `src/content/projects/` holds only the long-form write-up for each project. `mise run dev` uses fixture data; `mise run dev:desk` reads prod Desk. See [docs/projects.md](docs/projects.md).
+
 ## Building
 
 ```sh

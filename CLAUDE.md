@@ -37,8 +37,11 @@ Always prefer Bun's built-in APIs over adding new npm dependencies. Check the [B
 All development commands should be run through mise:
 
 ```sh
-# Start development server (runs on localhost:4321)
+# Start development server (runs on localhost:4321, projects use Desk fixture data)
 mise run dev
+
+# Development server against prod Desk through a remote binding (needs wrangler login)
+mise run dev:desk
 
 # Build for production
 mise run build
@@ -78,7 +81,7 @@ mise run deploy
 The site uses Astro's content collections with file-based loaders defined in `src/content.config.ts`:
 
 - **blog**: Blog posts in `src/content/blog/` with title, description, date, tags, and draft status
-- **projects**: Project entries in `src/content/projects/` with status (active, completed, archived, maintenance)
+- **projects**: Long-form prose for projects in `src/content/projects/`. Project data (name, description, state, links) comes from Desk at request time; see Projects below
 - **research**: Research notes in `src/content/research/` with draft/published/archived status and topics
 - **pages**: General pages in `src/content/pages/` (including the homepage)
 - **devtools**: External RSS feed from devtools.fm podcast
@@ -138,7 +141,19 @@ The URL manifest (`src/content/url-manifest.yaml`) maps content codes to their s
 - Used by middleware (`src/middleware.ts`) to redirect short code URLs
 - Structured with codes as keys and arrays of slugs as values (supports multiple slugs per code)
 
-This ensures permanent short URLs never break, while keeping canonical URLs clean and slug-based.
+This ensures permanent short URLs never break, while keeping canonical URLs clean and slug-based. A code's canonical page is its newest manifest path under the code's collection; other paths for the code (frontmatter `slugs` such as `/pex`) are aliases that redirect to it (`src/utils/url-manifest.ts`).
+
+### Projects
+
+Desk (desk.just-be.dev, `~/Code/thoughtflow`) is the system of record for projects: name, description, state (`idea | active | maintenance | done | archived`), the `experimental` flag, visibility and links. The site keeps only the long-form MDX prose.
+
+- `/projects` and `/projects/[slug]` render on demand. `src/utils/site-projects.ts` calls `listPublicProjects()` on Desk's `DeskPlatform` entrypoint through the `DESK` service binding in `wrangler.toml`, and joins the result with the MDX by each Desk project's `site` link (`src/utils/projects.ts`).
+- MDX frontmatter has only optional overrides (`title`, `description`, `date`, `code`, `slugs`). Don't add `status`, `url` or `repository`; the schema rejects them, and they belong in Desk.
+- Public Desk projects without MDX get a minimal page. MDX whose project isn't public in Desk is hidden. `idea` projects aren't listed.
+- Desk answers are cached per isolate (`src/utils/desk.ts`). If Desk is down, pages render MDX only, without state, and never fail.
+- `mise run dev` uses fixture data (`src/utils/desk-fixture.ts`); `DESK_DEV=unavailable` in `.dev.vars` simulates an outage.
+
+See `docs/projects.md` for the full rules.
 
 ### Styling System
 
@@ -167,6 +182,7 @@ The site includes a client-side keyboard shortcut system (`src/client/keyboard-s
 The site is deployed to Cloudflare Workers with configuration in `wrangler.toml`:
 
 - Static assets in `./dist`
+- `DESK` service binding to Desk's private API Worker (`DeskPlatform` entrypoint)
 - Custom domain: `just-be.dev`
 - Observability enabled
 

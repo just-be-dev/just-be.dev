@@ -1,25 +1,29 @@
 ---
-import { getCollection } from "astro:content";
 import Layout from "@/layouts/Layout.astro";
 import LinkList from "@/components/LinkList.astro";
 import type { LinkListItem } from "@/components/LinkList.astro";
 import { Code } from "@/utils/code";
+import { listProjects } from "@/utils/projects";
+import { loadProjects } from "@/utils/site-projects";
 
-const projects = (await getCollection("projects"))
-  .map((post) => ({
-    ...post,
-    code: post.data.code ? post.data.code.toUpperCase() : Code.fromId(post.id).toString(),
-  }))
-  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+// Rendered per request: project state comes from Desk (see src/utils/site-projects.ts).
+export const prerender = false;
 
-// Transform projects for LinkList
-const linkListItems: LinkListItem[] = projects.map((project) => ({
+const { deskAvailable, projects } = await loadProjects();
+
+const linkListItems: LinkListItem[] = listProjects(projects).map((project) => ({
   code: project.code,
-  slug: Code.buildUrl("projects", project.id),
-  title: project.data.title,
-  status: project.data.status,
-  description: project.data.description,
+  slug: Code.buildUrl("projects", project.slug),
+  title: project.title,
+  status: project.state,
+  experimental: project.experimental,
+  description: project.description,
 }));
+
+Astro.response.headers.set(
+  "Cache-Control",
+  deskAvailable ? "public, max-age=60, stale-while-revalidate=600" : "no-store"
+);
 ---
 
 <Layout title="Projects - Just Be">
