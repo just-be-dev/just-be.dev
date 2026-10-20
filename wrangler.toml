@@ -15,7 +15,7 @@ binding = "ASSETS"
 # script name; update `service` here if Desk's stack replaces the Worker.
 [[services]]
 binding = "DESK"
-service = "desk-api-placeholder"
+service = "desk-api-prod-52zp2vud3ktnsddd"
 entrypoint = "DeskPlatform"
 
 # `mise run dev:desk` (CLOUDFLARE_ENV=desk-remote) talks to prod Desk through a
@@ -25,6 +25,6 @@ vars = { DESK_DEV = "remote" }
 
 [[env.desk-remote.services]]
 binding = "DESK"
-service = "desk-api-placeholder"
+service = "desk-api-prod-52zp2vud3ktnsddd"
 entrypoint = "DeskPlatform"
 remote = true

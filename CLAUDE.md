@@ -70,7 +70,7 @@ mise run gen-codes
 # Generate URL manifest mapping slugs to codes
 mise run gen-url-manifest
 
-# Deploy to Cloudflare Workers
+# Deploy subdomains, the wildcard service and the router (not the site Worker; see Deployment)
 mise run deploy
 ```
 
@@ -185,6 +185,8 @@ The site is deployed to Cloudflare Workers with configuration in `wrangler.toml`
 - `DESK` service binding to Desk's private API Worker (`DeskPlatform` entrypoint)
 - Custom domain: `just-be.dev`
 - Observability enabled
+
+The site Worker (`just-be-dev`) is deployed by Cloudflare Workers Builds, the Cloudflare GitHub app: every push to `main` builds and deploys it (the "Workers Builds: just-be-dev" check on the commit), and pushes to other branches upload a preview version without deploying. `mise run deploy` does not deploy the site Worker; it covers the subdomains, the wildcard service and the router (`services/router`), which sits in front of the site on `just-be.dev/*`.
 
 ## Code Organization
 

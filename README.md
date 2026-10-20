@@ -36,4 +36,4 @@ mise run build
 
 ## Deployment
 
-This site is deployed to Cloudflare Workers.
+This site is deployed to Cloudflare Workers by Cloudflare Workers Builds on every push to `main`. `mise run deploy` deploys the subdomains and the router in front of the site.
